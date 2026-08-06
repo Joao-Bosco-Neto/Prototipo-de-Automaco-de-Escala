@@ -1,0 +1,1 @@
+# Prot-tipo-de-Automa-o-de-Escala
