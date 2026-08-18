@@ -14,7 +14,7 @@ jobs:
     steps:
       # Baixa o codigo do repositorio para a maquina do GitHub
       - name: Baixar o codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Instala o Java. O cache do Maven evita rebaixar as dependencias
       # (JavaFX, H2, JUnit) a cada execucao.
