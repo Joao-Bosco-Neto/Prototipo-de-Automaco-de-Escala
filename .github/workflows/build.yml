@@ -19,7 +19,7 @@ jobs:
       # Instala o Java. O cache do Maven evita rebaixar as dependencias
       # (JavaFX, H2, JUnit) a cada execucao.
       - name: Instalar JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
