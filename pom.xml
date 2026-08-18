@@ -14,6 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21.0.2</javafx.version>
         <h2.version>2.2.224</h2.version>
+        <bcrypt.version>0.10.2</bcrypt.version>
     </properties>
 
     <dependencies>
@@ -36,11 +37,13 @@
             <version>${h2.version}</version>
         </dependency>
 
-        <!-- BCrypt para hash de senha -->
+        <!-- BCrypt para hash de senha.
+             Usamos at.favre.lib no lugar de org.mindrot:jbcrypt, que esta sem
+             manutencao desde 2010. Mesmo algoritmo, biblioteca mantida. -->
         <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>${bcrypt.version}</version>
         </dependency>
 
         <!-- Testes -->
