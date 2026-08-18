@@ -1,6 +1,8 @@
 package br.edu.sistemaescala.backend.repository.jdbc;
 
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
+import br.edu.sistemaescala.backend.model.EscalaFuncionario;
+import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 import br.edu.sistemaescala.backend.model.TipoLancamento;
 import br.edu.sistemaescala.backend.repository.LancamentoHorasRepository;
@@ -51,11 +53,12 @@ public class LancamentoHorasRepositoryJdbc implements LancamentoHorasRepository 
         try (Connection conexao = ConexaoBanco.getConnection();
              PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setInt(1, lancamento.getFuncionarioId());
-            setNullableInt(stmt, 2, lancamento.getEscalaFuncionarioId());
+            stmt.setInt(1, lancamento.getFuncionario().getId());
+            setNullableInt(stmt, 2, lancamento.getEscalaFuncionario() != null
+                    ? lancamento.getEscalaFuncionario().getId() : null);
             stmt.setObject(3, lancamento.getDataReferencia());
             stmt.setInt(4, lancamento.getMinutos());
-            stmt.setString(5, lancamento.getTipo().getValorBanco());
+            stmt.setString(5, lancamento.getTipo().valor());
             stmt.setString(6, lancamento.getDescricao());
 
             stmt.executeUpdate();
@@ -137,17 +140,29 @@ public class LancamentoHorasRepositoryJdbc implements LancamentoHorasRepository 
         }
     }
 
+    /**
+     * Monta o LancamentoHoras a partir da linha, com Funcionario e
+     * EscalaFuncionario "rasos" (so com o id preenchido) — esta consulta nao
+     * faz JOIN pra hidratar os objetos inteiros, so referencia-los pelo id.
+     */
     private LancamentoHoras mapear(ResultSet rs) throws SQLException {
         LancamentoHoras lancamento = new LancamentoHoras();
         lancamento.setId(rs.getInt("id"));
-        lancamento.setFuncionarioId(rs.getInt("funcionario_id"));
+
+        Funcionario funcionario = new Funcionario();
+        funcionario.setId(rs.getInt("funcionario_id"));
+        lancamento.setFuncionario(funcionario);
 
         int escalaFuncionarioId = rs.getInt("escala_funcionario_id");
-        lancamento.setEscalaFuncionarioId(rs.wasNull() ? null : escalaFuncionarioId);
+        if (!rs.wasNull()) {
+            EscalaFuncionario escalaFuncionario = new EscalaFuncionario();
+            escalaFuncionario.setId(escalaFuncionarioId);
+            lancamento.setEscalaFuncionario(escalaFuncionario);
+        }
 
         lancamento.setDataReferencia(rs.getObject("data_referencia", LocalDate.class));
         lancamento.setMinutos(rs.getInt("minutos"));
-        lancamento.setTipo(TipoLancamento.fromValorBanco(rs.getString("tipo")));
+        lancamento.setTipo(TipoLancamento.deValor(rs.getString("tipo")));
         lancamento.setDescricao(rs.getString("descricao"));
         lancamento.setCriadoEm(rs.getObject("criado_em", LocalDateTime.class));
 
