@@ -66,4 +66,45 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!--
+          Perfil de seguranca: nao roda no build normal.
+          O Dependency-Check baixa a base do NVD e demora varios minutos,
+          entao fica fora do `mvn clean verify` do dia a dia.
+          No CI, roda semanalmente pelo workflow seguranca.yml.
+        -->
+        <profile>
+            <id>seguranca</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>12.2.2</version>
+                        <configuration>
+                            <!-- Falha se houver vulnerabilidade alta ou critica (CVSS >= 7) -->
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
+                            <!-- A chave vem da variavel de ambiente: passar por parametro
+                                 do Maven exporia o valor no log em modo debug (CVE-2024-23686) -->
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+                            <formats>
+                                <format>HTML</format>
+                                <format>SARIF</format>
+                            </formats>
+                            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                            <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
