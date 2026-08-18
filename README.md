@@ -1,5 +1,7 @@
 # Sistema de Escala
 
+![Build](https://github.com/Joao-Bosco-Neto/Prototipo-de-Automaco-de-Escala/actions/workflows/build.yml/badge.svg)
+
 Projeto integrador — sistema de gestao de escalas de turno (Java + JavaFX + H2).
 
 ## Estrutura de pastas
