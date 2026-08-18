@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: delegacia-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: delegacia
+      POSTGRES_PASSWORD: delegacia123
+      POSTGRES_DB: escala_delegacia
+    ports:
+      - "5432:5432"
+    volumes:
+      - delegacia-db-data:/var/lib/postgresql/data
+      - ./script.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  delegacia-db-data:
