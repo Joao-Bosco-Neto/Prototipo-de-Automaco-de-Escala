@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21.0.2</javafx.version>
         <h2.version>2.2.224</h2.version>
@@ -51,6 +51,13 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Necessário pro Test Runner do VS Code (usa o launcher diretamente) -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
