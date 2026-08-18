@@ -1,58 +1,166 @@
--- Ativa modo de compatibilidade PostgreSQL no H2
-SET MODE PostgreSQL;
+-- =====================================================================
+-- Sistema de Escala — criacao do banco
+--
+-- Alvo: H2 em modo PostgreSQL (producao) e PostgreSQL 13+ (dev opcional).
+-- O MODE=PostgreSQL vem da URL de conexao, por isso nao ha "SET MODE" aqui
+-- (esse comando quebraria o script se rodado contra um PostgreSQL de verdade).
+--
+-- Todo o script e idempotente: pode ser executado mais de uma vez sem erro.
+-- Regras de portabilidade: VARCHAR + CHECK no lugar de ENUM,
+-- CURRENT_TIMESTAMP no lugar de NOW(), IDENTITY no lugar de SERIAL.
+-- =====================================================================
 
-CREATE TYPE role_usuario AS ENUM ('admin', 'gestor');
-
-CREATE TABLE configuracao (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nome_organizacao VARCHAR(255) NOT NULL
+-- ---------------------------------------------------------------------
+-- Configuracao da organizacao (registro unico)
+-- Permite instalar o mesmo sistema em outro cliente sem tocar no codigo
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS configuracao (
+    id                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome_organizacao     VARCHAR(255) NOT NULL,
+    subtitulo            VARCHAR(255),
+    carga_horaria_mensal NUMERIC(6,2),
+    apuracao_banco_horas VARCHAR(20) NOT NULL DEFAULT 'mensal',
+    caminho_pdf_padrao   VARCHAR(500),
+    atualizado_em        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_config_apuracao CHECK (apuracao_banco_horas IN ('mensal','continuo'))
 );
 
-CREATE TABLE usuario (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    role role_usuario NOT NULL DEFAULT 'gestor',
-    ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP DEFAULT NOW()
+-- ---------------------------------------------------------------------
+-- Usuarios do sistema (quem opera o programa)
+-- login e separado de nome: nomes se repetem, login nao (ex.: "alexandre39")
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS usuario (
+    id           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome         VARCHAR(150) NOT NULL,
+    login        VARCHAR(100) NOT NULL UNIQUE,
+    senha_hash   VARCHAR(255) NOT NULL,
+    role         VARCHAR(20)  NOT NULL DEFAULT 'gestor',
+    ativo        BOOLEAN      NOT NULL DEFAULT TRUE,
+    ultimo_login TIMESTAMP,
+    criado_em    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_usuario_role CHECK (role IN ('admin','gestor'))
 );
 
-CREATE TABLE funcionario (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
-    matricula VARCHAR(50),
-    telefone VARCHAR(20),
-    horas_banco INT NOT NULL DEFAULT 0,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP DEFAULT NOW()
+-- ---------------------------------------------------------------------
+-- Pessoas escaladas
+-- matricula e o identificador usado em todas as telas: NOT NULL UNIQUE
+-- ativo sustenta o filtro Ativos/Inativos (funcionario nunca e excluido,
+-- para preservar o historico de plantoes)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS funcionario (
+    id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome        VARCHAR(150) NOT NULL,
+    matricula   VARCHAR(50)  NOT NULL UNIQUE,
+    telefone    VARCHAR(20),
+    observacoes VARCHAR(1000),
+    ativo       BOOLEAN      NOT NULL DEFAULT TRUE,
+    criado_em   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE tipo_turno (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    duracao_horas INT NOT NULL,
-    intervalo_descanso_horas INT NOT NULL,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE
+-- ---------------------------------------------------------------------
+-- Tipos de turno — e aqui que o produto deixa de ser especifico
+--
+-- 24x72 ..... 1 registro:  08:00, 24h de duracao, 72h de descanso
+-- 12x36 ..... 2 registros: 07:00/12h/36h e 19:00/12h/36h
+-- 5x2 ....... 1 registro:  08:00, 8h, 16h de descanso
+-- Sobreaviso  1 registro:  14:00, 18h, 0h, sem banco de horas
+--
+-- hora_inicio e o que permite mais de um turno por dia. Sem ela, 12x36
+-- e impossivel de representar.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tipo_turno (
+    id                       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome                     VARCHAR(100) NOT NULL,
+    hora_inicio              TIME         NOT NULL,
+    duracao_horas            NUMERIC(5,2) NOT NULL,
+    intervalo_descanso_horas NUMERIC(5,2) NOT NULL DEFAULT 0,
+    min_agentes              INT          NOT NULL DEFAULT 2,
+    max_agentes              INT,
+    conta_banco_horas        BOOLEAN      NOT NULL DEFAULT TRUE,
+    ativo                    BOOLEAN      NOT NULL DEFAULT TRUE,
+    criado_em                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_tt_duracao  CHECK (duracao_horas > 0),
+    CONSTRAINT ck_tt_descanso CHECK (intervalo_descanso_horas >= 0),
+    CONSTRAINT ck_tt_min      CHECK (min_agentes >= 1),
+    CONSTRAINT ck_tt_max      CHECK (max_agentes IS NULL OR max_agentes >= min_agentes)
 );
 
-CREATE TABLE escala_turno (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tipo_turno_id INT NOT NULL REFERENCES tipo_turno(id),
-    inicio TIMESTAMP NOT NULL,
-    fim TIMESTAMP NOT NULL,
-    min_agentes INT NOT NULL DEFAULT 2,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    CHECK (fim > inicio)
+-- ---------------------------------------------------------------------
+-- Turnos concretos no calendario
+-- min/max por turno permitem excecao num dia especifico (feriado, operacao)
+-- sem alterar o tipo de turno inteiro
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS escala_turno (
+    id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tipo_turno_id INT       NOT NULL REFERENCES tipo_turno(id),
+    inicio        TIMESTAMP NOT NULL,
+    fim           TIMESTAMP NOT NULL,
+    min_agentes   INT       NOT NULL DEFAULT 2,
+    max_agentes   INT,
+    observacao    VARCHAR(255),
+    ativo         BOOLEAN   NOT NULL DEFAULT TRUE,
+    criado_em     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_et_periodo CHECK (fim > inicio),
+    CONSTRAINT uq_et_tipo_inicio UNIQUE (tipo_turno_id, inicio)
 );
 
-CREATE TABLE escala_funcionario (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    escala_turno_id INT NOT NULL REFERENCES escala_turno(id),
-    funcionario_id INT NOT NULL REFERENCES funcionario(id),
-    cobertura_de INT REFERENCES escala_funcionario(id),
-    UNIQUE (escala_turno_id, funcionario_id)
+-- ---------------------------------------------------------------------
+-- Motivos de cobertura — tabela, nao lista fixa no codigo.
+-- Cada cliente cadastra os seus sem precisar de nova versao do sistema.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS motivo_cobertura (
+    id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome            VARCHAR(100) NOT NULL UNIQUE,
+    gera_lancamento BOOLEAN      NOT NULL DEFAULT TRUE,
+    ativo           BOOLEAN      NOT NULL DEFAULT TRUE
 );
 
-CREATE INDEX idx_escala_funcionario_funcionario ON escala_funcionario(funcionario_id);
-CREATE INDEX idx_escala_turno_inicio ON escala_turno(inicio);
-CREATE INDEX idx_escala_turno_fim ON escala_turno(fim);
+-- ---------------------------------------------------------------------
+-- Alocacao de pessoas nos turnos
+-- inicio/fim nulos = cumpre o turno inteiro (caso normal).
+-- Preenchidos = turno parcial (meio plantao), sem tabela nova.
+-- ON DELETE CASCADE: sem isso, "Limpar mes" falha por chave estrangeira.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS escala_funcionario (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    escala_turno_id     INT NOT NULL REFERENCES escala_turno(id) ON DELETE CASCADE,
+    funcionario_id      INT NOT NULL REFERENCES funcionario(id),
+    inicio              TIMESTAMP,
+    fim                 TIMESTAMP,
+    cobertura_de        INT REFERENCES escala_funcionario(id),
+    motivo_cobertura_id INT REFERENCES motivo_cobertura(id),
+    observacao          VARCHAR(500),
+    lancou_banco_horas  BOOLEAN   NOT NULL DEFAULT FALSE,
+    criado_em           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_ef_turno_func UNIQUE (escala_turno_id, funcionario_id),
+    CONSTRAINT ck_ef_periodo CHECK (inicio IS NULL OR fim IS NULL OR fim > inicio)
+);
+
+-- ---------------------------------------------------------------------
+-- Extrato do banco de horas
+-- Saldo e derivado por soma. Uma coluna unica em funcionario nao sustenta
+-- o "Ver extrato" da tela nem o estorno quando uma cobertura e excluida.
+-- Guardado em minutos: turno de 8h30 quebra um campo inteiro de horas.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS lancamento_horas (
+    id                    INT         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    funcionario_id        INT         NOT NULL REFERENCES funcionario(id),
+    escala_funcionario_id INT         REFERENCES escala_funcionario(id) ON DELETE CASCADE,
+    data_referencia       DATE        NOT NULL,
+    minutos               INT         NOT NULL,
+    tipo                  VARCHAR(30) NOT NULL,
+    descricao             VARCHAR(255),
+    criado_em             TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_lanc_tipo CHECK (tipo IN ('credito_cobertura','debito_ausencia',
+                                            'credito_extra','ajuste_manual'))
+);
+
+-- ---------------------------------------------------------------------
+-- Indices
+-- ---------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_ef_funcionario   ON escala_funcionario(funcionario_id);
+CREATE INDEX IF NOT EXISTS idx_ef_turno         ON escala_funcionario(escala_turno_id);
+CREATE INDEX IF NOT EXISTS idx_ef_cobertura     ON escala_funcionario(cobertura_de);
+CREATE INDEX IF NOT EXISTS idx_turno_inicio     ON escala_turno(inicio);
+CREATE INDEX IF NOT EXISTS idx_turno_fim        ON escala_turno(fim);
+CREATE INDEX IF NOT EXISTS idx_lanc_func_data   ON lancamento_horas(funcionario_id, data_referencia);

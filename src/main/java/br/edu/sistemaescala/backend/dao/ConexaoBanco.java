@@ -5,19 +5,24 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Classe utilitaria para obter conexao com o banco H2 (modo PostgreSQL).
+ * Fornece conexoes com o banco H2 (modo de compatibilidade PostgreSQL).
  *
- * O arquivo do banco fica em ./data/sistema_escala.mv.db, gerado automaticamente
- * na primeira execucao. O script de criacao das tabelas fica em
- * src/main/resources/banco/schema.sql
+ * O arquivo do banco fica em ./data/sistema_escala.mv.db e e criado na
+ * primeira execucao. A criacao das tabelas NAO acontece aqui: quem faz
+ * isso e o BancoInicializador, chamado uma vez na partida da aplicacao.
  */
-public class ConexaoBanco {
+public final class ConexaoBanco {
 
-    private static final String URL = "jdbc:h2:file:./data/sistema_escala;MODE=PostgreSQL";
-    private static final String USER = "sa";
-    private static final String PASSWORD = "";
+    private static final String URL =
+            "jdbc:h2:file:./data/sistema_escala;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE";
+    private static final String USUARIO = "sa";
+    private static final String SENHA = "";
+
+    private ConexaoBanco() {
+        // classe utilitaria: nao deve ser instanciada
+    }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+        return DriverManager.getConnection(URL, USUARIO, SENHA);
     }
 }
