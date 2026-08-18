@@ -1,0 +1,48 @@
+name: Seguranca
+
+# Roda semanalmente e sob demanda — NAO a cada PR.
+# O Dependency-Check baixa a base do NVD e leva varios minutos; rodar em
+# todo push estouraria o limite de requisicoes da API do NVD.
+on:
+  schedule:
+    - cron: '0 12 * * 1'   # toda segunda, 09h no horario de Brasilia
+  workflow_dispatch:        # permite disparar manualmente pela aba Actions
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # A base do NVD tem centenas de milhares de registros. Sem cache,
+      # cada execucao rebaixa tudo e esbarra no limite da API.
+      - name: Cache da base do NVD
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ github.run_id }}
+          restore-keys: nvd-
+
+      - name: Analisar dependencias
+        # A chave vai por variavel de ambiente, nao por parametro do Maven:
+        # em modo debug o Maven registraria o valor no log (GHSA-qqhq-8r2c-c3f5).
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn --batch-mode -P seguranca verify
+
+      - name: Publicar relatorio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-dependency-check
+          path: target/dependency-check-report.html
+          retention-days: 30
