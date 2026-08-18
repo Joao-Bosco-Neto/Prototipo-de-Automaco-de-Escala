@@ -73,7 +73,7 @@ acumula no ano (respostas conflitantes)?
 
 ---
 
-### #3 · [Banco] Implementar o schema v2 com equipes, coberturas e lançamentos
+### #3 · [Banco] Implementar o schema do banco de dados
 - **Milestone:** M0 — Fundação
 - **Labels:** banco, bloqueante
 - **Responsável:** Krisbrn
@@ -107,9 +107,15 @@ Arquivo completo já validado em PostgreSQL 16 — ver `V1__schema.sql`.
 
 ## ✅ Critérios de Aceite
 
-- [ ] `V1__schema.sql` criado em `src/main/resources/db/migration`
-- [ ] Schema roda do zero sem erro no banco escolhido em #1
-- [ ] Diagrama MER atualizado no diretório `banco/`
+- [ ] `schema.sql` em `src/main/resources/banco/` como fonte única (remover `banco/import.sql`)
+- [ ] `usuario.login` separado de `nome`
+- [ ] `funcionario.matricula` NOT NULL UNIQUE
+- [ ] `tipo_turno.hora_inicio` (sem ela, 12x36 é impossível de representar)
+- [ ] `max_agentes` em `tipo_turno` e `escala_turno`
+- [ ] Tabelas `motivo_cobertura` e `lancamento_horas`
+- [ ] `ON DELETE CASCADE` em `escala_funcionario` (senão "Limpar mês" falha)
+- [ ] Script idempotente, roda duas vezes sem erro
+- [ ] Diagrama MER atualizado
 
 ---
 
@@ -134,7 +140,7 @@ destrava todo mundo.
 ## ✅ Critérios de Aceite
 
 - [ ] `mvn clean install` passa
-- [ ] `mvn javafx:run` abre uma janela
+- [ ] `mvn javafx:run` abre uma janela (o `start()` não pode ficar vazio)
 - [ ] Estrutura de pacotes criada e commitada
 - [ ] Instruções de execução no README
 
@@ -180,7 +186,7 @@ com JDK 21. Serve para ninguém mesclar código que não compila.
 
 ---
 
-### #7 · [Banco] Configurar conexão, Flyway e carga inicial de dados
+### #7 · [Banco] Configurar conexão H2 e inicialização automática do banco
 - **Milestone:** M0 — Fundação
 - **Labels:** banco, backend
 - **Responsável:** Krisbrn
@@ -188,10 +194,12 @@ com JDK 21. Serve para ninguém mesclar código que não compila.
 
 ## 🎯 Objetivo e Contexto
 
-Classe de conexão lendo de arquivo de propriedades externo (nunca credenciais fixas no
-código), Flyway rodando as migrações na inicialização da aplicação, e um seed com dados
-de teste: 4 equipes, 12 funcionários, 1 tipo de turno 24x72, 1 configuração e 1 usuário
-administrador.
+Sem isto, **nenhuma issue de repositório (#9 a #12) consegue sequer ser testada**: o H2
+cria um arquivo vazio e qualquer consulta falha com "table not found".
+
+O Flyway foi descartado: a inicialização é feita por uma classe própria
+(`BancoInicializador`) que executa `schema.sql` e `seed.sql` do classpath na partida da
+aplicação. Os dois scripts são idempotentes, então rodar de novo não quebra nem duplica.
 
 ## 💼 Regras e Considerações
 
@@ -199,10 +207,10 @@ O seed é o que permite as outras frentes desenvolverem sem depender da tela de 
 
 ## ✅ Critérios de Aceite
 
-- [ ] Conexão configurável por `application.properties` externo
-- [ ] Flyway executa as migrações ao iniciar
-- [ ] `V2__seed.sql` popula dados de teste
+- [ ] `BancoInicializador` executa schema e seed na partida
 - [ ] Aplicação sobe com banco vazio e cria tudo sozinha
+- [ ] Executar duas vezes não gera erro nem duplica dados
+- [ ] Falha na inicialização exibe mensagem clara, não stack trace
 
 ---
 
@@ -255,7 +263,7 @@ Sempre `PreparedStatement` — nada de concatenar SQL.
 
 ---
 
-### #10 · [Banco] Repositórios de Funcionario e Equipe
+### #10 · [Banco] Repositório de Funcionario
 - **Milestone:** M1 — Dados e autenticação
 - **Labels:** backend, banco
 - **Responsável:** Krisbrn
@@ -266,7 +274,7 @@ Sempre `PreparedStatement` — nada de concatenar SQL.
 `FuncionarioRepository`: listar com filtro de status e busca por nome ou matrícula,
 buscar por id, inserir, atualizar, ativar/desativar, verificar matrícula duplicada, e uma
 consulta agregada de plantões no mês (coluna "Plantões/mês" da tela).
-`EquipeRepository`: CRUD e listagem ordenada por `ordem_rodizio`.
+Equipes de rodízio saíram do modelo: a organização passou a ser por tipo de turno.
 
 ## ✅ Critérios de Aceite
 
@@ -606,7 +614,7 @@ agentes desde então" do dashboard.
 
 ---
 
-### #24 · [Escala] Cadastro de equipes de rodízio
+### #24 · [Escala] CRUD de tipos de turno
 - **Milestone:** M3 — Funcionários e equipes
 - **Labels:** ui, escala
 - **Responsável:** Krisbrn
@@ -614,20 +622,25 @@ agentes desde então" do dashboard.
 
 ## 🎯 Objetivo e Contexto
 
-CRUD de equipes com nome e ordem no rodízio. Mostrar quantos funcionários há em cada
-equipe. Impedir desativar equipe com plantões futuros.
+CRUD de tipos de turno: nome, hora de início, duração, intervalo de descanso, mínimo e
+máximo de agentes, e se conta banco de horas. É esta tela que define o regime de trabalho
+da organização — 24x72, 12x36, 5x2 ou sobreaviso.
 
 ## 💼 Regras e Considerações
 
-O número de equipes precisa ser coerente com o regime: em 24x72, quatro equipes fecham o
-ciclo exato. Com menos, o descanso de 72h fica impossível de cumprir — vale avisar na tela.
+Inativar um tipo de turno não pode apagar os turnos já gerados com ele — o histórico da
+escala precisa continuar legível.
+
+Validar a coerência do regime: se `duracao_horas + intervalo_descanso_horas` for maior que
+o ciclo possível com o número de funcionários ativos, o descanso fica impossível de
+cumprir. Vale avisar na tela em vez de deixar o gerador falhar depois.
 
 ## ✅ Critérios de Aceite
 
-- [ ] CRUD de equipes funcionando
-- [ ] Ordem de rodízio única e editável
-- [ ] Contagem de funcionários por equipe
-- [ ] Aviso quando o número de equipes não fecha o ciclo do regime
+- [ ] CRUD de tipos de turno funcionando
+- [ ] Campos de duração, descanso, mínimo e máximo de agentes editáveis
+- [ ] Inativar tipo não afeta turnos já criados
+- [ ] Aviso quando o regime é inviável para o efetivo disponível
 
 ---
 
@@ -766,8 +779,12 @@ imediato, ainda na lista, não só depois de tentar salvar.
 
 ## 🎯 Objetivo e Contexto
 
-Botão "Gerar rodízio 24x72": distribui as equipes pelos dias do mês em sequência circular
-pela `ordem_rodizio`, criando os turnos e escalando os funcionários de cada equipe.
+Botão "Gerar rodízio": percorre os dias do período e, para cada `tipo_turno` ativo, cria o
+turno a partir de `hora_inicio` + `duracao_horas` e escala os funcionários disponíveis em
+sequência circular, respeitando o `intervalo_descanso_horas` do tipo.
+
+O mesmo laço produz 24x72 (um turno por dia), 12x36 (dois turnos por dia) e 5x2 — o regime
+vem da configuração, não do código.
 
 ## 💼 Regras e Considerações
 
@@ -777,7 +794,7 @@ fazer quando o mês já tem escala — perguntar se sobrescreve.
 
 ## ✅ Critérios de Aceite
 
-- [ ] Gera o mês inteiro respeitando a ordem das equipes
+- [ ] Gera o período inteiro a partir dos tipos de turno ativos
 - [ ] Continuidade correta com o último dia do mês anterior
 - [ ] Confirmação antes de sobrescrever mês existente
 - [ ] Escala gerada não viola nenhuma regra de descanso
@@ -1418,6 +1435,10 @@ foi BCrypt.
 
 ## 💼 Regras e Considerações
 
+**Deixou de ser teórica:** o `jbcrypt` da org.mindrot já está no `pom.xml`, e essa
+biblioteca está sem manutenção desde 2010. Ainda não há nenhuma senha gravada, então a
+troca custa uma classe agora — e fica cara depois da primeira.
+
 BCrypt com custo 12 não é falha e segue amplamente usado, mas estamos começando um sistema
 novo. Em Java, `password4j` ou Bouncy Castle entregam Argon2id com API simples. O custo da
 troca é uma classe, feita agora, antes de existir qualquer senha gravada.
@@ -1740,3 +1761,58 @@ o sistema. Se não for, remover o campo é a medida mais eficaz e a mais barata.
 - [ ] Orientação de segurança para o cliente no manual (disco criptografado, tela bloqueada)
 
 ---
+
+---
+
+### #70 · [UI] Tela de configurações da organização
+- **Milestone:** M3 — Funcionários e equipes
+- **Labels:** ui, setup
+- **Responsável:** Krisbrn
+- **Depende de:** #16
+
+## 🎯 Objetivo e Contexto
+
+O protótipo tem um item "Configurações" no menu que o backlog não previa. É a tela que
+edita o registro único da tabela `configuracao`: nome da organização, subtítulo, regime de
+apuração do banco de horas, carga horária mensal de referência e caminho padrão do PDF.
+
+## 💼 Regras e Considerações
+
+É esta tela que permite instalar o mesmo sistema em outro cliente sem tocar no código —
+o nome da organização aparece na barra de título e no cabeçalho do PDF.
+
+A carga horária mensal pode ficar vazia: nem toda organização controla isso.
+
+## ✅ Critérios de Aceite
+
+- [ ] Edição de todos os campos de `configuracao`
+- [ ] Nome da organização refletido na barra de título e no PDF
+- [ ] Alteração da apuração do banco de horas refletida na tela de saldos
+- [ ] Acesso restrito conforme o perfil do usuário
+
+---
+
+### #71 · [Banco] Repositórios de TipoTurno, MotivoCobertura e Configuracao
+- **Milestone:** M1 — Dados e autenticação
+- **Labels:** banco, backend
+- **Responsável:** Krisbrn
+- **Depende de:** #7, #8
+
+## 🎯 Objetivo e Contexto
+
+As três tabelas de apoio que o novo modelo introduziu e que alimentam o CRUD de tipos de
+turno (#24), a tela de configurações (#70) e o formulário de cobertura (#33).
+
+## 💼 Regras e Considerações
+
+`TipoTurnoRepository` precisa listar apenas os ativos para o gerador de rodízio, mas todos
+para a tela de cadastro — inativar um tipo não pode apagar os turnos já gerados com ele.
+
+`ConfiguracaoRepository` opera sobre registro único: leitura devolve sempre a mesma linha.
+
+## ✅ Critérios de Aceite
+
+- [ ] CRUD de `tipo_turno` com filtro de ativos
+- [ ] CRUD de `motivo_cobertura`
+- [ ] Leitura e atualização de `configuracao`
+- [ ] Inativar tipo de turno não afeta turnos já criados
