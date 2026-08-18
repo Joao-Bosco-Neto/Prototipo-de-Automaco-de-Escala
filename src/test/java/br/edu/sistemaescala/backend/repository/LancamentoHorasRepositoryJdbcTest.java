@@ -2,6 +2,8 @@ package br.edu.sistemaescala.backend.repository;
 
 import br.edu.sistemaescala.backend.dao.BancoInicializador;
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
+import br.edu.sistemaescala.backend.model.EscalaFuncionario;
+import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 import br.edu.sistemaescala.backend.model.TipoLancamento;
 import br.edu.sistemaescala.backend.repository.jdbc.LancamentoHorasRepositoryJdbc;
@@ -30,19 +32,21 @@ class LancamentoHorasRepositoryJdbcTest {
 
     private static final LancamentoHorasRepository repositorio = new LancamentoHorasRepositoryJdbc();
 
-    private static int funcionarioId;
+    private static Funcionario funcionario;
+    private static EscalaFuncionario escalaFuncionario;
     private static int tipoTurnoId;
     private static int escalaTurnoId;
-    private static int escalaFuncionarioId;
 
     @BeforeAll
     static void prepararBanco() throws SQLException {
         BancoInicializador.inicializar();
 
         try (Connection conexao = ConexaoBanco.getConnection()) {
-            funcionarioId = inserirRetornandoId(conexao,
+            int funcionarioId = inserirRetornandoId(conexao,
                     "INSERT INTO funcionario (nome, matricula) VALUES (?, ?)",
                     "Teste Lancamento Horas", "TESTE-LANC-HORAS-001");
+            funcionario = new Funcionario();
+            funcionario.setId(funcionarioId);
 
             tipoTurnoId = inserirRetornandoId(conexao,
                     "INSERT INTO tipo_turno (nome, hora_inicio, duracao_horas, intervalo_descanso_horas, min_agentes) " +
@@ -54,28 +58,29 @@ class LancamentoHorasRepositoryJdbcTest {
                     tipoTurnoId, java.sql.Timestamp.valueOf("2026-01-01 08:00:00"),
                     java.sql.Timestamp.valueOf("2026-01-02 08:00:00"), 1);
 
-            escalaFuncionarioId = inserirRetornandoId(conexao,
+            int escalaFuncionarioId = inserirRetornandoId(conexao,
                     "INSERT INTO escala_funcionario (escala_turno_id, funcionario_id) VALUES (?, ?)",
                     escalaTurnoId, funcionarioId);
+            escalaFuncionario = new EscalaFuncionario();
+            escalaFuncionario.setId(escalaFuncionarioId);
         }
     }
 
     @AfterAll
     static void limparBanco() throws SQLException {
         try (Connection conexao = ConexaoBanco.getConnection()) {
-            executar(conexao, "DELETE FROM lancamento_horas WHERE funcionario_id = ?", funcionarioId);
-            executar(conexao, "DELETE FROM escala_funcionario WHERE id = ?", escalaFuncionarioId);
+            executar(conexao, "DELETE FROM lancamento_horas WHERE funcionario_id = ?", funcionario.getId());
+            executar(conexao, "DELETE FROM escala_funcionario WHERE id = ?", escalaFuncionario.getId());
             executar(conexao, "DELETE FROM escala_turno WHERE id = ?", escalaTurnoId);
             executar(conexao, "DELETE FROM tipo_turno WHERE id = ?", tipoTurnoId);
-            executar(conexao, "DELETE FROM funcionario WHERE id = ?", funcionarioId);
+            executar(conexao, "DELETE FROM funcionario WHERE id = ?", funcionario.getId());
         }
     }
 
     @Test
     void salvarPreencheIdGerado() {
-        LancamentoHoras lancamento = new LancamentoHoras(
-                funcionarioId, null, LocalDate.of(2026, 1, 5), 480,
-                TipoLancamento.AJUSTE_MANUAL, "Ajuste de teste");
+        LancamentoHoras lancamento = novoLancamento(
+                LocalDate.of(2026, 1, 5), 480, TipoLancamento.AJUSTE_MANUAL, "Ajuste de teste");
 
         repositorio.salvar(lancamento);
 
@@ -89,47 +94,50 @@ class LancamentoHorasRepositoryJdbcTest {
         salvar(LocalDate.of(2026, 3, 1), 1000, TipoLancamento.CREDITO_EXTRA, "fora do periodo, nao deve entrar");
 
         List<LancamentoHoras> extrato = repositorio.buscarExtrato(
-                funcionarioId, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28));
+                funcionario.getId(), LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28));
 
         assertEquals(2, extrato.size());
         assertTrue(extrato.get(0).getDataReferencia().isBefore(extrato.get(1).getDataReferencia()),
                 "extrato deveria vir ordenado por data, mais antigo primeiro");
 
         int saldo = repositorio.somarSaldoMinutos(
-                funcionarioId, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28));
+                funcionario.getId(), LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28));
         assertEquals(720, saldo, "saldo do periodo deve somar so os lancamentos de fevereiro");
     }
 
     @Test
     void somarSaldoRetornaZeroQuandoNaoHaLancamentoNoPeriodo() {
         int saldo = repositorio.somarSaldoMinutos(
-                funcionarioId, LocalDate.of(2099, 1, 1), LocalDate.of(2099, 1, 31));
+                funcionario.getId(), LocalDate.of(2099, 1, 1), LocalDate.of(2099, 1, 31));
         assertEquals(0, saldo);
     }
 
     @Test
     void removerPorEscalaFuncionarioIdEstornaSoOsLancamentosVinculados() {
-        LancamentoHoras vinculado = new LancamentoHoras(
-                funcionarioId, escalaFuncionarioId, LocalDate.of(2026, 4, 1), 1440,
-                TipoLancamento.CREDITO_COBERTURA, "cobertura a ser estornada");
+        LancamentoHoras vinculado = new LancamentoHoras(null, funcionario, escalaFuncionario,
+                LocalDate.of(2026, 4, 1), 1440, TipoLancamento.CREDITO_COBERTURA,
+                "cobertura a ser estornada", null);
         repositorio.salvar(vinculado);
 
-        LancamentoHoras avulso = new LancamentoHoras(
-                funcionarioId, null, LocalDate.of(2026, 4, 2), 60,
-                TipoLancamento.AJUSTE_MANUAL, "lancamento avulso, nao deve ser afetado");
+        LancamentoHoras avulso = novoLancamento(
+                LocalDate.of(2026, 4, 2), 60, TipoLancamento.AJUSTE_MANUAL, "lancamento avulso, nao deve ser afetado");
         repositorio.salvar(avulso);
 
-        int removidos = repositorio.removerPorEscalaFuncionarioId(escalaFuncionarioId);
+        int removidos = repositorio.removerPorEscalaFuncionarioId(escalaFuncionario.getId());
         assertEquals(1, removidos);
 
         List<LancamentoHoras> extrato = repositorio.buscarExtrato(
-                funcionarioId, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+                funcionario.getId(), LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
         assertEquals(1, extrato.size());
         assertEquals(avulso.getId(), extrato.get(0).getId());
     }
 
+    private LancamentoHoras novoLancamento(LocalDate data, int minutos, TipoLancamento tipo, String descricao) {
+        return new LancamentoHoras(null, funcionario, null, data, minutos, tipo, descricao, null);
+    }
+
     private void salvar(LocalDate data, int minutos, TipoLancamento tipo, String descricao) {
-        repositorio.salvar(new LancamentoHoras(funcionarioId, null, data, minutos, tipo, descricao));
+        repositorio.salvar(novoLancamento(data, minutos, tipo, descricao));
     }
 
     private static int inserirRetornandoId(Connection conexao, String sql, Object... parametros) throws SQLException {
