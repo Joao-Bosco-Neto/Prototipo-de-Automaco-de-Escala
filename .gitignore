@@ -6,3 +6,5 @@ data/*.trace.db
 *.iml
 .vscode/
 .DS_Store
+graphify-out/.graphify_python
+graphify-out/cache/
