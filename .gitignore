@@ -6,3 +6,4 @@ data/*.trace.db
 *.iml
 .vscode/
 .DS_Store
+documentacao/seguranca/dependency-check-report.html
