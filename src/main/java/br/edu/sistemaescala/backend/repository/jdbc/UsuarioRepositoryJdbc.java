@@ -19,10 +19,10 @@ import br.edu.sistemaescala.backend.repository.UsuarioRepository;
 
 public class UsuarioRepositoryJdbc implements UsuarioRepository {
 
-    private static final String SQL_BUSCAR_POR_NOME = """
+    private static final String SQL_BUSCAR_POR_LOGIN = """
             SELECT id, nome, login, senha_hash, role, ativo, ultimo_login, criado_em
             FROM usuario
-            WHERE nome = ?
+            WHERE login = ?
             ORDER BY id
             LIMIT 1
             """;
@@ -51,15 +51,15 @@ public class UsuarioRepositoryJdbc implements UsuarioRepository {
     private static final String SQL_REGISTRAR_LOGIN = "UPDATE usuario SET ultimo_login = ? WHERE id = ?";
 
     @Override
-    public Optional<Usuario> buscarPorNome(String nome) {
+    public Optional<Usuario> buscarPorLogin(String login) {
         try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_BUSCAR_POR_NOME)) {
-            stmt.setString(1, nome);
+             PreparedStatement stmt = conexao.prepareStatement(SQL_BUSCAR_POR_LOGIN)) {
+            stmt.setString(1, login);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? Optional.of(mapear(rs)) : Optional.empty();
             }
         } catch (SQLException e) {
-            throw new RepositoryException("Falha ao buscar usuario por nome", e);
+            throw new RepositoryException("Falha ao buscar usuario por login", e);
         }
     }
 
