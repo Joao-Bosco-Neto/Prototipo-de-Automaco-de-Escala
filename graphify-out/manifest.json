@@ -1,0 +1,192 @@
+{
+  "/home/jb/Prototipo-de-Automaco-de-Escala/.claude/settings.local.json": {
+    "mtime": 1787078626.210966,
+    "ast_hash": "d8d253bc7136f7845d3d6ec6622d6f62",
+    "semantic_hash": "d8d253bc7136f7845d3d6ec6622d6f62"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/legado/import_postgres_legado.sql": {
+    "mtime": 1787075483.8401556,
+    "ast_hash": "717cabab58b615317cd6b170d95db5ff",
+    "semantic_hash": "717cabab58b615317cd6b170d95db5ff"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/scripts/sincronizar_issues.py": {
+    "mtime": 1787078574.1025305,
+    "ast_hash": "f2db50bdeabed43330951730e6efbbae",
+    "semantic_hash": "f2db50bdeabed43330951730e6efbbae"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/Main.java": {
+    "mtime": 1787076553.1954691,
+    "ast_hash": "3d6458c07d496af1af4374dad1d24686",
+    "semantic_hash": "3d6458c07d496af1af4374dad1d24686"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/dao/BancoInicializador.java": {
+    "mtime": 1787076553.1956124,
+    "ast_hash": "aa8fc242873859ca50961b35be7c55fc",
+    "semantic_hash": "aa8fc242873859ca50961b35be7c55fc"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/dao/ConexaoBanco.java": {
+    "mtime": 1787076553.1957545,
+    "ast_hash": "622c3147468b7739f1fe4093f6802b41",
+    "semantic_hash": "622c3147468b7739f1fe4093f6802b41"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/Configuracao.java": {
+    "mtime": 1787086095.7601194,
+    "ast_hash": "eb54a1a8a3e3f70a54ebfb10fd382185",
+    "semantic_hash": "eb54a1a8a3e3f70a54ebfb10fd382185"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/Equipe.java": {
+    "mtime": 1787104572.358999,
+    "ast_hash": "e018bf5fd27702efcf5abd34b034fc33",
+    "semantic_hash": "e018bf5fd27702efcf5abd34b034fc33"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/EscalaFuncionario.java": {
+    "mtime": 1787086095.7604327,
+    "ast_hash": "0462797f802f8aa5f4ffded88d64623c",
+    "semantic_hash": "0462797f802f8aa5f4ffded88d64623c"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/EscalaTurno.java": {
+    "mtime": 1787086095.7604327,
+    "ast_hash": "5540f86f02429d64d7a41b79edaf2614",
+    "semantic_hash": "5540f86f02429d64d7a41b79edaf2614"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/Funcionario.java": {
+    "mtime": 1787086095.7604327,
+    "ast_hash": "ec7eb446a85ca617c453424b7ae40804",
+    "semantic_hash": "ec7eb446a85ca617c453424b7ae40804"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/LancamentoHoras.java": {
+    "mtime": 1787086095.7604327,
+    "ast_hash": "7c56f1afd3f005e38369769230780ffc",
+    "semantic_hash": "7c56f1afd3f005e38369769230780ffc"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/MotivoCobertura.java": {
+    "mtime": 1787086095.7606764,
+    "ast_hash": "5c6fe0365e1987cd700868ef9e709fd0",
+    "semantic_hash": "5c6fe0365e1987cd700868ef9e709fd0"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/RoleUsuario.java": {
+    "mtime": 1787086095.7607424,
+    "ast_hash": "2cd9239662b618c503a04303f938f490",
+    "semantic_hash": "2cd9239662b618c503a04303f938f490"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/TipoLancamento.java": {
+    "mtime": 1787086095.7607424,
+    "ast_hash": "4f220cdb3ac29b85164ce5c756cabda9",
+    "semantic_hash": "4f220cdb3ac29b85164ce5c756cabda9"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/TipoTurno.java": {
+    "mtime": 1787086095.7607424,
+    "ast_hash": "449f6a600503aff80ddd04a6dea8b6a7",
+    "semantic_hash": "449f6a600503aff80ddd04a6dea8b6a7"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/Usuario.java": {
+    "mtime": 1787086095.76093,
+    "ast_hash": "da39c25eb9982774d43eee26ae8f7860",
+    "semantic_hash": "da39c25eb9982774d43eee26ae8f7860"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/ConfiguracaoRepository.java": {
+    "mtime": 1787104011.3538446,
+    "ast_hash": "a4f9d45b238ab9ba06d2c551e84b8ae0",
+    "semantic_hash": "a4f9d45b238ab9ba06d2c551e84b8ae0"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/LancamentoHorasRepository.java": {
+    "mtime": 1787086095.7610626,
+    "ast_hash": "94e7c49f2f413a56cf230793d9268dd3",
+    "semantic_hash": "94e7c49f2f413a56cf230793d9268dd3"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/RepositoryException.java": {
+    "mtime": 1787086095.7611384,
+    "ast_hash": "84960bb46d2ecd453718248f2661dc70",
+    "semantic_hash": "84960bb46d2ecd453718248f2661dc70"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/UsuarioRepository.java": {
+    "mtime": 1787104572.3592932,
+    "ast_hash": "1913df26d403fa0987fa2087518d87f0",
+    "semantic_hash": "1913df26d403fa0987fa2087518d87f0"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/jdbc/ConfiguracaoRepositoryJdbc.java": {
+    "mtime": 1787104011.354107,
+    "ast_hash": "a4c12774331e00b9961d5cdfb225b5e8",
+    "semantic_hash": "a4c12774331e00b9961d5cdfb225b5e8"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/jdbc/LancamentoHorasRepositoryJdbc.java": {
+    "mtime": 1787086095.7618225,
+    "ast_hash": "dd99b97c952ba6ffcb36f7d0d89fe99e",
+    "semantic_hash": "dd99b97c952ba6ffcb36f7d0d89fe99e"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/repository/jdbc/UsuarioRepositoryJdbc.java": {
+    "mtime": 1787104572.3595843,
+    "ast_hash": "20c2349bbc0f949b0654a91916ff416a",
+    "semantic_hash": "20c2349bbc0f949b0654a91916ff416a"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/resources/banco/schema.sql": {
+    "mtime": 1787076553.1959412,
+    "ast_hash": "5d038ced9a3f4f46ebedb8635fe2f13f",
+    "semantic_hash": "5d038ced9a3f4f46ebedb8635fe2f13f"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/main/resources/banco/seed.sql": {
+    "mtime": 1787076553.1960576,
+    "ast_hash": "1f8b5de11e892eeb5222d94796225f81",
+    "semantic_hash": "1f8b5de11e892eeb5222d94796225f81"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/test/java/br/edu/sistemaescala/backend/repository/LancamentoHorasRepositoryJdbcTest.java": {
+    "mtime": 1787086095.7620828,
+    "ast_hash": "a0e23363dafc7db94aad1a57689a3f86",
+    "semantic_hash": "a0e23363dafc7db94aad1a57689a3f86"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/src/test/java/br/edu/sistemaescala/backend/repository/UsuarioConfiguracaoRepositoryJdbcTest.java": {
+    "mtime": 1787104572.3599017,
+    "ast_hash": "f24feadc8409d258576f9955fe9255df",
+    "semantic_hash": "f24feadc8409d258576f9955fe9255df"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/.github/dependabot.yml": {
+    "mtime": 1787079776.5754657,
+    "ast_hash": "12d16b1755fd7e992802ec0c1f7d5e8d",
+    "semantic_hash": "12d16b1755fd7e992802ec0c1f7d5e8d"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/.github/workflows/build.yml": {
+    "mtime": 1787086095.7583418,
+    "ast_hash": "75d77460735c237b91d8e88567c6be2f",
+    "semantic_hash": "75d77460735c237b91d8e88567c6be2f"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/.github/workflows/seguranca.yml": {
+    "mtime": 1787086095.7583418,
+    "ast_hash": "15a4d1cf220f81e9768b5700bbfb39c7",
+    "semantic_hash": "15a4d1cf220f81e9768b5700bbfb39c7"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/README.md": {
+    "mtime": 1787078784.244978,
+    "ast_hash": "98aa01a215c607a7d747fa25a77b3f71",
+    "semantic_hash": "98aa01a215c607a7d747fa25a77b3f71"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/GUIA_DE_CONTRIBUICAO.md": {
+    "mtime": 1787075483.8389676,
+    "ast_hash": "8e3d2ad2be00ae7bb0c90347974551a1",
+    "semantic_hash": "8e3d2ad2be00ae7bb0c90347974551a1"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/legado/README.md": {
+    "mtime": 1787075483.8398921,
+    "ast_hash": "7f2559dc6b58a81130deeafe9738ab99",
+    "semantic_hash": "7f2559dc6b58a81130deeafe9738ab99"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/legado/README_original_delegacia.md": {
+    "mtime": 1787075483.8400247,
+    "ast_hash": "9f03e1ce09ba224e4240e1f76f38c05b",
+    "semantic_hash": "9f03e1ce09ba224e4240e1f76f38c05b"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/legado/docker-compose_postgres_legado.yml": {
+    "mtime": 1787075483.8401556,
+    "ast_hash": "f9d727677c275f86c06514ddc215f8d7",
+    "semantic_hash": "f9d727677c275f86c06514ddc215f8d7"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md": {
+    "mtime": 1787078574.1022196,
+    "ast_hash": "42a5b9e696990b1d30fb384759ae9dee",
+    "semantic_hash": "42a5b9e696990b1d30fb384759ae9dee"
+  },
+  "/home/jb/Prototipo-de-Automaco-de-Escala/documentacao/diagrama_mer.png": {
+    "mtime": 1787075483.8397481,
+    "ast_hash": "80b9b200a035b0ab811163f342464791",
+    "semantic_hash": "80b9b200a035b0ab811163f342464791"
+  }
+}
