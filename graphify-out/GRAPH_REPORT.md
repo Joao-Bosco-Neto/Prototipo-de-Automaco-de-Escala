@@ -1,167 +1,175 @@
-# Graph Report - .  (2026-08-18)
+# Graph Report - .  (2026-08-20)
 
 ## Corpus Check
-- Corpus is ~27,176 words - fits in a single context window. You may not need a graph.
+- 23 files · ~34,059 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 464 nodes · 812 edges · 27 communities (20 shown, 7 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 73 edges (avg confidence: 0.81)
-- Token cost: 0 input · 62,617 output
+- 663 nodes · 1302 edges · 31 communities (24 shown, 7 thin omitted)
+- Extraction: 89% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 135 edges (avg confidence: 0.8)
+- Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Usuario Repository JDBC|Usuario Repository JDBC]]
-- [[_COMMUNITY_LancamentoHoras Repository Impl|LancamentoHoras Repository Impl]]
+- [[_COMMUNITY_EscalaFuncionario Repository|EscalaFuncionario Repository]]
+- [[_COMMUNITY_Usuario Repository & Model|Usuario Repository & Model]]
+- [[_COMMUNITY_LancamentoHoras Repository|LancamentoHoras Repository]]
+- [[_COMMUNITY_TipoTurno Repository|TipoTurno Repository]]
+- [[_COMMUNITY_EscalaTurno JDBC Repository|EscalaTurno JDBC Repository]]
 - [[_COMMUNITY_Configuracao Repository|Configuracao Repository]]
-- [[_COMMUNITY_EscalaFuncionario Model|EscalaFuncionario Model]]
-- [[_COMMUNITY_TipoTurno Model|TipoTurno Model]]
+- [[_COMMUNITY_MotivoCobertura JDBC Repository|MotivoCobertura JDBC Repository]]
 - [[_COMMUNITY_EscalaTurno Model|EscalaTurno Model]]
-- [[_COMMUNITY_DB Connection & Usuario CRUD|DB Connection & Usuario CRUD]]
-- [[_COMMUNITY_Funcionario Model|Funcionario Model]]
-- [[_COMMUNITY_Database Bootstrap & Legacy Migration|Database Bootstrap & Legacy Migration]]
-- [[_COMMUNITY_LancamentoHoras Repository Tests|LancamentoHoras Repository Tests]]
-- [[_COMMUNITY_App Startup & DB Init|App Startup & DB Init]]
-- [[_COMMUNITY_Dependency-Check Vulnerability Scan|Dependency-Check Vulnerability Scan]]
-- [[_COMMUNITY_Usuario Repository Interface|Usuario Repository Interface]]
-- [[_COMMUNITY_GitHub Issue Sync Script|GitHub Issue Sync Script]]
-- [[_COMMUNITY_Git Workflow Conventions|Git Workflow Conventions]]
-- [[_COMMUNITY_MER Diagram Entities|MER Diagram Entities]]
-- [[_COMMUNITY_TipoLancamento Enum|TipoLancamento Enum]]
-- [[_COMMUNITY_Repository Exception Handling|Repository Exception Handling]]
-- [[_COMMUNITY_Shift Conflict Requirements|Shift Conflict Requirements]]
-- [[_COMMUNITY_Rest Interval Requirement|Rest Interval Requirement]]
-- [[_COMMUNITY_Tabela escala_funcionario|Tabela escala_funcionario]]
-- [[_COMMUNITY_Tabela escala_turno|Tabela escala_turno]]
-- [[_COMMUNITY_Tabela funcionario|Tabela funcionario]]
-- [[_COMMUNITY_Tabela lancamento_horas|Tabela lancamento_horas]]
-- [[_COMMUNITY_Password Hash Decision|Password Hash Decision]]
-- [[_COMMUNITY_Main JavaFX App|Main JavaFX App]]
+- [[_COMMUNITY_App Bootstrap & DB Init|App Bootstrap & DB Init]]
+- [[_COMMUNITY_Funcionario Mapping|Funcionario Mapping]]
+- [[_COMMUNITY_Funcionario Repository Interface|Funcionario Repository Interface]]
+- [[_COMMUNITY_FuncionarioRepositoryJdbc Impl|FuncionarioRepositoryJdbc Impl]]
+- [[_COMMUNITY_FuncionarioRepositoryJdbc Tests|FuncionarioRepositoryJdbc Tests]]
+- [[_COMMUNITY_MotivoCobertura Model|MotivoCobertura Model]]
+- [[_COMMUNITY_Dependency Check Report|Dependency Check Report]]
+- [[_COMMUNITY_DB Schema & Seed Scripts|DB Schema & Seed Scripts]]
+- [[_COMMUNITY_UsuarioRepositoryJdbc Auth Flows|UsuarioRepositoryJdbc Auth Flows]]
+- [[_COMMUNITY_DB Schema & Legacy Docs|DB Schema & Legacy Docs]]
+- [[_COMMUNITY_Issue Sync Script|Issue Sync Script]]
+- [[_COMMUNITY_Contribution Guide & Settings|Contribution Guide & Settings]]
+- [[_COMMUNITY_TipoLancamento Model|TipoLancamento Model]]
+- [[_COMMUNITY_CICD & Dependabot|CI/CD & Dependabot]]
+- [[_COMMUNITY_Legado Delegacia Requirements|Legado Delegacia Requirements]]
+- [[_COMMUNITY_Legado Delegacia RF11|Legado Delegacia RF11]]
+- [[_COMMUNITY_Schema escala_funcionario Table|Schema: escala_funcionario Table]]
+- [[_COMMUNITY_Schema escala_turno Table|Schema: escala_turno Table]]
+- [[_COMMUNITY_Schema funcionario Table|Schema: funcionario Table]]
+- [[_COMMUNITY_Schema lancamento_horas Table|Schema: lancamento_horas Table]]
+- [[_COMMUNITY_Backlog Issue 58|Backlog Issue 58]]
+- [[_COMMUNITY_Main Entry Point|Main Entry Point]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `EscalaFuncionario` - 25 edges
-2. `TipoTurno` - 25 edges
-3. `EscalaTurno` - 23 edges
-4. `Configuracao` - 22 edges
-5. `LancamentoHoras` - 21 edges
-6. `Usuario` - 21 edges
-7. `Funcionario` - 19 edges
-8. `Clean Scan: 0 Vulnerabilities Found (13/13 dependencies)` - 14 edges
-9. `UsuarioRepositoryJdbc` - 13 edges
-10. `LancamentoHorasRepositoryJdbcTest` - 11 edges
+1. `EscalaFuncionario` - 32 edges
+2. `TipoTurno` - 26 edges
+3. `EscalaTurno` - 25 edges
+4. `LancamentoHoras` - 24 edges
+5. `Funcionario` - 23 edges
+6. `Usuario` - 23 edges
+7. `Configuracao` - 21 edges
+8. `MotivoCobertura()` - 15 edges
+9. `Clean Scan: 0 Vulnerabilities Found (13/13 dependencies)` - 13 edges
+10. `FuncionarioRepositoryJdbc` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `UsuarioRepositoryJdbc.atualizarSenha(int, String)` --semantically_similar_to--> `jbcrypt-0.4.jar`  [INFERRED] [semantically similar]
   src/main/java/br/edu/sistemaescala/backend/repository/jdbc/UsuarioRepositoryJdbc.java → documentacao/seguranca/dependency-check-report.html
 - `Issue #59 — Proteger o Arquivo do Banco de Dados` --references--> `ConexaoBanco`  [AMBIGUOUS]
   /home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md → src/main/java/br/edu/sistemaescala/backend/dao/ConexaoBanco.java
-- `Legado README Overview` --conceptually_related_to--> `ConexaoBanco`  [INFERRED]
-  /home/jb/Prototipo-de-Automaco-de-Escala/documentacao/legado/README.md → src/main/java/br/edu/sistemaescala/backend/dao/ConexaoBanco.java
 - `Issue #1 — Decidir SGBD (PostgreSQL vs H2)` --rationale_for--> `ConexaoBanco`  [INFERRED]
   /home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md → src/main/java/br/edu/sistemaescala/backend/dao/ConexaoBanco.java
 - `permissions` --conceptually_related_to--> `Convenção de Nomenclatura de Branches`  [INFERRED]
   .claude/settings.local.json → /home/jb/Prototipo-de-Automaco-de-Escala/documentacao/GUIA_DE_CONTRIBUICAO.md
+- `Issue #7 — Conexão H2 e Inicialização Automática do Banco` --references--> `BancoInicializador`  [EXTRACTED]
+  /home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md → src/main/java/br/edu/sistemaescala/backend/dao/BancoInicializador.java
 
 ## Import Cycles
 - None detected.
 
-## Hyperedges (group relationships)
-- **Inicialização Automática do Banco na Partida** — sistemaescala_main_init, dao_bancoinicializador_inicializar, banco_schema_schema, banco_seed_seed, scripts_backlog_issues_issue_7 [EXTRACTED 1.00]
-- **Banco de Horas Domain Aggregate** — model_lancamentohoras, model_funcionario, model_escalafuncionario, model_tipolancamento, repository_lancamentohorasrepository, jdbc_lancamentohorasrepositoryjdbc [INFERRED 0.85]
-- **String-backed Enum with deValor Factory** — model_roleusuario, model_tipolancamento, model_motivocobertura [INFERRED 0.85]
-- **Repository Interfaces with JDBC Implementations** — repository_configuracaorepository, repository_lancamentohorasrepository, repository_usuariorepository, jdbc_configuracaorepositoryjdbc, jdbc_lancamentohorasrepositoryjdbc, jdbc_usuariorepositoryjdbc, repository_repositoryexception [EXTRACTED 1.00]
-- **Pipeline de Segurança de Dependências no CI** — github_dependabot_config, workflows_seguranca_dependency_check, scripts_backlog_issues_issue_65 [EXTRACTED 1.00]
-- **Migração de PostgreSQL Legado para H2 Embarcado** — legado_import_postgres_legado_schema, legado_docker_compose_postgres_legado_db, scripts_backlog_issues_issue_1, dao_conexaobanco_conexaobanco, banco_schema_schema [INFERRED 0.85]
-- **Employee shift assignment domain (funcionario, tipo_turno, escala_turno, escala_funcionario)** — documentacao_diagrama_mer_funcionario, documentacao_diagrama_mer_tipo_turno, documentacao_diagrama_mer_escala_turno, documentacao_diagrama_mer_escala_funcionario [INFERRED 0.85]
-- **UsuarioRepository Interface / JDBC Implementation / Integration Test Triad** — repository_usuariorepository, jdbc_usuariorepositoryjdbc, repository_usuarioconfiguracaorepositoryjdbctest [INFERRED 0.85]
-- **JavaFX 21.0.2 Dependency Family** — seguranca_dependency_check_report_javafx_base_21_0_2_jar, seguranca_dependency_check_report_javafx_base_21_0_2_linux_jar, seguranca_dependency_check_report_javafx_controls_21_0_2_jar, seguranca_dependency_check_report_javafx_controls_21_0_2_linux_jar, seguranca_dependency_check_report_javafx_fxml_21_0_2_jar, seguranca_dependency_check_report_javafx_fxml_21_0_2_linux_jar, seguranca_dependency_check_report_javafx_graphics_21_0_2_jar, seguranca_dependency_check_report_javafx_graphics_21_0_2_linux_jar [INFERRED 0.80]
+## Communities (31 total, 7 thin omitted)
 
-## Communities (27 total, 7 thin omitted)
+### Community 0 - "EscalaFuncionario Repository"
+Cohesion: 0.06
+Nodes (33): configuracao table, Diagrama MER (Entity-Relationship Diagram), funcionario table, tipo_turno table, usuario table, EscalaFuncionario, EscalaTurno, EscalaFuncionarioRepository (+25 more)
 
-### Community 0 - "Usuario Repository JDBC"
-Cohesion: 0.07
-Nodes (21): UsuarioRepositoryJdbc.preencherInsercao(PreparedStatement, Usuario), UsuarioRepositoryJdbc, Usuario, UsuarioConfiguracaoRepositoryJdbcTest, RoleUsuario, Integer, LocalDateTime, Object (+13 more)
+### Community 1 - "Usuario Repository & Model"
+Cohesion: 0.06
+Nodes (29): UsuarioRepositoryJdbc.mapear(ResultSet), UsuarioRepositoryJdbc.preencherInsercao(PreparedStatement, Usuario), deValor(), RoleUsuario(), toString(), valor(), Usuario, UsuarioRepository (+21 more)
 
-### Community 1 - "LancamentoHoras Repository Impl"
-Cohesion: 0.07
-Nodes (22): EscalaFuncionario, LancamentoHorasRepositoryJdbc, LancamentoHoras, LancamentoHorasRepository, Funcionario, Integer, LocalDate, LocalDateTime (+14 more)
+### Community 2 - "LancamentoHoras Repository"
+Cohesion: 0.06
+Nodes (30): LocalDate, LancamentoHoras, LancamentoHorasRepository, Connection, Funcionario, Integer, LocalDateTime, Object (+22 more)
 
-### Community 2 - "Configuracao Repository"
+### Community 3 - "TipoTurno Repository"
+Cohesion: 0.06
+Nodes (27): LocalTime, TipoTurno, TipoTurnoRepository, BigDecimal, Integer, LocalDateTime, Object, Override (+19 more)
+
+### Community 4 - "EscalaTurno JDBC Repository"
 Cohesion: 0.08
-Nodes (21): Tabela configuracao, ConfiguracaoRepositoryJdbc, Configuracao, ConfiguracaoRepository, UsuarioConfiguracaoRepositoryJdbcTest.limparBanco(), Issue #70 — Tela de Configurações da Organização, Issue #8 — Criar Classes de Domínio, BigDecimal (+13 more)
+Nodes (26): Map, EscalaTurnoRepository, EscalaTurno, List, LocalDateTime, Optional, YearMonth, EscalaFuncionario (+18 more)
 
-### Community 3 - "EscalaFuncionario Model"
+### Community 5 - "Configuracao Repository"
 Cohesion: 0.08
-Nodes (14): EscalaTurno, EscalaFuncionario, deValor(), MotivoCobertura(), toString(), valor(), Funcionario, Integer (+6 more)
+Nodes (23): Tabela configuracao, Configuracao, ConfiguracaoRepository, RepositoryException, RuntimeException, Issue #70 — Tela de Configurações da Organização, Issue #8 — Criar Classes de Domínio, BigDecimal (+15 more)
 
-### Community 4 - "TipoTurno Model"
+### Community 6 - "MotivoCobertura JDBC Repository"
 Cohesion: 0.10
-Nodes (8): LocalTime, TipoTurno, BigDecimal, Integer, LocalDateTime, Object, Override, String
+Nodes (16): MotivoCoberturaRepository, Boolean, List, MotivoCobertura, Optional, Override, PreparedStatement, ResultSet (+8 more)
 
-### Community 5 - "EscalaTurno Model"
-Cohesion: 0.11
-Nodes (7): EscalaTurno, Integer, LocalDateTime, Object, Override, String, TipoTurno
-
-### Community 6 - "DB Connection & Usuario CRUD"
+### Community 7 - "EscalaTurno Model"
 Cohesion: 0.12
-Nodes (24): ConexaoBanco, UsuarioRepositoryJdbc.atualizar(Usuario), UsuarioRepositoryJdbc.atualizarSenha(int, String), UsuarioRepositoryJdbc.buscarPorLogin(String), UsuarioRepositoryJdbc.desativar(int), UsuarioRepositoryJdbc.executarAtualizacao(String, String, int), UsuarioRepositoryJdbc.inserir(Usuario), UsuarioRepositoryJdbc.listar() (+16 more)
+Nodes (8): EscalaTurno, EscalaFuncionario, Integer, List, LocalDateTime, Object, Override, String
 
-### Community 7 - "Funcionario Model"
+### Community 8 - "App Bootstrap & DB Init"
+Cohesion: 0.12
+Nodes (13): Application, BancoInicializador, UsuarioConfiguracaoRepositoryJdbcTest, Main, Connection, List, String, Override (+5 more)
+
+### Community 9 - "Funcionario Mapping"
+Cohesion: 0.14
+Nodes (7): Funcionario, Integer, LocalDateTime, Object, Override, String, Funcionario
+
+### Community 10 - "Funcionario Repository Interface"
 Cohesion: 0.13
-Nodes (6): Funcionario, Integer, LocalDateTime, Object, Override, String
+Nodes (13): FuncionarioRepository, Boolean, Funcionario, Integer, List, Optional, String, YearMonth (+5 more)
 
-### Community 8 - "Database Bootstrap & Legacy Migration"
-Cohesion: 0.10
-Nodes (21): Tabela motivo_cobertura, schema.sql (script de criação do banco), Tabela tipo_turno, Tabela usuario, seed.sql (carga inicial), BancoInicializador.executarScript(), BancoInicializador.inicializar(), Dependabot Configuration (+13 more)
-
-### Community 9 - "LancamentoHoras Repository Tests"
+### Community 11 - "FuncionarioRepositoryJdbc Impl"
 Cohesion: 0.21
-Nodes (10): LancamentoHorasRepositoryJdbcTest, AfterAll, BeforeAll, Connection, LancamentoHoras, LocalDate, Object, String (+2 more)
+Nodes (7): FuncionarioRepositoryJdbc, Boolean, Funcionario, Integer, List, Override, String
 
-### Community 10 - "App Startup & DB Init"
-Cohesion: 0.15
-Nodes (10): Application, BancoInicializador, UsuarioConfiguracaoRepositoryJdbcTest.prepararBanco(), Main, Connection, List, String, Override (+2 more)
+### Community 12 - "FuncionarioRepositoryJdbc Tests"
+Cohesion: 0.21
+Nodes (7): FuncionarioRepositoryJdbcTest, AfterAll, BeforeAll, Connection, Object, String, Test
 
-### Community 11 - "Dependency-Check Vulnerability Scan"
-Cohesion: 0.13
-Nodes (15): OWASP Dependency-Check Report (sistema-escala), h2-2.2.224.jar, h2-2.2.224.jar: data.zip: table.js, h2-2.2.224.jar: data.zip: tree.js, javafx-base-21.0.2.jar, javafx-base-21.0.2-linux.jar, javafx-controls-21.0.2.jar, javafx-controls-21.0.2-linux.jar (+7 more)
+### Community 13 - "MotivoCobertura Model"
+Cohesion: 0.20
+Nodes (8): deValor(), MotivoCobertura(), toString(), valor(), Integer, Object, Override, String
 
-### Community 12 - "Usuario Repository Interface"
-Cohesion: 0.23
-Nodes (6): UsuarioRepository, List, LocalDateTime, Optional, String, Usuario
+### Community 14 - "Dependency Check Report"
+Cohesion: 0.14
+Nodes (14): OWASP Dependency-Check Report (sistema-escala), h2-2.2.224.jar, h2-2.2.224.jar: data.zip: table.js, h2-2.2.224.jar: data.zip: tree.js, javafx-base-21.0.2.jar, javafx-base-21.0.2-linux.jar, javafx-controls-21.0.2.jar, javafx-controls-21.0.2-linux.jar (+6 more)
 
-### Community 13 - "GitHub Issue Sync Script"
+### Community 15 - "DB Schema & Seed Scripts"
+Cohesion: 0.22
+Nodes (9): schema.sql (script de criação do banco), Tabela usuario, seed.sql (carga inicial), BancoInicializador.executarScript(), BancoInicializador.inicializar(), Schema PostgreSQL Legado, Issue #3 — Implementar Schema do Banco de Dados, Issue #66 — Endurecer Configuração da Aplicação e do H2 (+1 more)
+
+### Community 16 - "UsuarioRepositoryJdbc Auth Flows"
+Cohesion: 0.35
+Nodes (10): UsuarioRepositoryJdbc.atualizar(Usuario), UsuarioRepositoryJdbc.atualizarSenha(int, String), UsuarioRepositoryJdbc.buscarPorLogin(String), UsuarioRepositoryJdbc.executarAtualizacao(String, String, int), UsuarioRepositoryJdbc.inserir(Usuario), UsuarioRepositoryJdbc.registrarUltimoLogin(int, LocalDateTime), UsuarioRepositoryJdbc.verificarAtualizacao(int, String), UsuarioConfiguracaoRepositoryJdbcTest.buscaPorLoginRetornaUsuarioCorretoQuandoNomesSaoIguais() (+2 more)
+
+### Community 17 - "DB Schema & Legacy Docs"
+Cohesion: 0.20
+Nodes (10): Tabela motivo_cobertura, Tabela tipo_turno, ConexaoBanco, Serviço Postgres do Docker Compose Legado, Documento Original de Requisitos da Delegacia, RNF02 — Exigência de PostgreSQL, Legado README Overview, Issue #1 — Decidir SGBD (PostgreSQL vs H2) (+2 more)
+
+### Community 18 - "Issue Sync Script"
 Cohesion: 0.36
 Nodes (8): api_saudavel(), executar(), main(), mapear_existentes(), montar_corpo(), parse_backlog(), Casa GitHub -> backlog pelo rodape; cai para o titulo se faltar rodape., rodar()
 
-### Community 14 - "Git Workflow Conventions"
+### Community 19 - "Contribution Guide & Settings"
 Cohesion: 0.29
 Nodes (6): permissions, allow, Convenção de Nomenclatura de Branches, Conventional Commits, Fluxo de Pull Request e Code Review, Issue #5 — Padronizar Fluxo de Git e Guia de Contribuição
 
-### Community 15 - "MER Diagram Entities"
-Cohesion: 0.48
-Nodes (7): configuracao table, Diagrama MER (Entity-Relationship Diagram), escala_funcionario table, escala_turno table, funcionario table, tipo_turno table, usuario table
-
-### Community 16 - "TipoLancamento Enum"
+### Community 20 - "TipoLancamento Model"
 Cohesion: 0.48
 Nodes (6): deValor(), TipoLancamento(), toString(), valor(), Override, String
 
-### Community 17 - "Repository Exception Handling"
-Cohesion: 0.33
-Nodes (4): RepositoryException, RuntimeException, String, Throwable
+### Community 21 - "CI/CD & Dependabot"
+Cohesion: 0.40
+Nodes (6): Dependabot Configuration, README Principal do Projeto, Issue #6 — Configurar Build e Testes no GitHub Actions, Issue #65 — Verificação de Dependências Vulneráveis no CI, Build CI Workflow, Dependency-Check Security Workflow
 
-### Community 18 - "Shift Conflict Requirements"
+### Community 22 - "Legado Delegacia Requirements"
 Cohesion: 0.40
 Nodes (5): RF05 — Validar Conflito de Horário, RF10 — Mínimo de 2 Agentes por Plantão, RNF06 — Bloquear Conflito de Horário Não Resolvido, RNF08 — Bloquear Violação de Mínimo de Agentes / Descanso, Issue #26 — Mínimo de Agentes e Bloqueio de Duplicidade (RF05, RF10)
 
 ## Ambiguous Edges - Review These
 - `ConexaoBanco` → `Issue #59 — Proteger o Arquivo do Banco de Dados`  [AMBIGUOUS]
   /home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md · relation: references
-- `EscalaFuncionario.java` → `MotivoCobertura.java`  [AMBIGUOUS]
-  /home/jb/Prototipo-de-Automaco-de-Escala/src/main/java/br/edu/sistemaescala/backend/model/EscalaFuncionario.java · relation: shares_data_with
 - `seed.sql (carga inicial)` → `Issue #66 — Endurecer Configuração da Aplicação e do H2`  [AMBIGUOUS]
   /home/jb/Prototipo-de-Automaco-de-Escala/scripts/BACKLOG_ISSUES.md · relation: references
 
 ## Knowledge Gaps
-- **54 isolated node(s):** `allow`, `String`, `Object`, `Object`, `Object` (+49 more)
+- **71 isolated node(s):** `allow`, `String`, `Object`, `Object`, `Object` (+66 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -170,15 +178,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `ConexaoBanco` and `Issue #59 — Proteger o Arquivo do Banco de Dados`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **What is the exact relationship between `EscalaFuncionario.java` and `MotivoCobertura.java`?**
-  _Edge tagged AMBIGUOUS (relation: shares_data_with) - confidence is low._
 - **What is the exact relationship between `seed.sql (carga inicial)` and `Issue #66 — Endurecer Configuração da Aplicação e do H2`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
+- **Why does `EscalaFuncionario` connect `EscalaFuncionario Repository` to `Funcionario Mapping`, `LancamentoHoras Repository`, `EscalaTurno JDBC Repository`?**
+  _High betweenness centrality (0.380) - this node is a cross-community bridge._
+- **Why does `LocalTime` connect `TipoTurno Repository` to `EscalaTurno JDBC Repository`?**
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
+- **Why does `LocalDate` connect `LancamentoHoras Repository` to `Funcionario Repository Interface`?**
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `EscalaFuncionario` (e.g. with `.mapear()` and `.salvar()`) actually correct?**
+  _`EscalaFuncionario` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `allow`, `Casa GitHub -> backlog pelo rodape; cai para o titulo se faltar rodape.`, `String` to the rest of the system?**
-  _57 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Usuario Repository JDBC` be split into smaller, more focused modules?**
-  _Cohesion score 0.07377049180327869 - nodes in this community are weakly interconnected._
-- **Should `LancamentoHoras Repository Impl` be split into smaller, more focused modules?**
-  _Cohesion score 0.0707070707070707 - nodes in this community are weakly interconnected._
-- **Should `Configuracao Repository` be split into smaller, more focused modules?**
-  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
+  _74 weakly-connected nodes found - possible documentation gaps or missing edges._
