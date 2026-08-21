@@ -8,7 +8,9 @@ import br.edu.sistemaescala.backend.model.Usuario;
 
 public interface UsuarioRepository {
 
-    Optional<Usuario> buscarPorNome(String nome);
+    Optional<Usuario> buscarPorLogin(String login);
+
+    Optional<Usuario> buscarPorId(int id);
 
     List<Usuario> listar();
 

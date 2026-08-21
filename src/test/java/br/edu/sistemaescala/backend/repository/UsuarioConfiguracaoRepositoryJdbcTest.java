@@ -57,26 +57,56 @@ class UsuarioConfiguracaoRepositoryJdbcTest {
         USUARIOS.inserir(usuario);
         usuarioId = usuario.getId();
 
-        Optional<Usuario> encontrado = USUARIOS.buscarPorNome("Usuario de teste");
+        Optional<Usuario> encontrado = USUARIOS.buscarPorLogin(LOGIN_TESTE);
         assertTrue(encontrado.isPresent());
-        assertEquals(LOGIN_TESTE, encontrado.orElseThrow().getLogin());
+        assertEquals("Usuario de teste", encontrado.orElseThrow().getNome());
         assertTrue(USUARIOS.listar().stream().anyMatch(item -> item.getId().equals(usuarioId)));
 
         usuario.setNome("Usuario atualizado");
         usuario.setLogin("teste-repositorio-atualizado");
         usuario.setRole(RoleUsuario.ADMIN);
         USUARIOS.atualizar(usuario);
-        assertEquals("Usuario atualizado", USUARIOS.buscarPorNome("Usuario atualizado").orElseThrow().getNome());
+        assertEquals("Usuario atualizado", USUARIOS.buscarPorLogin("teste-repositorio-atualizado").orElseThrow().getNome());
 
         LocalDateTime ultimoLogin = LocalDateTime.of(2026, 8, 18, 12, 30);
         USUARIOS.atualizarSenha(usuarioId, "hash-atualizado");
         USUARIOS.registrarUltimoLogin(usuarioId, ultimoLogin);
-        Usuario aposLogin = USUARIOS.buscarPorNome("Usuario atualizado").orElseThrow();
+        Usuario aposLogin = USUARIOS.buscarPorLogin("teste-repositorio-atualizado").orElseThrow();
         assertEquals("hash-atualizado", aposLogin.getSenhaHash());
         assertEquals(ultimoLogin, aposLogin.getUltimoLogin());
 
         USUARIOS.desativar(usuarioId);
-        assertFalse(USUARIOS.buscarPorNome("Usuario atualizado").orElseThrow().isAtivo());
+        assertFalse(USUARIOS.buscarPorLogin("teste-repositorio-atualizado").orElseThrow().isAtivo());
+    }
+
+    @Test
+    void buscaPorLoginRetornaUsuarioCorretoQuandoNomesSaoIguais() {
+        String nomeComum = "Usuario Homonimo";
+        Usuario primeiro = new Usuario(null, nomeComum, "login-homonimo-1", "hash-1",
+                RoleUsuario.GESTOR, true, null, null);
+        Usuario segundo = new Usuario(null, nomeComum, "login-homonimo-2", "hash-2",
+                RoleUsuario.GESTOR, true, null, null);
+        USUARIOS.inserir(primeiro);
+        USUARIOS.inserir(segundo);
+
+        try {
+            Usuario encontrado = USUARIOS.buscarPorLogin("login-homonimo-2").orElseThrow();
+            assertEquals(segundo.getId(), encontrado.getId());
+            assertEquals("login-homonimo-2", encontrado.getLogin());
+        } finally {
+            removerUsuario(primeiro.getId());
+            removerUsuario(segundo.getId());
+        }
+    }
+
+    private static void removerUsuario(int id) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement("DELETE FROM usuario WHERE id = ?")) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

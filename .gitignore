@@ -6,8 +6,5 @@ data/*.trace.db
 *.iml
 .vscode/
 .DS_Store
-documentacao/seguranca/dependency-check-report.html
-graphify-out/cost.json
 graphify-out/.graphify_python
 graphify-out/cache/
-.claude/settings.local.json
