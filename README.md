@@ -32,7 +32,7 @@ sistema-escala/
 │   └── test/
 │       └── java/br/edu/sistemaescala/backend/   # testes unitarios
 │
-├── data/                              # arquivo do banco H2 (gerado em runtime, nao versionar)
+├── data/                              # legado; o banco novo fica no perfil do usuario
 └── documentacao/                      # documentacao final do projeto
 ```
 
@@ -41,9 +41,14 @@ sistema-escala/
 O banco usado e o **H2** em modo de compatibilidade PostgreSQL, embarcado no proprio
 processo da aplicacao (nao precisa de Podman/Docker rodando à parte).
 
-- Arquivo gerado em: `./data/sistema_escala.mv.db`
+- Arquivo gerado em: `%USERPROFILE%/.sistema-escala/sistema_escala.mv.db`
+- Senha e chave AES: `%USERPROFILE%/.sistema-escala/banco.key` (fora do repositorio)
 - Script de criacao: `src/main/resources/banco/schema.sql`
-- Conexao (`ConexaoBanco.java`): `jdbc:h2:file:./data/sistema_escala;MODE=PostgreSQL`
+- Conexao (`ConexaoBanco.java`): H2 em modo PostgreSQL com `CIPHER=AES`
+
+Consulte [documentacao/seguranca/PROTECAO_BANCO.md](documentacao/seguranca/PROTECAO_BANCO.md)
+e [documentacao/seguranca/MODELAGEM_AMEACAS.md](documentacao/seguranca/MODELAGEM_AMEACAS.md)
+para a decisao de criptografia, as permissoes do arquivo e o risco residual.
 
 ## Como rodar
 
