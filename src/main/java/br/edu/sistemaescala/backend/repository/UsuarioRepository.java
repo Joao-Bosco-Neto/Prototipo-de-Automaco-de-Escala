@@ -10,6 +10,8 @@ public interface UsuarioRepository {
 
     Optional<Usuario> buscarPorLogin(String login);
 
+    Optional<Usuario> buscarPorId(int id);
+
     List<Usuario> listar();
 
     Usuario inserir(Usuario usuario);

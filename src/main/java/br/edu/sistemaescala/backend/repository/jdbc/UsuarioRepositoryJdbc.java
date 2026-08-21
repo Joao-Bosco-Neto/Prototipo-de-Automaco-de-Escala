@@ -27,6 +27,12 @@ public class UsuarioRepositoryJdbc implements UsuarioRepository {
             LIMIT 1
             """;
 
+    private static final String SQL_BUSCAR_POR_ID = """
+            SELECT id, nome, login, senha_hash, role, ativo, ultimo_login, criado_em
+            FROM usuario
+            WHERE id = ?
+            """;
+
     private static final String SQL_LISTAR = """
             SELECT id, nome, login, senha_hash, role, ativo, ultimo_login, criado_em
             FROM usuario
@@ -60,6 +66,19 @@ public class UsuarioRepositoryJdbc implements UsuarioRepository {
             }
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao buscar usuario por login", e);
+        }
+    }
+
+    @Override
+    public Optional<Usuario> buscarPorId(int id) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_BUSCAR_POR_ID)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? Optional.of(mapear(rs)) : Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao buscar usuario " + id, e);
         }
     }
 
