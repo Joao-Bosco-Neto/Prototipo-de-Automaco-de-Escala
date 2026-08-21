@@ -1,6 +1,8 @@
 package br.edu.sistemaescala.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,11 +36,13 @@ class AutenticacaoServiceImplTest {
     private UsuarioRepository usuarioRepository;
     private AutenticacaoService autenticacaoService;
     private Usuario usuarioAtivo;
+    private List<Long> atrasos;
 
     @BeforeEach
     void prepararMocks() {
         usuarioRepository = mock(UsuarioRepository.class);
-        autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository);
+        atrasos = new ArrayList<>();
+        autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository, atrasos::add);
 
         String hash = BCrypt.withDefaults().hashToString(12, SENHA_CORRETA.toCharArray());
         usuarioAtivo = new Usuario(USUARIO_ID, "Usuario Teste", LOGIN, hash,
@@ -77,6 +81,31 @@ class AutenticacaoServiceImplTest {
     }
 
     @Test
+    void loginInexistenteESenhaErradaTemResultadoIdentico() {
+        when(usuarioRepository.buscarPorLogin("nao-existe")).thenReturn(Optional.empty());
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioAtivo));
+
+        Optional<Usuario> resultadoLoginInexistente = autenticacaoService.autenticar("nao-existe", SENHA_CORRETA);
+        Optional<Usuario> resultadoSenhaErrada = autenticacaoService.autenticar(LOGIN, "senha-errada");
+
+        assertEquals(resultadoLoginInexistente, resultadoSenhaErrada);
+        assertTrue(resultadoLoginInexistente.isEmpty());
+    }
+
+    @Test
+    void falhasAplicamAtrasoProgressivoELoginCorretoReiniciaContador() {
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioAtivo));
+
+        autenticacaoService.autenticar(LOGIN, "senha-errada");
+        autenticacaoService.autenticar(LOGIN, "senha-errada");
+        assertEquals(List.of(250L, 500L), atrasos);
+
+        autenticacaoService.autenticar(LOGIN, SENHA_CORRETA);
+        autenticacaoService.autenticar(LOGIN, "senha-errada");
+        assertEquals(List.of(250L, 500L, 250L), atrasos);
+    }
+
+    @Test
     void autenticarComUsuarioInativoRetornaOptionalVazioMesmoComSenhaCerta() {
         Usuario usuarioInativo = new Usuario(USUARIO_ID, "Usuario Teste", LOGIN, usuarioAtivo.getSenhaHash(),
                 RoleUsuario.GESTOR, false, null, null);
@@ -96,6 +125,20 @@ class AutenticacaoServiceImplTest {
 
         assertNotEquals(senha, hash);
         assertTrue(BCrypt.verifyer().verify(senha.toCharArray(), hash).verified);
+    }
+
+    @Test
+    void rejeitaSenhaComMenosDeOitoCaracteres() {
+        assertThrows(SenhaFracaException.class, () -> autenticacaoService.gerarHash("1234567"));
+    }
+
+    @Test
+    void alterarSenhaNaoExigeRotacaoMasExigeMinimoDeOitoCaracteres() {
+        when(usuarioRepository.buscarPorId(USUARIO_ID)).thenReturn(Optional.of(usuarioAtivo));
+
+        assertThrows(SenhaFracaException.class,
+                () -> autenticacaoService.alterarSenha(USUARIO_ID, SENHA_CORRETA, "1234567"));
+        verify(usuarioRepository, never()).atualizarSenha(anyInt(), anyString());
     }
 
     @Test

@@ -1,28 +1,37 @@
 package br.edu.sistemaescala.backend.service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongConsumer;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
-
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
 
 public class AutenticacaoServiceImpl implements AutenticacaoService {
 
     private static final int CUSTO_BCRYPT = 12;
-
-    // Hash bcrypt valido e fixo, sem correspondencia com senha real de
-    // ninguem. Usado so para gastar o mesmo tempo de um verify() de verdade
-    // quando o login nao existe, para o tempo de resposta nao denunciar se
-    // um login existe ou nao no banco.
-    private static final String HASH_DUMMY_TIMING = "$2b$12$Q.4/UwMCG1eiyEQ0dIySUeg1razw9C7c4gjGYa22BK1r/H8CPyAWe";
+    private static final int TAMANHO_MINIMO_SENHA = 8;
+    private static final long ATRASO_INICIAL_MS = 250L;
+    private static final long ATRASO_MAXIMO_MS = 8_000L;
 
     private final UsuarioRepository usuarioRepository;
+    private final String hashDummyTiming;
+    private final Map<String, Integer> falhasPorLogin = new ConcurrentHashMap<>();
+    private final LongConsumer esperar;
 
     public AutenticacaoServiceImpl(UsuarioRepository usuarioRepository) {
+        this(usuarioRepository, AutenticacaoServiceImpl::esperarComInterrupcao);
+    }
+
+    AutenticacaoServiceImpl(UsuarioRepository usuarioRepository, LongConsumer esperar) {
         this.usuarioRepository = usuarioRepository;
+        this.esperar = esperar;
+        this.hashDummyTiming = gerarHashDummyTiming();
     }
 
     @Override
@@ -31,9 +40,8 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
         char[] senhaChars = senha.toCharArray();
         try {
             if (usuarioEncontrado.isEmpty()) {
-                // Login nao existe: ainda assim roda o verify contra o hash
-                // dummy acima, ver comentario da constante.
-                BCrypt.verifyer().verify(senhaChars, HASH_DUMMY_TIMING);
+                BCrypt.verifyer().verify(senhaChars, hashDummyTiming);
+                aplicarAtraso(login);
                 return Optional.empty();
             }
 
@@ -44,9 +52,11 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
             // Optional.empty(), sem diferenca observavel de fora: nao da
             // para saber qual dos tres casos aconteceu.
             if (!usuario.isAtivo() || !senhaCorreta) {
+                aplicarAtraso(login);
                 return Optional.empty();
             }
 
+            falhasPorLogin.remove(chaveLogin(login));
             usuarioRepository.registrarUltimoLogin(usuario.getId(), LocalDateTime.now());
             return Optional.of(usuario);
         } finally {
@@ -56,6 +66,7 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
     @Override
     public String gerarHash(String senhaPura) {
+        validarSenha(senhaPura);
         char[] senhaChars = senhaPura.toCharArray();
         try {
             return BCrypt.withDefaults().hashToString(CUSTO_BCRYPT, senhaChars);
@@ -66,6 +77,7 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
     @Override
     public void alterarSenha(int usuarioId, String senhaAtual, String senhaNova) {
+        validarSenha(senhaNova);
         Usuario usuario = usuarioRepository.buscarPorId(usuarioId)
                 .orElseThrow(SenhaInvalidaException::new);
 
@@ -83,5 +95,48 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
         String novoHash = gerarHash(senhaNova);
         usuarioRepository.atualizarSenha(usuarioId, novoHash);
+    }
+
+    private void aplicarAtraso(String login) {
+        String chave = chaveLogin(login);
+        int numeroFalha = falhasPorLogin.merge(chave, 1, Integer::sum);
+        int deslocamento = Math.min(numeroFalha - 1, 5);
+        long atraso = Math.min(ATRASO_INICIAL_MS << deslocamento, ATRASO_MAXIMO_MS);
+        esperar.accept(atraso);
+    }
+
+    private String chaveLogin(String login) {
+        return login == null ? "" : login.trim().toLowerCase();
+    }
+
+    private void validarSenha(String senha) {
+        if (senha == null || senha.length() < TAMANHO_MINIMO_SENHA) {
+            throw new SenhaFracaException();
+        }
+    }
+
+    private static String gerarHashDummyTiming() {
+        byte[] aleatorio = new byte[32];
+        new SecureRandom().nextBytes(aleatorio);
+        char[] segredo = new char[aleatorio.length * 2];
+        for (int indice = 0; indice < aleatorio.length; indice++) {
+            int valor = aleatorio[indice] & 0xff;
+            segredo[indice * 2] = Character.forDigit(valor >>> 4, 16);
+            segredo[indice * 2 + 1] = Character.forDigit(valor & 0x0f, 16);
+        }
+        try {
+            return BCrypt.withDefaults().hashToString(CUSTO_BCRYPT, segredo);
+        } finally {
+            Arrays.fill(aleatorio, (byte) 0);
+            Arrays.fill(segredo, '0');
+        }
+    }
+
+    private static void esperarComInterrupcao(long atrasoMs) {
+        try {
+            Thread.sleep(atrasoMs);
+        } catch (InterruptedException excecao) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
