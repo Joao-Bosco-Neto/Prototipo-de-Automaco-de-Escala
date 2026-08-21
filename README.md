@@ -65,3 +65,9 @@ Na primeira execucao, rode o script `schema.sql` contra o banco para criar as ta
 - Implementar DAOs em `backend/dao`
 - Implementar validacao de conflito de horarios em `backend/service`
 - Criar telas FXML em `frontend/fxml` seguindo a direcao visual (desktop nativo, 1366x768)
+
+## Protótipo das telas
+
+O protótipo visual (HTML standalone, abre em qualquer navegador sem servidor) está em
+[`prototipo/index.html`](prototipo/index.html). Reflete o layout de referência para as
+issues de UI — várias citam "conforme a tela X" apontando pra ele.
