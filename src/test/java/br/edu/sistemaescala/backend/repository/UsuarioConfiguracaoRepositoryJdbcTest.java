@@ -3,7 +3,9 @@ package br.edu.sistemaescala.backend.repository;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -29,12 +31,16 @@ class UsuarioConfiguracaoRepositoryJdbcTest {
     private static final ConfiguracaoRepository CONFIGURACAO = new ConfiguracaoRepositoryJdbc();
     private static final String LOGIN_TESTE = "teste-repositorio-usuario";
     private static Configuracao configuracaoOriginal;
+    private static boolean configuracaoCriadaPeloTeste;
     private static Integer usuarioId;
 
     @BeforeAll
     static void prepararBanco() {
         BancoInicializador.inicializar();
-        configuracaoOriginal = CONFIGURACAO.buscar().orElseThrow();
+        configuracaoOriginal = CONFIGURACAO.buscar().orElseGet(() -> {
+            configuracaoCriadaPeloTeste = true;
+            return inserirConfiguracaoDeTeste();
+        });
     }
 
     @AfterAll
@@ -46,7 +52,35 @@ class UsuarioConfiguracaoRepositoryJdbcTest {
                 stmt.executeUpdate();
             }
         }
-        CONFIGURACAO.atualizar(configuracaoOriginal);
+        if (configuracaoCriadaPeloTeste) {
+            try (Connection conexao = ConexaoBanco.getConnection();
+                 PreparedStatement stmt = conexao.prepareStatement("DELETE FROM configuracao WHERE id = ?")) {
+                stmt.setInt(1, configuracaoOriginal.getId());
+                stmt.executeUpdate();
+            }
+        } else {
+            CONFIGURACAO.atualizar(configuracaoOriginal);
+        }
+    }
+
+    private static Configuracao inserirConfiguracaoDeTeste() {
+        String sql = "INSERT INTO configuracao (nome_organizacao, subtitulo) VALUES (?, ?)";
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, "Organizacao de teste");
+            stmt.setString(2, "Sistema de testes");
+            stmt.executeUpdate();
+            try (ResultSet chaves = stmt.getGeneratedKeys()) {
+                chaves.next();
+                Configuracao configuracao = new Configuracao();
+                configuracao.setId(chaves.getInt(1));
+                configuracao.setNomeOrganizacao("Organizacao de teste");
+                configuracao.setSubtitulo("Sistema de testes");
+                return configuracao;
+            }
+        } catch (SQLException excecao) {
+            throw new RuntimeException("Falha ao criar configuracao de teste", excecao);
+        }
     }
 
     @Test
