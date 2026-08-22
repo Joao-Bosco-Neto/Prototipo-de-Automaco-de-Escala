@@ -1,6 +1,7 @@
 target/
 data/*.mv.db
 data/*.trace.db
+.sistema-escala/
 *.class
 .idea/
 *.iml

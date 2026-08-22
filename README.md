@@ -56,8 +56,8 @@ para a decisao de criptografia, as permissoes do arquivo e o risco residual.
 mvn clean javafx:run
 ```
 
-Na primeira execucao, rode o script `schema.sql` contra o banco para criar as tabelas
-(ou implemente a leitura automatica do script na inicializacao da aplicacao).
+Na primeira execucao, o aplicativo cria as tabelas automaticamente. O seed de producao
+nao inclui dados de exemplo nem credenciais; fixtures ficam apenas nos recursos de teste.
 
 ## Proximos passos
 
