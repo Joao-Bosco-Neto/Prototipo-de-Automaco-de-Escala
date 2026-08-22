@@ -18,3 +18,6 @@ protegida e sem compartilhamento de credenciais.
 
 Esse e o risco residual aceito para uma aplicacao desktop offline monousuario
 e corresponde aos riscos CWE-922 e CWE-732.
+
+O aplicativo nao importa nem instancia `org.h2.tools.Server` e nao chama o
+servidor web do H2. Portanto, nenhum console HTTP e iniciado pela aplicacao.
