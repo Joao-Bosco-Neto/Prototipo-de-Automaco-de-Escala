@@ -71,3 +71,15 @@ nao inclui dados de exemplo nem credenciais; fixtures ficam apenas nos recursos 
 O protótipo visual (HTML standalone, abre em qualquer navegador sem servidor) está em
 [`prototipo/index.html`](prototipo/index.html). Reflete o layout de referência para as
 issues de UI — várias citam "conforme a tela X" apontando pra ele.
+
+## Tema visual (CSS)
+
+Toda tela deve usar as classes de `src/main/resources/frontend/css/app.css`,
+nunca `setStyle()` com hex direto. Classes disponíveis: `button-primario`,
+`button-secundario`, `button-perigo`, `titulo-1`, `titulo-2`, `card`,
+`selo-sucesso`, `selo-atencao`, `selo-perigo`, `selo-neutro`, além de estilos
+automáticos para `TextField`, `PasswordField` e `TableView`.
+
+Para ver todos os componentes de uma vez, rode:
+
+    mvn exec:java -Dexec.mainClass="br.edu.sistemaescala.frontend.VitrineComponentesApp"
