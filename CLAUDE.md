@@ -13,3 +13,14 @@ Rules:
 `prototipo/index.html` é o protótipo visual do sistema (HTML standalone). Ao trabalhar
 em qualquer issue de UI, consulte este arquivo antes de implementar o layout — ele é a
 referência visual oficial, citada nas issues como "conforme a tela X".
+
+## Tema CSS — regra obrigatória
+
+Antes de criar qualquer tela nova, leia `src/main/resources/frontend/css/app.css`.
+Use as classes de lá (`button-primario`, `card`, `selo-*`, etc.) via
+`getStyleClass().add(...)`. NUNCA use `setStyle()` com cor em hex — é
+exatamente o problema que este arquivo existe para evitar.
+
+Referência visual de todos os componentes:
+`br.edu.sistemaescala.frontend.VitrineComponentesApp` (roda com
+`mvn exec:java -Dexec.mainClass=...`).
