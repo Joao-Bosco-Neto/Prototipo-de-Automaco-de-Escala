@@ -153,3 +153,55 @@
     -fx-border-color: -cor-borda;
     -fx-border-radius: 12px;
 }
+
+/* ---------------------------------------------------------------------
+   Shell da aplicação (barra de título, navegação lateral, status)
+   --------------------------------------------------------------------- */
+.barra-titulo {
+    -fx-background-color: -cor-primaria;
+    -fx-padding: 10px 16px;
+}
+.titulo-organizacao {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+/* Variante do secundário para uso sobre o fundo escuro da barra de título. */
+.button-secundario-claro {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-border-color: white;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 6px 16px;
+    -fx-cursor: hand;
+}
+.button-secundario-claro:hover { -fx-background-color: -cor-primaria-escura; }
+
+.navegacao-lateral {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-border-color: transparent -cor-borda-clara transparent transparent;
+    -fx-padding: 16px 12px;
+}
+/* Item ativo da navegação lateral. Vem depois de .button-secundario de
+   propósito: mesma especificidade, então a última regra é a que vale. */
+.nav-item-ativo {
+    -fx-background-color: -cor-primaria;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-color: -cor-primaria-escura;
+}
+.nav-item-ativo:hover { -fx-background-color: -cor-primaria-escura; }
+
+.area-conteudo {
+    -fx-background-color: -cor-fundo-pagina;
+}
+
+/* A cor do texto fica por conta de .texto-secundario nos labels: uma regra
+   .barra-status .label venceria os .selo-* por especificidade. */
+.barra-status {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-border-color: -cor-borda-clara transparent transparent transparent;
+    -fx-padding: 6px 16px;
+    -fx-font-size: 11.5px;
+}

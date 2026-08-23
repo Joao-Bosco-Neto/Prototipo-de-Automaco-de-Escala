@@ -2,29 +2,28 @@ package br.edu.sistemaescala;
 
 import br.edu.sistemaescala.backend.dao.BancoInicializador;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
+import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
 import br.edu.sistemaescala.backend.repository.jdbc.ConfiguracaoRepositoryJdbc;
+import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoService;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoService;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoServiceImpl;
 import br.edu.sistemaescala.frontend.controller.PrimeiroAcessoController;
+import br.edu.sistemaescala.frontend.controller.ShellController;
 import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
  * Ponto de entrada da aplicacao Sistema de Escala.
  *
- * Hoje mostra apenas uma tela provisoria confirmando que a aplicacao sobe
- * e que o banco foi criado. Sera substituida pelo shell da aplicacao
- * (menu, navegacao lateral e area de conteudo) e pela tela de login.
+ * No primeiro acesso abre a tela de configuracao inicial; nas demais
+ * execucoes abre o shell da aplicacao (menu, navegacao lateral e area de
+ * conteudo). A tela de login entra aqui quando a issue #15 for feita.
  */
 public class Main extends Application {
 
@@ -38,6 +37,7 @@ public class Main extends Application {
     public void start(Stage palco) {
         UsuarioRepository usuarioRepository = new UsuarioRepositoryJdbc();
         ConfiguracaoRepository configuracaoRepository = new ConfiguracaoRepositoryJdbc();
+        TipoTurnoRepository tipoTurnoRepository = new TipoTurnoRepositoryJdbc();
         AutenticacaoService autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository);
         PrimeiroAcessoService primeiroAcessoService = new PrimeiroAcessoServiceImpl(
                 usuarioRepository, configuracaoRepository, autenticacaoService);
@@ -46,13 +46,7 @@ public class Main extends Application {
         if (primeiroAcessoService.primeiroAcesso()) {
             conteudo = new PrimeiroAcessoController(primeiroAcessoService).criarTela();
         } else {
-            Label titulo = new Label("Sistema de Escala");
-            titulo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
-            Label situacao = new Label("Sistema pronto para uso.");
-            VBox raizPronta = new VBox(12, titulo, situacao);
-            raizPronta.setAlignment(Pos.CENTER);
-            raizPronta.setPadding(new Insets(40));
-            conteudo = raizPronta;
+            conteudo = new ShellController(configuracaoRepository, tipoTurnoRepository).criarTela();
         }
 
         Scene cena = new Scene(conteudo, 1366, 768);
