@@ -83,3 +83,4 @@ automáticos para `TextField`, `PasswordField` e `TableView`.
 Para ver todos os componentes de uma vez, rode:
 
     mvn exec:java -Dexec.mainClass="br.edu.sistemaescala.frontend.VitrineComponentesApp"
+# teste
