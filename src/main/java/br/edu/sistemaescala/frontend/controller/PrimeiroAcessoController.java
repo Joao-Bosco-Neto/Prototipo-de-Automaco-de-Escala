@@ -21,7 +21,7 @@ public class PrimeiroAcessoController {
 
     public Parent criarTela() {
         Label titulo = new Label("Configuração inicial");
-        titulo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        titulo.getStyleClass().add("titulo-1");
 
         Label descricao = new Label("Cadastre a organização e o administrador do sistema.");
         TextField nomeOrganizacao = new TextField();
@@ -33,6 +33,7 @@ public class PrimeiroAcessoController {
         PasswordField confirmacaoSenha = new PasswordField();
         confirmacaoSenha.setPromptText("Confirme a senha");
         Button salvar = new Button("Concluir configuração");
+        salvar.getStyleClass().add("button-primario");
         Label mensagem = new Label();
         mensagem.setWrapText(true);
 
@@ -54,11 +55,12 @@ public class PrimeiroAcessoController {
                         senha.getText(), confirmacaoSenha.getText());
                 salvar.setDisable(true);
                 mensagem.setText("Configuração concluída. O administrador já pode entrar no sistema.");
-                mensagem.setStyle("-fx-text-fill: #176b3a;");
+                // Cor buscada via variavel do tema (app.css), nao mais hex fixo.
+                mensagem.setStyle("-fx-text-fill: -cor-sucesso;");
                 limpar(senha, confirmacaoSenha);
             } catch (RuntimeException excecao) {
                 mensagem.setText(excecao.getMessage());
-                mensagem.setStyle("-fx-text-fill: #a12622;");
+                mensagem.setStyle("-fx-text-fill: -cor-perigo;");
             }
         });
 

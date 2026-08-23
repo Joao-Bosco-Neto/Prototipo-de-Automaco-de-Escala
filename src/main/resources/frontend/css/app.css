@@ -1,0 +1,155 @@
+/* =====================================================================
+   Sistema de Escala — Tema base
+   Paleta extraída do prototipo/index.html. Nao adicione cor nova sem
+   antes checar se já existe uma variavel equivalente aqui.
+   ===================================================================== */
+
+.root {
+    /* --- Cores institucionais --- */
+    -cor-primaria: #1f4d7a;
+    -cor-primaria-escura: #163a5c;
+    -cor-primaria-borda: #3d6288;
+
+    /* --- Texto --- */
+    -cor-texto: #1b2530;
+    -cor-texto-secundario: #5c6875;
+    -cor-texto-terciario: #9fadba;
+
+    /* --- Fundos e bordas --- */
+    -cor-fundo-pagina: #f7f8fa;
+    -cor-fundo-alternativo: #f2f4f6;
+    -cor-fundo-card: #ffffff;
+    -cor-borda: #c9cfd6;
+    -cor-borda-clara: #dde3e9;
+
+    /* --- Status --- */
+    -cor-sucesso: #1f6b45;
+    -cor-atencao: #8a6100;
+    -cor-perigo: #a32a2a;
+    -cor-perigo-fundo: #fbeaea;
+    -cor-neutro: #5c6875;
+
+    -fx-font-family: "Segoe UI", "Noto Sans", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: -cor-fundo-pagina;
+}
+
+/* ---------------------------------------------------------------------
+   Tipografia
+   --------------------------------------------------------------------- */
+.titulo-1 {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+.titulo-2 {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+.texto-secundario {
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* ---------------------------------------------------------------------
+   Botões
+   --------------------------------------------------------------------- */
+.button-primario {
+    -fx-background-color: -cor-primaria;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 18px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.button-primario:hover   { -fx-background-color: -cor-primaria-escura; }
+.button-primario:pressed { -fx-background-color: derive(-cor-primaria-escura, -15%); }
+.button-primario:disabled { -fx-opacity: 0.5; -fx-cursor: default; }
+
+.button-secundario {
+    -fx-background-color: transparent;
+    -fx-text-fill: -cor-primaria;
+    -fx-border-color: -cor-primaria-borda;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 18px;
+    -fx-cursor: hand;
+}
+.button-secundario:hover { -fx-background-color: derive(-cor-primaria, 90%); }
+
+.button-perigo {
+    -fx-background-color: -cor-perigo;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 18px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.button-perigo:hover { -fx-background-color: derive(-cor-perigo, -15%); }
+
+/* ---------------------------------------------------------------------
+   Campos de formulário
+   --------------------------------------------------------------------- */
+.text-field, .password-field, .combo-box, .date-picker {
+    -fx-background-color: white;
+    -fx-border-color: -cor-borda;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 7px 10px;
+}
+.text-field:focused, .password-field:focused, .combo-box:focused {
+    -fx-border-color: -cor-primaria;
+}
+.campo-com-erro {
+    -fx-border-color: -cor-perigo;
+}
+
+/* ---------------------------------------------------------------------
+   Card
+   --------------------------------------------------------------------- */
+.card {
+    -fx-background-color: -cor-fundo-card;
+    -fx-background-radius: 8px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 8px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(27,37,48,0.08), 8, 0, 0, 2);
+}
+
+/* ---------------------------------------------------------------------
+   Tabela
+   --------------------------------------------------------------------- */
+.table-view {
+    -fx-background-color: -cor-fundo-card;
+    -fx-border-color: -cor-borda-clara;
+}
+.table-view .column-header-background {
+    -fx-background-color: -cor-fundo-alternativo;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -cor-texto-secundario;
+    -fx-font-weight: bold;
+}
+.table-row-cell:selected {
+    -fx-background-color: derive(-cor-primaria, 85%);
+    -fx-text-fill: -cor-texto;
+}
+
+/* ---------------------------------------------------------------------
+   Selo de status
+   --------------------------------------------------------------------- */
+.selo {
+    -fx-padding: 3px 10px;
+    -fx-background-radius: 12px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.selo-sucesso  { -fx-background-color: derive(-cor-sucesso, 85%); -fx-text-fill: -cor-sucesso; }
+.selo-atencao  { -fx-background-color: derive(-cor-atencao, 85%); -fx-text-fill: -cor-atencao; }
+.selo-perigo   { -fx-background-color: -cor-perigo-fundo;         -fx-text-fill: -cor-perigo; }
+.selo-neutro {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-text-fill: -cor-neutro;
+    -fx-border-color: -cor-borda;
+    -fx-border-radius: 12px;
+}
