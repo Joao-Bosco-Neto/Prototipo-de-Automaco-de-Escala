@@ -55,7 +55,9 @@ public class Main extends Application {
             conteudo = raizPronta;
         }
 
-        palco.setScene(new Scene(conteudo, 1366, 768));
+        Scene cena = new Scene(conteudo, 1366, 768);
+        cena.getStylesheets().add(getClass().getResource("/frontend/css/app.css").toExternalForm());
+        palco.setScene(cena);
         palco.setTitle("Sistema de Escala");
         palco.show();
     }
