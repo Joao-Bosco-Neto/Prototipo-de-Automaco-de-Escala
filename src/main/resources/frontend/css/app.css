@@ -205,3 +205,46 @@
     -fx-padding: 6px 16px;
     -fx-font-size: 11.5px;
 }
+
+/* ---------------------------------------------------------------------
+   Tela de login
+   --------------------------------------------------------------------- */
+.tela-login { -fx-background-color: #f4f6f8; }
+.login-painel-lateral {
+    -fx-background-color: #14293f;
+    -fx-border-color: #060d14;
+}
+.login-organizacao {
+    -fx-text-fill: #7fa3c4;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.login-titulo {
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+.login-descricao, .login-seguranca {
+    -fx-text-fill: #a9c1d6;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 4px;
+}
+.login-versao {
+    -fx-text-fill: #6d8fae;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 11px;
+}
+.login-painel-formulario { -fx-background-color: #f4f6f8; }
+.login-titulo-formulario {
+    -fx-text-fill: -cor-texto;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+.login-lembrar { -fx-text-fill: -cor-texto-secundario; }
+.login-mensagem-erro {
+    -fx-text-fill: -cor-perigo;
+    -fx-background-color: -cor-perigo-fundo;
+    -fx-border-color: #c98080;
+    -fx-border-width: 0 0 0 4px;
+    -fx-padding: 10px;
+}

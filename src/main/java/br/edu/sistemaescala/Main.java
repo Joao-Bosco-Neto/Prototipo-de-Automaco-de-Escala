@@ -11,6 +11,7 @@ import br.edu.sistemaescala.backend.service.AutenticacaoService;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoService;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoServiceImpl;
+import br.edu.sistemaescala.frontend.controller.LoginController;
 import br.edu.sistemaescala.frontend.controller.PrimeiroAcessoController;
 import br.edu.sistemaescala.frontend.controller.ShellController;
 import javafx.application.Application;
@@ -23,7 +24,7 @@ import javafx.stage.Stage;
  *
  * No primeiro acesso abre a tela de configuracao inicial; nas demais
  * execucoes abre o shell da aplicacao (menu, navegacao lateral e area de
- * conteudo). A tela de login entra aqui quando a issue #15 for feita.
+ * conteudo).
  */
 public class Main extends Application {
 
@@ -46,7 +47,12 @@ public class Main extends Application {
         if (primeiroAcessoService.primeiroAcesso()) {
             conteudo = new PrimeiroAcessoController(primeiroAcessoService).criarTela();
         } else {
-            conteudo = new ShellController(configuracaoRepository, tipoTurnoRepository).criarTela();
+            String nomeOrganizacao = configuracaoRepository.buscar()
+                    .map(configuracao -> configuracao.getNomeOrganizacao())
+                    .orElse("Organização não configurada");
+            conteudo = new LoginController(autenticacaoService,
+                    usuario -> abrirJanelaPrincipal(palco, configuracaoRepository, tipoTurnoRepository))
+                    .criarTela(nomeOrganizacao);
         }
 
         Scene cena = new Scene(conteudo, 1366, 768);
@@ -54,6 +60,11 @@ public class Main extends Application {
         palco.setScene(cena);
         palco.setTitle("Sistema de Escala");
         palco.show();
+    }
+
+    private void abrirJanelaPrincipal(Stage palco, ConfiguracaoRepository configuracaoRepository,
+                                      TipoTurnoRepository tipoTurnoRepository) {
+        palco.getScene().setRoot(new ShellController(configuracaoRepository, tipoTurnoRepository).criarTela());
     }
 
     public static void main(String[] args) {
