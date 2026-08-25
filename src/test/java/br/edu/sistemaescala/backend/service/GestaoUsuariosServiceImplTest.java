@@ -67,6 +67,21 @@ class GestaoUsuariosServiceImplTest {
     }
 
     @Test
+    void recusaAcessoSemUsuarioAutenticado() {
+        sessaoUsuario.encerrar();
+
+        assertThrows(AcessoNegadoException.class, () -> gestaoUsuariosService.listar());
+        assertThrows(AcessoNegadoException.class,
+                () -> gestaoUsuariosService.cadastrar("Novo", "novo", "12345678", "12345678", RoleUsuario.GESTOR, true));
+        assertThrows(AcessoNegadoException.class,
+                () -> gestaoUsuariosService.atualizar(2, "Novo", "novo", RoleUsuario.GESTOR, true));
+        assertThrows(AcessoNegadoException.class,
+                () -> gestaoUsuariosService.alterarStatus(2, false));
+        assertThrows(AcessoNegadoException.class,
+                () -> gestaoUsuariosService.redefinirSenha(2, "novaSenha123", "novaSenha123"));
+    }
+
+    @Test
     void listaEBuscaUsuariosComSucesso() {
         when(usuarioRepository.listar()).thenReturn(List.of(adminLogado));
         when(usuarioRepository.buscarPorId(1)).thenReturn(Optional.of(adminLogado));
