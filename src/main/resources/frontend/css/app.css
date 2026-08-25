@@ -248,3 +248,38 @@
     -fx-border-width: 0 0 0 4px;
     -fx-padding: 10px;
 }
+
+/* ---------------------------------------------------------------------
+   Bloqueio por inatividade (Issue #61 / OWASP A07)
+   --------------------------------------------------------------------- */
+.painel-bloqueio-overlay {
+    -fx-background-color: rgba(20, 41, 63, 0.94);
+    -fx-alignment: center;
+}
+.card-bloqueio {
+    -fx-background-color: -cor-fundo-card;
+    -fx-background-radius: 8px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 8px;
+    -fx-padding: 30px 34px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 24, 0, 0, 8);
+}
+.bloqueio-icone-container {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-background-radius: 32px;
+    -fx-min-width: 56px;
+    -fx-min-height: 56px;
+    -fx-max-width: 56px;
+    -fx-max-height: 56px;
+    -fx-alignment: center;
+}
+.bloqueio-icone-texto {
+    -fx-font-size: 24px;
+}
+.bloqueio-usuario-card {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-background-radius: 6px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 6px;
+    -fx-padding: 10px 14px;
+}

@@ -16,9 +16,14 @@ import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
+import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
+import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,25 +33,25 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.InputEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 /**
- * Shell da aplicacao (issue #38): barra de titulo, menu superior, navegacao
- * lateral, area central de conteudo e barra de status.
+ * Shell da aplicacao (issue #38 / #61): barra de titulo, menu superior, navegacao
+ * lateral, area central de conteudo, barra de status e bloqueio por inatividade (OWASP A07).
  *
  * A tela e montada em Java puro, como o resto do frontend — o projeto nao usa
  * FXML em lugar nenhum. O tema (app.css) e aplicado na Scene criada pelo
  * Main, entao aqui basta usar as classes de estilo via getStyleClass().
  *
- * A troca de conteudo e um roteador simples: cada item da navegacao lateral
- * substitui o centro do BorderPane. Como as telas reais ainda nao existem,
- * todos os itens mostram um placeholder "em construcao"; cada uma sera
- * trocada pela issue especifica correspondente.
+ * O trabalho nao salvo e preservado através de um StackPane onde o overlay de
+ * bloqueio e exibido por cima da arvore de componentes sem reiniciar o estado.
  */
 public class ShellController {
 
@@ -69,11 +74,13 @@ public class ShellController {
     private final TipoTurnoRepository tipoTurnoRepository;
     private final GestaoUsuariosService gestaoUsuariosService;
     private final SessaoUsuario sessaoUsuario;
+    private final BloqueioInatividadeService bloqueioService;
     private final AutorizacaoService autorizacaoService;
     private final Runnable aoSair;
 
     private final BorderPane raiz = new BorderPane();
     private final List<Button> botoesNavegacao = new ArrayList<>();
+    private Timeline temporizadorInatividade;
 
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository) {
@@ -95,10 +102,22 @@ public class ShellController {
                            TipoTurnoRepository tipoTurnoRepository,
                            GestaoUsuariosService gestaoUsuariosService,
                            SessaoUsuario sessaoUsuario, Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, sessaoUsuario,
+                new BloqueioInatividadeServiceImpl(sessaoUsuario, new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc())),
+                aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           SessaoUsuario sessaoUsuario,
+                           BloqueioInatividadeService bloqueioService,
+                           Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.sessaoUsuario = sessaoUsuario;
+        this.bloqueioService = bloqueioService;
         this.autorizacaoService = new AutorizacaoService();
         this.aoSair = aoSair;
     }
@@ -110,7 +129,69 @@ public class ShellController {
 
         // "Visão geral" e o item selecionado ao abrir o shell.
         selecionar(botoesNavegacao.get(0), ITENS_NAVEGACAO.get(0));
-        return raiz;
+
+        // Cria o painel de sobreposição de bloqueio por inatividade
+        BloqueioController bloqueioController = new BloqueioController(
+                bloqueioService,
+                sessaoUsuario,
+                this::executarSaida,
+                this::ocultarBloqueio
+        );
+        StackPane painelBloqueio = bloqueioController.criarPainelBloqueio();
+
+        StackPane containerPrincipal = new StackPane(raiz, painelBloqueio);
+
+        // Notificação de estado do serviço de bloqueio
+        bloqueioService.adicionarOuvinteBloqueio(bloqueado -> {
+            Platform.runLater(() -> {
+                if (bloqueado) {
+                    painelBloqueio.setVisible(true);
+                    painelBloqueio.setManaged(true);
+                    bloqueioController.prepararExibicao();
+                } else {
+                    painelBloqueio.setVisible(false);
+                    painelBloqueio.setManaged(false);
+                }
+            });
+        });
+
+        // Captura qualquer interação do usuário para renovar o marco de atividade
+        containerPrincipal.addEventFilter(InputEvent.ANY, evento -> {
+            if (!bloqueioService.estaBloqueado()) {
+                bloqueioService.registrarAtividade();
+            }
+        });
+
+        iniciarMonitorInatividade();
+
+        return containerPrincipal;
+    }
+
+    private void iniciarMonitorInatividade() {
+        pararMonitorInatividade();
+        temporizadorInatividade = new Timeline(new KeyFrame(Duration.seconds(1), evento -> {
+            bloqueioService.verificarInatividade();
+        }));
+        temporizadorInatividade.setCycleCount(Animation.INDEFINITE);
+        temporizadorInatividade.play();
+    }
+
+    private void pararMonitorInatividade() {
+        if (temporizadorInatividade != null) {
+            temporizadorInatividade.stop();
+            temporizadorInatividade = null;
+        }
+    }
+
+    private void ocultarBloqueio() {
+        // Ao desbloquear com sucesso, retoma o monitor e foca o trabalho
+        iniciarMonitorInatividade();
+    }
+
+    private void executarSaida() {
+        pararMonitorInatividade();
+        sessaoUsuario.encerrar();
+        aoSair.run();
     }
 
     // -----------------------------------------------------------------
@@ -128,14 +209,15 @@ public class ShellController {
         Label identidade = new Label(usuario.getNome() + " (" + usuario.getRole() + ")");
         identidade.getStyleClass().add("texto-secundario");
 
+        Button botaoBloquear = new Button("Bloquear");
+        botaoBloquear.getStyleClass().add("button-secundario-claro");
+        botaoBloquear.setOnAction(evento -> bloqueioService.bloquear());
+
         Button sair = new Button("Sair");
         sair.getStyleClass().add("button-secundario-claro");
-        sair.setOnAction(evento -> {
-            sessaoUsuario.encerrar();
-            aoSair.run();
-        });
+        sair.setOnAction(evento -> executarSaida());
 
-        HBox barra = new HBox(12, organizacao, identidade, espacador, sair);
+        HBox barra = new HBox(12, organizacao, identidade, espacador, botaoBloquear, sair);
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.getStyleClass().add("barra-titulo");
         return barra;
