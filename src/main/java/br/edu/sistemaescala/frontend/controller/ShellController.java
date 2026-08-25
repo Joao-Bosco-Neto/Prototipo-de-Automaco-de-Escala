@@ -8,9 +8,13 @@ import java.util.List;
 
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
 import br.edu.sistemaescala.backend.model.Configuracao;
+import br.edu.sistemaescala.backend.model.RoleUsuario;
+import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.service.AutorizacaoService;
+import br.edu.sistemaescala.backend.service.SessaoUsuario;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,6 +23,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -58,14 +63,26 @@ public class ShellController {
 
     private final ConfiguracaoRepository configuracaoRepository;
     private final TipoTurnoRepository tipoTurnoRepository;
+    private final SessaoUsuario sessaoUsuario;
+    private final AutorizacaoService autorizacaoService;
+    private final Runnable aoSair;
 
     private final BorderPane raiz = new BorderPane();
     private final List<Button> botoesNavegacao = new ArrayList<>();
 
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository) {
+        this(configuracaoRepository, tipoTurnoRepository, new SessaoUsuario(), Platform::exit);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           SessaoUsuario sessaoUsuario, Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
+        this.sessaoUsuario = sessaoUsuario;
+        this.autorizacaoService = new AutorizacaoService();
+        this.aoSair = aoSair;
     }
 
     public Parent criarTela() {
@@ -89,16 +106,18 @@ public class ShellController {
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
 
-        // Sem usuario logado por enquanto: login e sessao ainda nao existem
-        // (issues #15 e #17), entao a barra mostra so a organizacao e o Sair.
+        Usuario usuario = sessaoUsuario.exigirUsuario();
+        Label identidade = new Label(usuario.getNome() + " (" + usuario.getRole() + ")");
+        identidade.getStyleClass().add("texto-secundario");
+
         Button sair = new Button("Sair");
         sair.getStyleClass().add("button-secundario-claro");
         sair.setOnAction(evento -> {
-            // TODO(#15,#17): substituir por logout real quando login e sessao existirem.
-            Platform.exit();
+            sessaoUsuario.encerrar();
+            aoSair.run();
         });
 
-        HBox barra = new HBox(12, organizacao, espacador, sair);
+        HBox barra = new HBox(12, organizacao, identidade, espacador, sair);
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.getStyleClass().add("barra-titulo");
         return barra;
@@ -123,6 +142,13 @@ public class ShellController {
         // Menus vazios de proposito: os itens de submenu chegam junto com a
         // issue de cada tela, para nao criar acao que ainda nao existe.
         MENUS_SUPERIORES.forEach(nome -> menuBar.getMenus().add(new Menu(nome)));
+        if (sessaoUsuario.usuarioAtual().map(usuario -> usuario.getRole() == RoleUsuario.ADMIN).orElse(false)) {
+            Menu gestaoUsuarios = new Menu("Gestão de usuários");
+            MenuItem abrirGestao = new MenuItem("Administrar usuários");
+            abrirGestao.setOnAction(evento -> raiz.setCenter(criarConteudo("Gestão de usuários")));
+            gestaoUsuarios.getItems().add(abrirGestao);
+            menuBar.getMenus().add(gestaoUsuarios);
+        }
         return menuBar;
     }
 
@@ -159,6 +185,9 @@ public class ShellController {
      * na issue especifica correspondente (funcionarios, escala, coberturas...).
      */
     private Parent criarConteudo(String item) {
+        if ("Gestão de usuários".equals(item)) {
+            autorizacaoService.exigirAdministrador(sessaoUsuario);
+        }
         Label placeholder = new Label("Tela de " + item + " — em construção");
         placeholder.getStyleClass().add("titulo-2");
 
