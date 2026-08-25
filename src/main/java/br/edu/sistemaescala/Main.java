@@ -9,6 +9,8 @@ import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoService;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
+import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
+import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoService;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
@@ -21,11 +23,10 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 /**
- * Ponto de entrada da aplicacao Sistema de Escala.
+ * Ponto de entrada da aplicação Sistema de Escala.
  *
- * No primeiro acesso abre a tela de configuracao inicial; nas demais
- * execucoes abre o shell da aplicacao (menu, navegacao lateral e area de
- * conteudo).
+ * No primeiro acesso abre a tela de configuração inicial; nas demais
+ * execuções abre a tela de login e, após autenticado, o shell principal.
  */
 public class Main extends Application {
 
@@ -50,7 +51,7 @@ public class Main extends Application {
             conteudo = new PrimeiroAcessoController(primeiroAcessoService).criarTela();
         } else {
             conteudo = criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                autenticacaoService, sessaoUsuario);
+                    usuarioRepository, autenticacaoService, sessaoUsuario);
         }
 
         Scene cena = new Scene(conteudo, 1366, 768);
@@ -60,28 +61,40 @@ public class Main extends Application {
         palco.show();
     }
 
-    private void abrirJanelaPrincipal(Stage palco, ConfiguracaoRepository configuracaoRepository,
-                          TipoTurnoRepository tipoTurnoRepository,
-                          SessaoUsuario sessaoUsuario,
-                          AutenticacaoService autenticacaoService) {
-        palco.getScene().setRoot(new ShellController(configuracaoRepository, tipoTurnoRepository,
-            sessaoUsuario, () -> palco.getScene().setRoot(
-                criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                    autenticacaoService, sessaoUsuario)))
-            .criarTela());
-        }
+    private void abrirJanelaPrincipal(Stage palco,
+                                      ConfiguracaoRepository configuracaoRepository,
+                                      TipoTurnoRepository tipoTurnoRepository,
+                                      UsuarioRepository usuarioRepository,
+                                      SessaoUsuario sessaoUsuario,
+                                      AutenticacaoService autenticacaoService) {
+        GestaoUsuariosService gestaoUsuariosService = new GestaoUsuariosServiceImpl(
+                usuarioRepository, autenticacaoService, sessaoUsuario);
 
-        private Parent criarTelaLogin(Stage palco, ConfiguracaoRepository configuracaoRepository,
-                      TipoTurnoRepository tipoTurnoRepository,
-                      AutenticacaoService autenticacaoService,
-                      SessaoUsuario sessaoUsuario) {
+        palco.getScene().setRoot(new ShellController(
+                configuracaoRepository,
+                tipoTurnoRepository,
+                gestaoUsuariosService,
+                sessaoUsuario,
+                () -> palco.getScene().setRoot(
+                        criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
+                                usuarioRepository, autenticacaoService, sessaoUsuario)))
+                .criarTela());
+    }
+
+    private Parent criarTelaLogin(Stage palco,
+                                  ConfiguracaoRepository configuracaoRepository,
+                                  TipoTurnoRepository tipoTurnoRepository,
+                                  UsuarioRepository usuarioRepository,
+                                  AutenticacaoService autenticacaoService,
+                                  SessaoUsuario sessaoUsuario) {
         String nomeOrganizacao = configuracaoRepository.buscar()
-            .map(configuracao -> configuracao.getNomeOrganizacao())
-            .orElse("Organização não configurada");
+                .map(configuracao -> configuracao.getNomeOrganizacao())
+                .orElse("Organização não configurada");
+
         return new LoginController(autenticacaoService, usuario -> {
             sessaoUsuario.iniciar(usuario);
             abrirJanelaPrincipal(palco, configuracaoRepository, tipoTurnoRepository,
-                sessaoUsuario, autenticacaoService);
+                    usuarioRepository, sessaoUsuario, autenticacaoService);
         }).criarTela(nomeOrganizacao);
     }
 

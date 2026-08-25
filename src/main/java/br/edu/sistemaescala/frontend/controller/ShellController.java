@@ -13,7 +13,11 @@ import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
+import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
+import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -63,6 +67,7 @@ public class ShellController {
 
     private final ConfiguracaoRepository configuracaoRepository;
     private final TipoTurnoRepository tipoTurnoRepository;
+    private final GestaoUsuariosService gestaoUsuariosService;
     private final SessaoUsuario sessaoUsuario;
     private final AutorizacaoService autorizacaoService;
     private final Runnable aoSair;
@@ -78,8 +83,21 @@ public class ShellController {
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository,
                            SessaoUsuario sessaoUsuario, Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository,
+                new GestaoUsuariosServiceImpl(
+                        new UsuarioRepositoryJdbc(),
+                        new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc()),
+                        sessaoUsuario),
+                sessaoUsuario, aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           SessaoUsuario sessaoUsuario, Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
+        this.gestaoUsuariosService = gestaoUsuariosService;
         this.sessaoUsuario = sessaoUsuario;
         this.autorizacaoService = new AutorizacaoService();
         this.aoSair = aoSair;
@@ -145,7 +163,10 @@ public class ShellController {
         if (sessaoUsuario.usuarioAtual().map(usuario -> usuario.getRole() == RoleUsuario.ADMIN).orElse(false)) {
             Menu gestaoUsuarios = new Menu("Gestão de usuários");
             MenuItem abrirGestao = new MenuItem("Administrar usuários");
-            abrirGestao.setOnAction(evento -> raiz.setCenter(criarConteudo("Gestão de usuários")));
+            abrirGestao.setOnAction(evento -> {
+                botoesNavegacao.forEach(botao -> botao.getStyleClass().remove(CLASSE_ITEM_ATIVO));
+                raiz.setCenter(criarConteudo("Gestão de usuários"));
+            });
             gestaoUsuarios.getItems().add(abrirGestao);
             menuBar.getMenus().add(gestaoUsuarios);
         }
@@ -187,6 +208,7 @@ public class ShellController {
     private Parent criarConteudo(String item) {
         if ("Gestão de usuários".equals(item)) {
             autorizacaoService.exigirAdministrador(sessaoUsuario);
+            return new GestaoUsuariosController(gestaoUsuariosService).criarTela();
         }
         Label placeholder = new Label("Tela de " + item + " — em construção");
         placeholder.getStyleClass().add("titulo-2");
