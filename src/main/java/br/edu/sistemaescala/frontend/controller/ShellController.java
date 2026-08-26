@@ -19,6 +19,8 @@ import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
+import br.edu.sistemaescala.backend.service.ConfiguracaoService;
+import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
@@ -80,6 +82,7 @@ public class ShellController {
     private final GestaoUsuariosService gestaoUsuariosService;
     private final FuncionarioService funcionarioService;
     private final TipoTurnoService tipoTurnoService;
+    private final ConfiguracaoService configuracaoService;
     private final SessaoUsuario sessaoUsuario;
     private final BloqueioInatividadeService bloqueioService;
     private final AutorizacaoService autorizacaoService;
@@ -88,6 +91,7 @@ public class ShellController {
     private final BorderPane raiz = new BorderPane();
     private final List<Button> botoesNavegacao = new ArrayList<>();
     private Timeline temporizadorInatividade;
+    private Label rotuloOrganizacao;
 
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository) {
@@ -146,11 +150,28 @@ public class ShellController {
                            SessaoUsuario sessaoUsuario,
                            BloqueioInatividadeService bloqueioService,
                            Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, funcionarioService,
+                tipoTurnoService,
+                new ConfiguracaoServiceImpl(configuracaoRepository, sessaoUsuario),
+                sessaoUsuario, bloqueioService, aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           FuncionarioService funcionarioService,
+                           TipoTurnoService tipoTurnoService,
+                           ConfiguracaoService configuracaoService,
+                           SessaoUsuario sessaoUsuario,
+                           BloqueioInatividadeService bloqueioService,
+                           Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.funcionarioService = funcionarioService;
         this.tipoTurnoService = tipoTurnoService;
+        this.configuracaoService = configuracaoService != null ? configuracaoService
+                : new ConfiguracaoServiceImpl(configuracaoRepository, sessaoUsuario);
         this.sessaoUsuario = sessaoUsuario;
         this.bloqueioService = bloqueioService;
         this.autorizacaoService = new AutorizacaoService();
@@ -234,8 +255,8 @@ public class ShellController {
     // -----------------------------------------------------------------
 
     private HBox criarBarraTitulo() {
-        Label organizacao = new Label(nomeOrganizacao());
-        organizacao.getStyleClass().add("titulo-organizacao");
+        rotuloOrganizacao = new Label(nomeOrganizacao());
+        rotuloOrganizacao.getStyleClass().add("titulo-organizacao");
 
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
@@ -252,7 +273,7 @@ public class ShellController {
         sair.getStyleClass().add("button-secundario-claro");
         sair.setOnAction(evento -> executarSaida());
 
-        HBox barra = new HBox(12, organizacao, identidade, espacador, botaoBloquear, sair);
+        HBox barra = new HBox(12, rotuloOrganizacao, identidade, espacador, botaoBloquear, sair);
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.getStyleClass().add("barra-titulo");
         return barra;
@@ -282,7 +303,14 @@ public class ShellController {
                     botoesNavegacao.forEach(botao -> botao.getStyleClass().remove(CLASSE_ITEM_ATIVO));
                     raiz.setCenter(criarConteudo("Tipos de turno"));
                 });
-                menu.getItems().add(itemTiposTurno);
+
+                MenuItem itemConfiguracoes = new MenuItem("Configurações da Organização");
+                itemConfiguracoes.setOnAction(evento -> {
+                    botoesNavegacao.forEach(botao -> botao.getStyleClass().remove(CLASSE_ITEM_ATIVO));
+                    raiz.setCenter(criarConteudo("Configurações"));
+                });
+
+                menu.getItems().addAll(itemTiposTurno, itemConfiguracoes);
             }
             menuBar.getMenus().add(menu);
         }
@@ -341,6 +369,16 @@ public class ShellController {
         }
         if ("Tipos de turno".equals(item)) {
             return new TipoTurnoController(tipoTurnoService).criarTela();
+        }
+        if ("Configurações".equals(item) || "Configurações da organização".equals(item)) {
+            return new ConfiguracaoController(configuracaoService, config -> {
+                if (rotuloOrganizacao != null && config != null) {
+                    rotuloOrganizacao.setText(config.getNomeOrganizacao());
+                }
+                if (raiz.getScene() != null && raiz.getScene().getWindow() instanceof javafx.stage.Stage palco) {
+                    palco.setTitle("Sistema de Escala — " + config.getNomeOrganizacao());
+                }
+            }).criarTela();
         }
         Label placeholder = new Label("Tela de " + item + " — em construção");
         placeholder.getStyleClass().add("titulo-2");

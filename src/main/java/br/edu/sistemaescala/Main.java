@@ -13,6 +13,8 @@ import br.edu.sistemaescala.backend.service.AutenticacaoService;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
+import br.edu.sistemaescala.backend.service.ConfiguracaoService;
+import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
@@ -111,6 +113,7 @@ public class Main extends Application {
                 usuarioRepository, autenticacaoService, sessaoUsuario);
         FuncionarioService funcionarioService = new FuncionarioServiceImpl(funcionarioRepository);
         TipoTurnoService tipoTurnoService = new TipoTurnoServiceImpl(tipoTurnoRepository, funcionarioRepository);
+        ConfiguracaoService configuracaoService = new ConfiguracaoServiceImpl(configuracaoRepository, sessaoUsuario);
         BloqueioInatividadeService bloqueioInatividadeService =
                 new BloqueioInatividadeServiceImpl(sessaoUsuario, autenticacaoService);
 
@@ -120,6 +123,7 @@ public class Main extends Application {
                 gestaoUsuariosService,
                 funcionarioService,
                 tipoTurnoService,
+                configuracaoService,
                 sessaoUsuario,
                 bloqueioInatividadeService,
                 () -> palco.getScene().setRoot(
