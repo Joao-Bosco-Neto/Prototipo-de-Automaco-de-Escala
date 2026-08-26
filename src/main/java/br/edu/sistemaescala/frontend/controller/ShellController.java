@@ -13,11 +13,14 @@ import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
+import br.edu.sistemaescala.backend.service.FuncionarioService;
+import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
@@ -73,6 +76,7 @@ public class ShellController {
     private final ConfiguracaoRepository configuracaoRepository;
     private final TipoTurnoRepository tipoTurnoRepository;
     private final GestaoUsuariosService gestaoUsuariosService;
+    private final FuncionarioService funcionarioService;
     private final SessaoUsuario sessaoUsuario;
     private final BloqueioInatividadeService bloqueioService;
     private final AutorizacaoService autorizacaoService;
@@ -95,6 +99,7 @@ public class ShellController {
                         new UsuarioRepositoryJdbc(),
                         new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc()),
                         sessaoUsuario),
+                new FuncionarioServiceImpl(new FuncionarioRepositoryJdbc()),
                 sessaoUsuario, aoSair);
     }
 
@@ -102,7 +107,9 @@ public class ShellController {
                            TipoTurnoRepository tipoTurnoRepository,
                            GestaoUsuariosService gestaoUsuariosService,
                            SessaoUsuario sessaoUsuario, Runnable aoSair) {
-        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, sessaoUsuario,
+        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService,
+                new FuncionarioServiceImpl(new FuncionarioRepositoryJdbc()),
+                sessaoUsuario,
                 new BloqueioInatividadeServiceImpl(sessaoUsuario, new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc())),
                 aoSair);
     }
@@ -110,12 +117,25 @@ public class ShellController {
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository,
                            GestaoUsuariosService gestaoUsuariosService,
+                           FuncionarioService funcionarioService,
+                           SessaoUsuario sessaoUsuario, Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, funcionarioService,
+                sessaoUsuario,
+                new BloqueioInatividadeServiceImpl(sessaoUsuario, new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc())),
+                aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           FuncionarioService funcionarioService,
                            SessaoUsuario sessaoUsuario,
                            BloqueioInatividadeService bloqueioService,
                            Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
+        this.funcionarioService = funcionarioService;
         this.sessaoUsuario = sessaoUsuario;
         this.bloqueioService = bloqueioService;
         this.autorizacaoService = new AutorizacaoService();
@@ -291,6 +311,9 @@ public class ShellController {
         if ("Gestão de usuários".equals(item)) {
             autorizacaoService.exigirAdministrador(sessaoUsuario);
             return new GestaoUsuariosController(gestaoUsuariosService).criarTela();
+        }
+        if ("Funcionários".equals(item)) {
+            return new FuncionarioController(funcionarioService).criarTela();
         }
         Label placeholder = new Label("Tela de " + item + " — em construção");
         placeholder.getStyleClass().add("titulo-2");

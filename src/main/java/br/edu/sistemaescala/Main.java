@@ -83,8 +83,7 @@ public class Main extends Application {
             conteudo = new PrimeiroAcessoController(primeiroAcessoService).criarTela();
         } else {
             conteudo = criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                    usuarioRepository, autenticacaoService, sessaoUsuario);
-        }
+                    usuarioRepository, funcionarioRepository, autenticacaoService, sessaoUsuario);
 
         Scene cena = new Scene(conteudo, 1366, 768);
         cena.getStylesheets().add(getClass().getResource("/frontend/css/app.css").toExternalForm());
@@ -97,31 +96,30 @@ public class Main extends Application {
                                       ConfiguracaoRepository configuracaoRepository,
                                       TipoTurnoRepository tipoTurnoRepository,
                                       UsuarioRepository usuarioRepository,
-                                      SessaoUsuario sessaoUsuario,
+                                      FuncionarioRepository funcionarioRepository,
                                       AutenticacaoService autenticacaoService) {
         GestaoUsuariosService gestaoUsuariosService = new GestaoUsuariosServiceImpl(
                 usuarioRepository, autenticacaoService, sessaoUsuario);
-        BloqueioInatividadeService bloqueioInatividadeService =
+        FuncionarioService funcionarioService = new FuncionarioServiceImpl(funcionarioRepository);
                 new BloqueioInatividadeServiceImpl(sessaoUsuario, autenticacaoService);
 
         palco.getScene().setRoot(new ShellController(
                 configuracaoRepository,
                 tipoTurnoRepository,
                 gestaoUsuariosService,
-                sessaoUsuario,
+                funcionarioService,
                 bloqueioInatividadeService,
                 () -> palco.getScene().setRoot(
                         criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                                usuarioRepository, autenticacaoService, sessaoUsuario)))
+                                usuarioRepository, funcionarioRepository, autenticacaoService, sessaoUsuario)))
                 .criarTela());
-    }
 
     private Parent criarTelaLogin(Stage palco,
                                   ConfiguracaoRepository configuracaoRepository,
                                   TipoTurnoRepository tipoTurnoRepository,
                                   UsuarioRepository usuarioRepository,
+                                  FuncionarioRepository funcionarioRepository,
                                   AutenticacaoService autenticacaoService,
-                                  SessaoUsuario sessaoUsuario) {
         String nomeOrganizacao = configuracaoRepository.buscar()
                 .map(configuracao -> configuracao.getNomeOrganizacao())
                 .orElse("Organização não configurada");
@@ -129,10 +127,9 @@ public class Main extends Application {
         return new LoginController(autenticacaoService, usuario -> {
             sessaoUsuario.iniciar(usuario);
             abrirJanelaPrincipal(palco, configuracaoRepository, tipoTurnoRepository,
-                    usuarioRepository, sessaoUsuario, autenticacaoService);
+                    usuarioRepository, funcionarioRepository, sessaoUsuario, autenticacaoService);
         }).criarTela(nomeOrganizacao);
     }
-
     /**
      * Tela minima exibida quando o banco nao subiu: informa o usuario, dá o
      * caminho do log e deixa a janela aberta ate ele mesmo fechar.
