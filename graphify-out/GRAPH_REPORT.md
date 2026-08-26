@@ -1,16 +1,16 @@
 # Graph Report - Prototipo-de-Automaco-de-Escala  (2026-08-25)
 
 ## Corpus Check
-- 84 files · ~59,188 words
+- 87 files · ~60,705 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1484 nodes · 2876 edges · 124 communities (40 shown, 84 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 331 edges (avg confidence: 0.8)
+- 1524 nodes · 2967 edges · 127 communities (43 shown, 84 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 340 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c583f196`
+- Built from commit: `01f382ee`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -139,6 +139,9 @@
 - [[_COMMUNITY_Community 121|Community 121]]
 - [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Backlog de Issues — Sistema de Automação de Escala` - 191 edges
@@ -172,7 +175,7 @@
 - **Padrao de Servico de Autenticacao (interface + impl + testes + repositorio)** — service_autenticacaoservice_autenticacaoservice, service_autenticacaoserviceimpl_autenticacaoserviceimpl, service_autenticacaoserviceimpltest_autenticacaoserviceimpltest, repository_usuariorepository_usuariorepository [INFERRED 0.85]
 - **Documentacao de Seguranca do Banco Local + Implementacao** — seguranca_modelagemameacas_decisaoaes, seguranca_protecaobanco_protecaoh2, dao_conexaobanco_conexaobanco [INFERRED 0.85]
 
-## Communities (124 total, 84 thin omitted)
+## Communities (127 total, 84 thin omitted)
 
 ### Community 0 - "Modelo de Dados da Escala"
 Cohesion: 0.06
@@ -180,7 +183,7 @@ Nodes (34): EscalaFuncionarioRepositoryJdbc, EscalaFuncionario, EscalaFuncionari
 
 ### Community 1 - "Repositorio de Lancamento de Horas"
 Cohesion: 0.06
-Nodes (38): LancamentoHorasRepositoryJdbc, LancamentoHoras, deValor(), TipoLancamento(), toString(), valor(), LancamentoHorasRepository, LancamentoHorasRepositoryJdbcTest (+30 more)
+Nodes (32): LancamentoHorasRepositoryJdbc, LancamentoHoras, LancamentoHorasRepository, LancamentoHorasRepositoryJdbcTest, EscalaFuncionario, Funcionario, Integer, LocalDate (+24 more)
 
 ### Community 2 - "Repositorio de Tipo de Turno"
 Cohesion: 0.06
@@ -195,8 +198,8 @@ Cohesion: 0.07
 Nodes (31): Application, Button, Prototipo de Referencia Rule, Tema CSS Obrigatorio Rule, PrimeiroAcessoController, LinhaExemplo, VitrineComponentesApp, GestaoUsuariosService (+23 more)
 
 ### Community 5 - "Repositorio de Escala de Turno"
-Cohesion: 0.11
-Nodes (24): EscalaTurnoRepositoryJdbc, EscalaTurnoRepository, EscalaTurnoRepositoryJdbcTest, EscalaTurno, List, LocalDateTime, Optional, YearMonth (+16 more)
+Cohesion: 0.09
+Nodes (27): EscalaTurnoRepositoryJdbc, EscalaTurnoRepository, EscalaTurnoRepositoryJdbcTest, TipoTurno, EscalaTurno, List, LocalDateTime, Optional (+19 more)
 
 ### Community 6 - "Servico de Autenticacao"
 Cohesion: 0.06
@@ -215,16 +218,16 @@ Cohesion: 0.07
 Nodes (23): MotivoCoberturaRepositoryJdbc, MotivoCobertura, MotivoCoberturaRepository, MotivoCoberturaRepositoryJdbcTest, Integer, Object, Override, String (+15 more)
 
 ### Community 10 - "Entidade EscalaTurno"
-Cohesion: 0.10
-Nodes (9): EscalaTurno, EscalaFuncionario, Integer, List, LocalDateTime, Object, Override, String (+1 more)
+Cohesion: 0.11
+Nodes (8): EscalaTurno, EscalaFuncionario, Integer, List, LocalDateTime, Object, Override, String
 
 ### Community 11 - "Inicializacao do Banco (Schema)"
 Cohesion: 0.14
 Nodes (13): Tabela motivo_cobertura, schema.sql (script de criação do banco), Tabela tipo_turno, Tabela usuario, BancoInicializador.executarScript(), BancoInicializador.inicializar(), Serviço Postgres do Docker Compose Legado, Schema PostgreSQL Legado (+5 more)
 
 ### Community 12 - "Entidade Funcionario"
-Cohesion: 0.05
-Nodes (33): FuncionarioRepositoryJdbc, Funcionario, FuncionarioRepository, FuncionarioRepositoryJdbcTest, Integer, LocalDateTime, Object, Override (+25 more)
+Cohesion: 0.15
+Nodes (7): Funcionario, Integer, LocalDateTime, Object, Override, String, ResultSet
 
 ### Community 13 - "Entidade MotivoCobertura"
 Cohesion: 0.02
@@ -247,8 +250,8 @@ Cohesion: 0.14
 Nodes (13): Arquitetura, Banco de dados, Comandos, Como responder, Conceitos centrais, Contexto do Projeto — cole isto antes de pedir ajuda a uma IA, Estado atual, Fluxo de trabalho (+5 more)
 
 ### Community 18 - "Interface UsuarioRepository"
-Cohesion: 0.08
-Nodes (20): Alert, AlertType, LoginController, DialogPane, DialogUtil, TratadorErroGlobal, Logger, LogAplicacao (+12 more)
+Cohesion: 0.05
+Nodes (28): Alert, AlertType, LoginController, FuncaoTransacional, TransacaoUtil, DialogPane, DialogUtil, TratadorErroGlobal (+20 more)
 
 ### Community 19 - "Script de Sincronizacao de Issues"
 Cohesion: 0.36
@@ -287,12 +290,12 @@ Cohesion: 0.40
 Nodes (5): configuracao table, Diagrama MER (Entity-Relationship Diagram), funcionario table, tipo_turno table, usuario table
 
 ### Community 111 - "Community 111"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (7): GestaoUsuariosController, GestaoUsuariosService, HBox, Parent, RoleUsuario, String, VBox
 
 ### Community 112 - "Community 112"
-Cohesion: 0.17
-Nodes (11): BloqueioInatividadeService, Clock, BloqueioInatividadeServiceImpl, AutenticacaoService, Boolean, Consumer, Duration, Instant (+3 more)
+Cohesion: 0.09
+Nodes (14): BloqueioInatividadeService, Clock, BloqueioInatividadeServiceImpl, BloqueioInatividadeServiceImplTest, AutenticacaoService, Boolean, Consumer, Duration (+6 more)
 
 ### Community 113 - "Community 113"
 Cohesion: 0.16
@@ -303,16 +306,16 @@ Cohesion: 0.19
 Nodes (3): GestaoUsuariosServiceImplTest, BeforeEach, Test
 
 ### Community 115 - "Community 115"
-Cohesion: 0.20
-Nodes (3): BloqueioInatividadeServiceImplTest, BeforeEach, Test
+Cohesion: 0.24
+Nodes (9): TransacaoUtilTest, AfterAll, BeforeAll, Connection, EscalaFuncionario, LocalDateTime, Object, String (+1 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.18
 Nodes (6): BloqueioInatividadeService, Boolean, Consumer, Duration, Instant, String
 
 ### Community 117 - "Community 117"
-Cohesion: 0.37
-Nodes (7): GestaoUsuariosServiceImpl, List, Optional, Override, RoleUsuario, String, Usuario
+Cohesion: 0.24
+Nodes (11): AutorizacaoService, GestaoUsuariosServiceImpl, AutenticacaoService, List, Optional, Override, RoleUsuario, SessaoUsuario (+3 more)
 
 ### Community 118 - "Community 118"
 Cohesion: 0.13
@@ -323,7 +326,7 @@ Cohesion: 0.28
 Nodes (6): GestaoUsuariosService, List, Optional, RoleUsuario, String, Usuario
 
 ### Community 121 - "Community 121"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): AutorizacaoService, RoleUsuario, RoleUsuario, SessaoUsuario, String, Usuario
 
 ### Community 122 - "Community 122"
@@ -331,15 +334,27 @@ Cohesion: 0.31
 Nodes (5): SessaoUsuario, SessaoUsuarioTest, Optional, Usuario, Test
 
 ### Community 123 - "Community 123"
-Cohesion: 0.40
-Nodes (4): AutorizacaoService, AutenticacaoService, SessaoUsuario, UsuarioRepository
+Cohesion: 0.19
+Nodes (9): FuncionarioRepositoryJdbc, Boolean, Funcionario, Integer, List, Optional, Override, String (+1 more)
+
+### Community 124 - "Community 124"
+Cohesion: 0.20
+Nodes (9): FuncionarioRepositoryJdbcTest, AfterAll, BeforeAll, Connection, Funcionario, Object, String, Test (+1 more)
+
+### Community 125 - "Community 125"
+Cohesion: 0.18
+Nodes (8): FuncionarioRepository, Boolean, Funcionario, Integer, List, Optional, String, YearMonth
+
+### Community 126 - "Community 126"
+Cohesion: 0.48
+Nodes (6): deValor(), TipoLancamento(), toString(), valor(), Override, String
 
 ## Ambiguous Edges - Review These
 - `ConexaoBanco` → `Issue #59 — Proteger o Arquivo do Banco de Dados`  [AMBIGUOUS]
   scripts/BACKLOG_ISSUES.md · relation: references
 
 ## Knowledge Gaps
-- **348 isolated node(s):** `PreToolUse`, `allow`, `String`, `Throwable`, `Throwable` (+343 more)
+- **353 isolated node(s):** `PreToolUse`, `allow`, `String`, `Throwable`, `Throwable` (+348 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **84 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -349,14 +364,14 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `ConexaoBanco` and `Issue #59 — Proteger o Arquivo do Banco de Dados`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **Why does `Main` connect `Bootstrap da Aplicacao e Auth` to `Repositorio de Usuario (JDBC)`, `Interface FuncionarioRepository`, `Servico de Autenticacao`, `Configuracao e Seed de Dados`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **Why does `Backlog de Issues — Sistema de Automação de Escala` connect `Entidade MotivoCobertura` to `Script de Sincronizacao de Issues`, `Community 39`, `Community 40`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 45`, `Community 46`, `Community 47`, `Community 48`, `Community 49`, `Community 50`, `Community 51`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 58`, `Community 59`, `Community 60`, `Community 61`, `Community 62`, `Community 63`, `Community 64`, `Community 65`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 71`, `Community 72`, `Community 73`, `Community 74`, `Community 75`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 82`, `Community 83`, `Community 84`, `Community 85`, `Community 86`, `Community 87`, `Community 88`, `Community 89`, `Community 90`, `Community 91`, `Community 92`, `Community 93`, `Community 94`, `Community 95`, `Community 96`, `Community 97`, `Community 98`, `Community 99`, `Community 100`, `Community 101`, `Community 102`, `Community 103`, `Community 104`, `Community 105`, `Community 106`, `Community 107`, `Community 108`, `Community 109`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Why does `EscalaTurno` connect `Entidade EscalaTurno` to `Repositorio de Tipo de Turno`?**
-  _High betweenness centrality (0.034) - this node is a cross-community bridge._
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+- **Why does `ConexaoBanco` connect `Repositorio de Usuario (JDBC)` to `Inicializacao do Banco (Schema)`, `Configuracao e Seed de Dados`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
+- **Why does `EscalaTurno` connect `Entidade EscalaTurno` to `Repositorio de Tipo de Turno`, `Repositorio de Escala de Turno`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **What connects `PreToolUse`, `allow`, `Casa GitHub -> backlog pelo rodape; cai para o titulo se faltar rodape.` to the rest of the system?**
-  _355 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _360 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Modelo de Dados da Escala` be split into smaller, more focused modules?**
-  _Cohesion score 0.05694586312563841 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05643513789581205 - nodes in this community are weakly interconnected._
 - **Should `Repositorio de Lancamento de Horas` be split into smaller, more focused modules?**
-  _Cohesion score 0.05553923009109609 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.062456140350877196 - nodes in this community are weakly interconnected._
