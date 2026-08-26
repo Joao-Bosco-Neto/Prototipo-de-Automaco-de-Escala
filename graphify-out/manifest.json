@@ -15,8 +15,8 @@
     "semantic_hash": "f2db50bdeabed43330951730e6efbbae"
   },
   "src/main/java/br/edu/sistemaescala/Main.java": {
-    "mtime": 1787452463.3912628,
-    "ast_hash": "f7d05ecc378c08256b7001f49d8fa320",
+    "mtime": 1787709462.8978624,
+    "ast_hash": "ba1369924ecffd09b5d062b6b8f6776f",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/dao/BancoInicializador.java": {
@@ -150,9 +150,9 @@
     "semantic_hash": "15a4d1cf220f81e9768b5700bbfb39c7"
   },
   "README.md": {
-    "mtime": 1787449900.3376074,
-    "ast_hash": "b20d7b6880dde944226b1ad3c3c47b8a",
-    "semantic_hash": "b20d7b6880dde944226b1ad3c3c47b8a"
+    "mtime": 1787708606.0094426,
+    "ast_hash": "6ffe2b65cfdd9f89e17680c202886554",
+    "semantic_hash": ""
   },
   "documentacao/GUIA_DE_CONTRIBUICAO.md": {
     "mtime": 1787075483.8389676,
@@ -350,13 +350,108 @@
     "semantic_hash": "35126f957fc23913859afdb5022c87fe"
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/ShellController.java": {
-    "mtime": 1787452449.3290675,
-    "ast_hash": "fe34c51d0744d1ccfe11eb77d9b3412f",
+    "mtime": 1787708606.010787,
+    "ast_hash": "6504375ef9e2cbabfe87d0bebc9acc30",
     "semantic_hash": ""
   },
   "docs/CONTEXTO_PARA_IA.md": {
     "mtime": 1787451565.8237526,
     "ast_hash": "322599c4ef0ae3818d9ea5c043e22086",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/LogAplicacao.java": {
+    "mtime": 1787709747.092343,
+    "ast_hash": "64b32c95ff7228bfed027adec393902b",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/AcessoNegadoException.java": {
+    "mtime": 1787708606.009679,
+    "ast_hash": "88692cb1660d0bd47deefdf2727ef30f",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/AutorizacaoService.java": {
+    "mtime": 1787708606.0098448,
+    "ast_hash": "ac03e0f0852c9e59ccf30d166b16654f",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/BloqueioInatividadeService.java": {
+    "mtime": 1787708606.0099146,
+    "ast_hash": "47ea7ccd81990545ddd80e3a55105809",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/BloqueioInatividadeServiceImpl.java": {
+    "mtime": 1787708606.009994,
+    "ast_hash": "0ed60ffa998e5aea46b2a62592570bb4",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/GestaoUsuariosService.java": {
+    "mtime": 1787708606.0100749,
+    "ast_hash": "b9935d23c26ea6a29af19c9562ee53e5",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/GestaoUsuariosServiceImpl.java": {
+    "mtime": 1787708606.0100749,
+    "ast_hash": "894ee9c4893930c8017447e4f25c6b60",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/RegraUsuarioException.java": {
+    "mtime": 1787708606.0100749,
+    "ast_hash": "40dcc76aa02d52ca66532847dfe53f49",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/SessaoUsuario.java": {
+    "mtime": 1787708606.0100749,
+    "ast_hash": "593fabcbc78edba36e3fb2fae9689dfc",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/DialogUtil.java": {
+    "mtime": 1787709124.5974813,
+    "ast_hash": "5cbc4fdcca47b013ed68babe6f636518",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/TratadorErroGlobal.java": {
+    "mtime": 1787709147.489894,
+    "ast_hash": "1ee2438572115a7ccdd72b7968b805bd",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/controller/BloqueioController.java": {
+    "mtime": 1787708606.0103164,
+    "ast_hash": "3f0e5e8959d010a6e212817e5d0ad86d",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/controller/GestaoUsuariosController.java": {
+    "mtime": 1787709201.6676419,
+    "ast_hash": "921792a9aec6f5cdaadd28d822a553a8",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/controller/LoginController.java": {
+    "mtime": 1787709213.8412573,
+    "ast_hash": "e447bed7be61e3d669f45d3f3bae9824",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/service/AutorizacaoServiceTest.java": {
+    "mtime": 1787708606.0112498,
+    "ast_hash": "af0e4e1c45fa8171f92631a3cf474189",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/service/BloqueioInatividadeServiceImplTest.java": {
+    "mtime": 1787708606.0113695,
+    "ast_hash": "05d3a1d64154b8e093455b625fc3ac74",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/service/GestaoUsuariosServiceImplTest.java": {
+    "mtime": 1787708606.011469,
+    "ast_hash": "cdd71811ce6db45496222022e4b9cb2c",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/service/SessaoUsuarioTest.java": {
+    "mtime": 1787708606.011469,
+    "ast_hash": "f071f51179b2c2919a56858254f4822c",
+    "semantic_hash": ""
+  },
+  "GEMINI.md": {
+    "mtime": 1787708606.0090857,
+    "ast_hash": "9cab3c95fd33ee2d5f9178672c1c7192",
     "semantic_hash": ""
   }
 }
