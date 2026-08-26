@@ -78,7 +78,18 @@ public class LoginController {
         Label mensagem = new Label();
         mensagem.setWrapText(true);
         mensagem.getStyleClass().add("login-mensagem-erro");
+        mensagem.setVisible(false);
         mensagem.setManaged(false);
+
+        campoUsuario.textProperty().addListener((obs, antigo, novo) -> {
+            mensagem.setVisible(false);
+            mensagem.setManaged(false);
+        });
+        campoSenha.textProperty().addListener((obs, antigo, novo) -> {
+            mensagem.setVisible(false);
+            mensagem.setManaged(false);
+        });
+
         Button entrar = new Button("Entrar no sistema");
         entrar.getStyleClass().add("button-primario");
         entrar.setDefaultButton(true);
@@ -109,6 +120,7 @@ public class LoginController {
                 aoAutenticar.accept(usuario.orElseThrow());
             } else {
                 mensagem.setText(TEXTO_ERRO);
+                mensagem.setVisible(true);
                 mensagem.setManaged(true);
                 campoSenha.clear();
                 campoSenha.requestFocus();

@@ -49,18 +49,27 @@ public class PrimeiroAcessoController {
         campos.add(new Label("Confirmação"), 0, 3);
         campos.add(confirmacaoSenha, 1, 3);
 
+        mensagem.getStyleClass().add("selo");
+        mensagem.setVisible(false);
+        mensagem.setManaged(false);
+
         salvar.setOnAction(evento -> {
             try {
                 primeiroAcessoService.configurar(nomeOrganizacao.getText(), login.getText(),
                         senha.getText(), confirmacaoSenha.getText());
                 salvar.setDisable(true);
                 mensagem.setText("Configuração concluída. O administrador já pode entrar no sistema.");
-                // Cor buscada via variavel do tema (app.css), nao mais hex fixo.
-                mensagem.setStyle("-fx-text-fill: -cor-sucesso;");
+                mensagem.getStyleClass().removeAll("selo-sucesso", "selo-perigo");
+                mensagem.getStyleClass().add("selo-sucesso");
+                mensagem.setVisible(true);
+                mensagem.setManaged(true);
                 limpar(senha, confirmacaoSenha);
             } catch (RuntimeException excecao) {
                 mensagem.setText(excecao.getMessage());
-                mensagem.setStyle("-fx-text-fill: -cor-perigo;");
+                mensagem.getStyleClass().removeAll("selo-sucesso", "selo-perigo");
+                mensagem.getStyleClass().add("selo-perigo");
+                mensagem.setVisible(true);
+                mensagem.setManaged(true);
             }
         });
 

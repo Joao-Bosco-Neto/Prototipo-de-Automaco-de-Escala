@@ -350,6 +350,7 @@ public class FuncionarioController {
 
         checkAtivo.setSelected(true);
 
+        labelMensagemCard.getStyleClass().add("selo");
         labelMensagemCard.setWrapText(true);
         labelMensagemCard.setVisible(false);
         labelMensagemCard.setManaged(false);
@@ -382,7 +383,7 @@ public class FuncionarioController {
     }
 
     private void configurarEstiloErroLabel(Label label) {
-        label.getStyleClass().add("selo-perigo");
+        label.getStyleClass().addAll("selo", "selo-perigo");
         label.setVisible(false);
         label.setManaged(false);
     }

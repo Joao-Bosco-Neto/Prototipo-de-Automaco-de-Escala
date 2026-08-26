@@ -24,6 +24,8 @@ import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
+import br.edu.sistemaescala.backend.service.TipoTurnoService;
+import br.edu.sistemaescala.backend.service.TipoTurnoServiceImpl;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -77,6 +79,7 @@ public class ShellController {
     private final TipoTurnoRepository tipoTurnoRepository;
     private final GestaoUsuariosService gestaoUsuariosService;
     private final FuncionarioService funcionarioService;
+    private final TipoTurnoService tipoTurnoService;
     private final SessaoUsuario sessaoUsuario;
     private final BloqueioInatividadeService bloqueioService;
     private final AutorizacaoService autorizacaoService;
@@ -99,7 +102,6 @@ public class ShellController {
                         new UsuarioRepositoryJdbc(),
                         new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc()),
                         sessaoUsuario),
-                new FuncionarioServiceImpl(new FuncionarioRepositoryJdbc()),
                 sessaoUsuario, aoSair);
     }
 
@@ -109,9 +111,7 @@ public class ShellController {
                            SessaoUsuario sessaoUsuario, Runnable aoSair) {
         this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService,
                 new FuncionarioServiceImpl(new FuncionarioRepositoryJdbc()),
-                sessaoUsuario,
-                new BloqueioInatividadeServiceImpl(sessaoUsuario, new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc())),
-                aoSair);
+                sessaoUsuario, aoSair);
     }
 
     public ShellController(ConfiguracaoRepository configuracaoRepository,
@@ -120,6 +120,7 @@ public class ShellController {
                            FuncionarioService funcionarioService,
                            SessaoUsuario sessaoUsuario, Runnable aoSair) {
         this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, funcionarioService,
+                new TipoTurnoServiceImpl(tipoTurnoRepository, new FuncionarioRepositoryJdbc()),
                 sessaoUsuario,
                 new BloqueioInatividadeServiceImpl(sessaoUsuario, new AutenticacaoServiceImpl(new UsuarioRepositoryJdbc())),
                 aoSair);
@@ -132,10 +133,24 @@ public class ShellController {
                            SessaoUsuario sessaoUsuario,
                            BloqueioInatividadeService bloqueioService,
                            Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository, gestaoUsuariosService, funcionarioService,
+                new TipoTurnoServiceImpl(tipoTurnoRepository, new FuncionarioRepositoryJdbc()),
+                sessaoUsuario, bloqueioService, aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           FuncionarioService funcionarioService,
+                           TipoTurnoService tipoTurnoService,
+                           SessaoUsuario sessaoUsuario,
+                           BloqueioInatividadeService bloqueioService,
+                           Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.funcionarioService = funcionarioService;
+        this.tipoTurnoService = tipoTurnoService;
         this.sessaoUsuario = sessaoUsuario;
         this.bloqueioService = bloqueioService;
         this.autorizacaoService = new AutorizacaoService();
@@ -259,9 +274,18 @@ public class ShellController {
 
     private MenuBar criarMenuSuperior() {
         MenuBar menuBar = new MenuBar();
-        // Menus vazios de proposito: os itens de submenu chegam junto com a
-        // issue de cada tela, para nao criar acao que ainda nao existe.
-        MENUS_SUPERIORES.forEach(nome -> menuBar.getMenus().add(new Menu(nome)));
+        for (String nome : MENUS_SUPERIORES) {
+            Menu menu = new Menu(nome);
+            if ("Cadastros".equals(nome)) {
+                MenuItem itemTiposTurno = new MenuItem("Tipos de Turno");
+                itemTiposTurno.setOnAction(evento -> {
+                    botoesNavegacao.forEach(botao -> botao.getStyleClass().remove(CLASSE_ITEM_ATIVO));
+                    raiz.setCenter(criarConteudo("Tipos de turno"));
+                });
+                menu.getItems().add(itemTiposTurno);
+            }
+            menuBar.getMenus().add(menu);
+        }
         if (sessaoUsuario.usuarioAtual().map(usuario -> usuario.getRole() == RoleUsuario.ADMIN).orElse(false)) {
             Menu gestaoUsuarios = new Menu("Gestão de usuários");
             MenuItem abrirGestao = new MenuItem("Administrar usuários");
@@ -314,6 +338,9 @@ public class ShellController {
         }
         if ("Funcionários".equals(item)) {
             return new FuncionarioController(funcionarioService).criarTela();
+        }
+        if ("Tipos de turno".equals(item)) {
+            return new TipoTurnoController(tipoTurnoService).criarTela();
         }
         Label placeholder = new Label("Tela de " + item + " — em construção");
         placeholder.getStyleClass().add("titulo-2");

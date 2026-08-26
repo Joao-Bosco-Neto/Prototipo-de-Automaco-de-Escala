@@ -36,6 +36,9 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
     @Override
     public Optional<Usuario> autenticar(String login, String senha) {
+        if (login == null || senha == null || login.isBlank() || senha.isBlank()) {
+            return Optional.empty();
+        }
         Optional<Usuario> usuarioEncontrado = usuarioRepository.buscarPorLogin(login);
         char[] senhaChars = senha.toCharArray();
         try {
