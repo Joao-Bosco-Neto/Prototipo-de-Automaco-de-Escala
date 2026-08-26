@@ -15,7 +15,7 @@
     "semantic_hash": "f2db50bdeabed43330951730e6efbbae"
   },
   "src/main/java/br/edu/sistemaescala/Main.java": {
-    "mtime": 1787709462.8978624,
+    "mtime": 1787710331.9997835,
     "ast_hash": "ba1369924ecffd09b5d062b6b8f6776f",
     "semantic_hash": ""
   },
@@ -360,7 +360,7 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/LogAplicacao.java": {
-    "mtime": 1787709747.092343,
+    "mtime": 1787710331.9996266,
     "ast_hash": "64b32c95ff7228bfed027adec393902b",
     "semantic_hash": ""
   },
@@ -405,12 +405,12 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/DialogUtil.java": {
-    "mtime": 1787709124.5974813,
+    "mtime": 1787710331.9999197,
     "ast_hash": "5cbc4fdcca47b013ed68babe6f636518",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/TratadorErroGlobal.java": {
-    "mtime": 1787709147.489894,
+    "mtime": 1787710332.0000927,
     "ast_hash": "1ee2438572115a7ccdd72b7968b805bd",
     "semantic_hash": ""
   },
@@ -420,12 +420,12 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/GestaoUsuariosController.java": {
-    "mtime": 1787709201.6676419,
+    "mtime": 1787710332.0003066,
     "ast_hash": "921792a9aec6f5cdaadd28d822a553a8",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/LoginController.java": {
-    "mtime": 1787709213.8412573,
+    "mtime": 1787710332.0004764,
     "ast_hash": "e447bed7be61e3d669f45d3f3bae9824",
     "semantic_hash": ""
   },
