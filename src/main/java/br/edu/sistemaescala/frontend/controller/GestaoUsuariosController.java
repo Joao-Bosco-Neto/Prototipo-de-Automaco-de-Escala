@@ -12,13 +12,13 @@ import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.RegraUsuarioException;
 import br.edu.sistemaescala.backend.service.SenhaFracaException;
 import br.edu.sistemaescala.backend.service.SenhasNaoConferemException;
+import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -290,9 +290,9 @@ public class GestaoUsuariosController {
         try {
             listaUsuarios.setAll(gestaoUsuariosService.listar());
         } catch (AcessoNegadoException excecao) {
-            mostrarErroDialogo("Acesso Negado", excecao.getMessage());
+            DialogUtil.mostrarErro("Acesso Negado", excecao.getMessage());
         } catch (Exception excecao) {
-            mostrarErroDialogo("Erro ao carregar usuários", "Não foi possível carregar a lista de usuários: " + excecao.getMessage());
+            DialogUtil.mostrarErro("Erro ao carregar usuários", "Não foi possível carregar a lista de usuários: " + excecao.getMessage());
         }
     }
 
@@ -372,9 +372,9 @@ public class GestaoUsuariosController {
             tabela.getSelectionModel().select(selecionado);
             mostrarFeedbackSucesso(novoStatus ? "Usuário reativado com sucesso!" : "Usuário desativado com sucesso!");
         } catch (RegraUsuarioException | AcessoNegadoException excecao) {
-            mostrarErroDialogo("Não foi possível alterar o status", excecao.getMessage());
+            DialogUtil.mostrarErro("Não foi possível alterar o status", excecao.getMessage());
         } catch (Exception excecao) {
-            mostrarErroDialogo("Erro ao alterar status", "Ocorreu um erro ao alterar o status do usuário: " + excecao.getMessage());
+            DialogUtil.mostrarErro("Erro ao alterar status", "Ocorreu um erro ao alterar o status do usuário: " + excecao.getMessage());
         }
     }
 
@@ -401,6 +401,7 @@ public class GestaoUsuariosController {
                 erroDialogo);
         corpoDialogo.setPadding(new Insets(20));
 
+        DialogUtil.aplicarTema(dialog.getDialogPane());
         dialog.getDialogPane().setContent(corpoDialogo);
         ButtonType botaoConfirmar = new ButtonType("Redefinir Senha", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(botaoConfirmar, ButtonType.CANCEL);
@@ -449,13 +450,5 @@ public class GestaoUsuariosController {
         mensagemFeedback.setVisible(false);
         mensagemFeedback.setManaged(false);
         mensagemFeedback.setText("");
-    }
-
-    private void mostrarErroDialogo(String titulo, String mensagem) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Sistema de Escala");
-        alert.setHeaderText(titulo);
-        alert.setContentText(mensagem);
-        alert.showAndWait();
     }
 }
