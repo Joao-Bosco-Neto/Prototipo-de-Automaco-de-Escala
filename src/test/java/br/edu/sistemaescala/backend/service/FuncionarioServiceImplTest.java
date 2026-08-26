@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,9 +32,98 @@ class FuncionarioServiceImplTest {
     }
 
     @Test
+    void cadastrarFuncionarioComSucesso() {
+        when(funcionarioRepository.existeMatricula("POL001", null)).thenReturn(false);
+        when(funcionarioRepository.inserir(any(Funcionario.class))).thenAnswer(invocation -> {
+            Funcionario f = invocation.getArgument(0);
+            f.setId(10);
+            return f;
+        });
+
+        Funcionario criado = funcionarioService.cadastrar("  João Silva  ", "  POL001  ", "(63) 99999-1111", "Obs", true);
+
+        assertNotNull(criado);
+        assertEquals(10, criado.getId());
+        assertEquals("João Silva", criado.getNome());
+        assertEquals("POL001", criado.getMatricula());
+        assertEquals("(63) 99999-1111", criado.getTelefone());
+        assertEquals("Obs", criado.getObservacoes());
+        assertTrue(criado.isAtivo());
+        verify(funcionarioRepository).inserir(any(Funcionario.class));
+    }
+
+    @Test
+    void cadastrarRejeitaNomeEmBranco() {
+        RegraFuncionarioException erroNull = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.cadastrar(null, "POL001", null, null, true));
+        assertEquals("O nome do funcionário é obrigatório.", erroNull.getMessage());
+
+        RegraFuncionarioException erroVazio = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.cadastrar("   ", "POL001", null, null, true));
+        assertEquals("O nome do funcionário é obrigatório.", erroVazio.getMessage());
+    }
+
+    @Test
+    void cadastrarRejeitaMatriculaEmBranco() {
+        RegraFuncionarioException erroNull = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.cadastrar("João Silva", null, null, null, true));
+        assertEquals("A matrícula do funcionário é obrigatória.", erroNull.getMessage());
+
+        RegraFuncionarioException erroVazio = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.cadastrar("João Silva", "   ", null, null, true));
+        assertEquals("A matrícula do funcionário é obrigatória.", erroVazio.getMessage());
+    }
+
+    @Test
+    void cadastrarRejeitaMatriculaDuplicada() {
+        when(funcionarioRepository.existeMatricula("POL001", null)).thenReturn(true);
+
+        RegraFuncionarioException erro = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.cadastrar("João Silva", "POL001", null, null, true));
+        assertEquals("Já existe um funcionário cadastrado com a matrícula 'POL001'.", erro.getMessage());
+    }
+
+    @Test
+    void atualizarFuncionarioComSucesso() {
+        Funcionario existente = new Funcionario(5, "Antigo Nome", "POL005", "111", null, true, null);
+        when(funcionarioRepository.buscarPorId(5)).thenReturn(Optional.of(existente));
+        when(funcionarioRepository.existeMatricula("POL005-NOVA", 5)).thenReturn(false);
+        when(funcionarioRepository.atualizar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Funcionario atualizado = funcionarioService.atualizar(5, "Novo Nome", "POL005-NOVA", "222", "Nova obs", false);
+
+        assertNotNull(atualizado);
+        assertEquals("Novo Nome", atualizado.getNome());
+        assertEquals("POL005-NOVA", atualizado.getMatricula());
+        assertEquals("222", atualizado.getTelefone());
+        assertEquals("Nova obs", atualizado.getObservacoes());
+        assertFalse(atualizado.isAtivo());
+        verify(funcionarioRepository).atualizar(existente);
+    }
+
+    @Test
+    void atualizarRejeitaFuncionarioNaoEncontrado() {
+        when(funcionarioRepository.buscarPorId(99)).thenReturn(Optional.empty());
+
+        RegraFuncionarioException erro = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.atualizar(99, "Nome", "POL99", null, null, true));
+        assertEquals("Funcionário não encontrado.", erro.getMessage());
+    }
+
+    @Test
+    void atualizarRejeitaMatriculaDuplicadaDeOutroFuncionario() {
+        Funcionario existente = new Funcionario(5, "Nome", "POL005", null, null, true, null);
+        when(funcionarioRepository.buscarPorId(5)).thenReturn(Optional.of(existente));
+        when(funcionarioRepository.existeMatricula("POL006", 5)).thenReturn(true);
+
+        RegraFuncionarioException erro = assertThrows(RegraFuncionarioException.class,
+                () -> funcionarioService.atualizar(5, "Nome", "POL006", null, null, true));
+        assertEquals("Já existe um funcionário cadastrado com a matrícula 'POL006'.", erro.getMessage());
+    }
+
+    @Test
     void listarComPlantoesAgregaCorretamenteContagemDePlantoesNoMes() {
         Funcionario f1 = new Funcionario(1, "João Silva", "POL001", "63999991111", null, true, null);
-        Funcionario f2 = new Funcionario(2, "Maria Souza", "POL002", "63999992222", null, false, null);
 
         YearMonth mes = YearMonth.of(2026, 9);
         when(funcionarioRepository.listar(null, "Silva")).thenReturn(List.of(f1));
@@ -107,4 +198,3 @@ class FuncionarioServiceImplTest {
         verify(funcionarioRepository).contarPlantoesNoMes(1, mes);
     }
 }
-

@@ -24,10 +24,19 @@ public interface FuncionarioService {
 
     Optional<Funcionario> buscarPorId(int id);
 
+    /**
+     * Cadastra um novo funcionário no sistema após validar regras de negócio.
+     */
+    Funcionario cadastrar(String nome, String matricula, String telefone, String observacoes, boolean ativo);
+
+    /**
+     * Atualiza os dados de um funcionário existente no sistema.
+     */
+    Funcionario atualizar(int id, String nome, String matricula, String telefone, String observacoes, boolean ativo);
+
     void ativar(int id);
 
     void desativar(int id);
 
     int contarPlantoesNoMes(int funcionarioId, YearMonth mesReferencia);
 }
-
