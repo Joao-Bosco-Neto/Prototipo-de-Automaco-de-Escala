@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.backend.service;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -17,18 +18,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.Funcionario;
+import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.FuncionarioRepository;
 
 class FuncionarioServiceImplTest {
 
     private FuncionarioRepository funcionarioRepository;
+    private EscalaFuncionarioRepository escalaFuncionarioRepository;
     private FuncionarioService funcionarioService;
 
     @BeforeEach
     void setup() {
         funcionarioRepository = mock(FuncionarioRepository.class);
-        funcionarioService = new FuncionarioServiceImpl(funcionarioRepository);
+        escalaFuncionarioRepository = mock(EscalaFuncionarioRepository.class);
+        funcionarioService = new FuncionarioServiceImpl(funcionarioRepository, escalaFuncionarioRepository);
     }
 
     @Test
@@ -196,5 +201,25 @@ class FuncionarioServiceImplTest {
         int total = funcionarioService.contarPlantoesNoMes(1, mes);
         assertEquals(4, total);
         verify(funcionarioRepository).contarPlantoesNoMes(1, mes);
+    }
+
+    @Test
+    void contarEBuscarPlantoesFuturosConsultamEscalaFuncionarioRepository() {
+        LocalDateTime agora = LocalDateTime.of(2026, 8, 26, 14, 0);
+        EscalaFuncionario ef1 = new EscalaFuncionario();
+        ef1.setId(100);
+        EscalaFuncionario ef2 = new EscalaFuncionario();
+        ef2.setId(101);
+
+        when(escalaFuncionarioRepository.listarPorFuncionario(eq(1), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(ef1, ef2));
+
+        int totalFuturos = funcionarioService.contarPlantoesFuturos(1, agora);
+        assertEquals(2, totalFuturos);
+
+        List<EscalaFuncionario> listaFuturos = funcionarioService.buscarPlantoesFuturos(1, agora);
+        assertEquals(2, listaFuturos.size());
+        verify(escalaFuncionarioRepository, org.mockito.Mockito.times(2))
+                .listarPorFuncionario(eq(1), any(LocalDateTime.class), any(LocalDateTime.class));
     }
 }

@@ -1,19 +1,30 @@
 package br.edu.sistemaescala.backend.service;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.Funcionario;
+import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.FuncionarioRepository;
+import br.edu.sistemaescala.backend.repository.jdbc.EscalaFuncionarioRepositoryJdbc;
 
 public class FuncionarioServiceImpl implements FuncionarioService {
 
     private final FuncionarioRepository funcionarioRepository;
+    private final EscalaFuncionarioRepository escalaFuncionarioRepository;
 
     public FuncionarioServiceImpl(FuncionarioRepository funcionarioRepository) {
+        this(funcionarioRepository, new EscalaFuncionarioRepositoryJdbc());
+    }
+
+    public FuncionarioServiceImpl(FuncionarioRepository funcionarioRepository,
+                                  EscalaFuncionarioRepository escalaFuncionarioRepository) {
         this.funcionarioRepository = Objects.requireNonNull(funcionarioRepository, "funcionarioRepository não pode ser nulo");
+        this.escalaFuncionarioRepository = Objects.requireNonNull(escalaFuncionarioRepository, "escalaFuncionarioRepository não pode ser nulo");
     }
 
     @Override
@@ -98,6 +109,18 @@ public class FuncionarioServiceImpl implements FuncionarioService {
     public int contarPlantoesNoMes(int funcionarioId, YearMonth mesReferencia) {
         YearMonth mes = mesReferencia != null ? mesReferencia : YearMonth.now();
         return funcionarioRepository.contarPlantoesNoMes(funcionarioId, mes);
+    }
+
+    @Override
+    public int contarPlantoesFuturos(int funcionarioId, LocalDateTime aPartirDe) {
+        return buscarPlantoesFuturos(funcionarioId, aPartirDe).size();
+    }
+
+    @Override
+    public List<EscalaFuncionario> buscarPlantoesFuturos(int funcionarioId, LocalDateTime aPartirDe) {
+        LocalDateTime inicio = aPartirDe != null ? aPartirDe : LocalDateTime.now();
+        LocalDateTime fim = inicio.plusYears(100);
+        return escalaFuncionarioRepository.listarPorFuncionario(funcionarioId, inicio, fim);
     }
 
     private void validarCamposObrigatorios(String nome, String matricula) {

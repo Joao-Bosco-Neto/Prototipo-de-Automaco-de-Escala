@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.frontend.controller;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -505,6 +506,21 @@ public class FuncionarioController {
         String observacoes = campoObservacoes.getText();
         boolean ativo = checkAtivo.isSelected();
 
+        if (idFuncionarioEmEdicao != null && !ativo) {
+            int plantoesFuturos = funcionarioService.contarPlantoesFuturos(idFuncionarioEmEdicao, LocalDateTime.now());
+            if (plantoesFuturos > 0) {
+                Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+                alerta.setTitle("Confirmar Desativação");
+                alerta.setHeaderText("Atenção: O funcionário possui " + plantoesFuturos + " plantão(ões) futuro(s) agendado(s)!");
+                alerta.setContentText("Ao desativá-lo, as alocações existentes serão preservadas no banco, mas ele não poderá ser escalado para novos plantões.\n\nDeseja confirmar a desativação?");
+                var resposta = alerta.showAndWait();
+                if (resposta.isEmpty() || resposta.get() != ButtonType.OK) {
+                    checkAtivo.setSelected(true);
+                    return;
+                }
+            }
+        }
+
         try {
             if (idFuncionarioEmEdicao == null) {
                 funcionarioService.cadastrar(nome, matricula, telefone, observacoes, ativo);
@@ -580,10 +596,18 @@ public class FuncionarioController {
     }
 
     private void confirmarEDesativar(FuncionarioListagemItem item) {
+        int plantoesFuturos = funcionarioService.contarPlantoesFuturos(item.getId(), LocalDateTime.now());
+
         Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
         alerta.setTitle("Confirmar Desativação");
-        alerta.setHeaderText("Deseja desativar o funcionário " + item.getNome() + "?");
-        alerta.setContentText("O funcionário não será escalado para novos plantões, mas o histórico passado será preservado.");
+
+        if (plantoesFuturos > 0) {
+            alerta.setHeaderText("Atenção: O funcionário " + item.getNome() + " possui " + plantoesFuturos + " plantão(ões) futuro(s) agendado(s)!");
+            alerta.setContentText("Ao desativá-lo, o histórico passado e as alocações existentes serão preservados, mas ele não poderá ser atribuído a novos plantões ou coberturas.\n\nDeseja realmente desativar?");
+        } else {
+            alerta.setHeaderText("Deseja desativar o funcionário " + item.getNome() + "?");
+            alerta.setContentText("O funcionário não será escalado para novos plantões, mas o histórico passado será preservado.");
+        }
 
         alerta.showAndWait().ifPresent(resposta -> {
             if (resposta == ButtonType.OK) {
