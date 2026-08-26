@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.backend.repository;
 
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -22,6 +23,16 @@ public interface EscalaFuncionarioRepository {
 
     /** Insere uma alocacao e retorna a mesma instancia com o id gerado preenchido. */
     EscalaFuncionario inserir(EscalaFuncionario escalaFuncionario);
+
+    /**
+     * Mesma insercao, porem numa Connection recebida de fora — e assim que
+     * a alocacao participa de uma transacao aberta pelo TransacaoUtil, junto
+     * com outras escritas.
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     */
+    EscalaFuncionario inserir(EscalaFuncionario escalaFuncionario, Connection conexao);
 
     void remover(int id);
 

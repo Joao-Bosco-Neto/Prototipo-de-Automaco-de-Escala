@@ -116,8 +116,21 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
 
     @Override
     public EscalaFuncionario inserir(EscalaFuncionario escalaFuncionario) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
+        // Abre a conexao so para esta escrita e delega, para o SQL do INSERT
+        // existir num lugar unico.
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return inserir(escalaFuncionario, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao inserir alocacao de funcionario no turno", e);
+        }
+    }
+
+    @Override
+    public EscalaFuncionario inserir(EscalaFuncionario escalaFuncionario, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setInt(1, escalaFuncionario.getEscalaTurno().getId());
             stmt.setInt(2, escalaFuncionario.getFuncionario().getId());
