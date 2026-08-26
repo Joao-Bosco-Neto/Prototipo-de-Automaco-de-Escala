@@ -2,15 +2,19 @@ package br.edu.sistemaescala;
 
 import br.edu.sistemaescala.backend.dao.BancoInicializador;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
+import br.edu.sistemaescala.backend.repository.FuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
 import br.edu.sistemaescala.backend.repository.jdbc.ConfiguracaoRepositoryJdbc;
+import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoService;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
+import br.edu.sistemaescala.backend.service.FuncionarioService;
+import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
 import br.edu.sistemaescala.backend.service.PrimeiroAcessoService;
@@ -71,6 +75,7 @@ public class Main extends Application {
         }
 
         UsuarioRepository usuarioRepository = new UsuarioRepositoryJdbc();
+        FuncionarioRepository funcionarioRepository = new FuncionarioRepositoryJdbc();
         ConfiguracaoRepository configuracaoRepository = new ConfiguracaoRepositoryJdbc();
         TipoTurnoRepository tipoTurnoRepository = new TipoTurnoRepositoryJdbc();
         AutenticacaoService autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository);
@@ -83,7 +88,7 @@ public class Main extends Application {
             conteudo = new PrimeiroAcessoController(primeiroAcessoService).criarTela();
         } else {
             conteudo = criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                    usuarioRepository, autenticacaoService, sessaoUsuario);
+                    usuarioRepository, funcionarioRepository, autenticacaoService, sessaoUsuario);
         }
 
         Scene cena = new Scene(conteudo, 1366, 768);
@@ -97,10 +102,12 @@ public class Main extends Application {
                                       ConfiguracaoRepository configuracaoRepository,
                                       TipoTurnoRepository tipoTurnoRepository,
                                       UsuarioRepository usuarioRepository,
+                                      FuncionarioRepository funcionarioRepository,
                                       SessaoUsuario sessaoUsuario,
                                       AutenticacaoService autenticacaoService) {
         GestaoUsuariosService gestaoUsuariosService = new GestaoUsuariosServiceImpl(
                 usuarioRepository, autenticacaoService, sessaoUsuario);
+        FuncionarioService funcionarioService = new FuncionarioServiceImpl(funcionarioRepository);
         BloqueioInatividadeService bloqueioInatividadeService =
                 new BloqueioInatividadeServiceImpl(sessaoUsuario, autenticacaoService);
 
@@ -108,11 +115,12 @@ public class Main extends Application {
                 configuracaoRepository,
                 tipoTurnoRepository,
                 gestaoUsuariosService,
+                funcionarioService,
                 sessaoUsuario,
                 bloqueioInatividadeService,
                 () -> palco.getScene().setRoot(
                         criarTelaLogin(palco, configuracaoRepository, tipoTurnoRepository,
-                                usuarioRepository, autenticacaoService, sessaoUsuario)))
+                                usuarioRepository, funcionarioRepository, autenticacaoService, sessaoUsuario)))
                 .criarTela());
     }
 
@@ -120,6 +128,7 @@ public class Main extends Application {
                                   ConfiguracaoRepository configuracaoRepository,
                                   TipoTurnoRepository tipoTurnoRepository,
                                   UsuarioRepository usuarioRepository,
+                                  FuncionarioRepository funcionarioRepository,
                                   AutenticacaoService autenticacaoService,
                                   SessaoUsuario sessaoUsuario) {
         String nomeOrganizacao = configuracaoRepository.buscar()
@@ -129,7 +138,7 @@ public class Main extends Application {
         return new LoginController(autenticacaoService, usuario -> {
             sessaoUsuario.iniciar(usuario);
             abrirJanelaPrincipal(palco, configuracaoRepository, tipoTurnoRepository,
-                    usuarioRepository, sessaoUsuario, autenticacaoService);
+                    usuarioRepository, funcionarioRepository, sessaoUsuario, autenticacaoService);
         }).criarTela(nomeOrganizacao);
     }
 
