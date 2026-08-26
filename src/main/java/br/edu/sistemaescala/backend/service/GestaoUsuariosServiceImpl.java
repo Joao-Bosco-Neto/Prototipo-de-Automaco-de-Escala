@@ -147,7 +147,7 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
         if (novaSenha == null || novaSenha.length() < 8) {
             throw new SenhaFracaException();
         }
-        if (confirmacaoSenha != null && !novaSenha.equals(confirmacaoSenha)) {
+        if (confirmacaoSenha == null || !novaSenha.equals(confirmacaoSenha)) {
             throw new SenhasNaoConferemException();
         }
 
