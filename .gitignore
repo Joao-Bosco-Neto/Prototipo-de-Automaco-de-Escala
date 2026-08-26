@@ -10,3 +10,4 @@ data/*.trace.db
 graphify-out/.graphify_python
 graphify-out/cache/
 graphify-out/cost.json
+graphify-out/20*/

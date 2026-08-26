@@ -4,8 +4,11 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
+import br.edu.sistemaescala.LogAplicacao;
 import br.edu.sistemaescala.backend.model.Usuario;
+import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.service.AutenticacaoService;
+import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -87,8 +90,18 @@ public class LoginController {
         Runnable autenticar = () -> {
             String login = campoUsuario.getText().trim();
             String senha = campoSenha.getText();
-            Optional<Usuario> usuario = login.isBlank() || senha.isBlank()
-                    ? Optional.empty() : autenticacaoService.autenticar(login, senha);
+            Optional<Usuario> usuario;
+            try {
+                usuario = login.isBlank() || senha.isBlank()
+                        ? Optional.empty() : autenticacaoService.autenticar(login, senha);
+            } catch (RepositoryException excecao) {
+                // Banco fora do ar durante o login: antes a excecao subia sem
+                // tratamento nenhum e a aplicacao travava sem avisar nada.
+                LogAplicacao.registrarErro("Falha de acesso ao banco durante o login", excecao);
+                campoSenha.clear();
+                DialogUtil.mostrarErroBancoIndisponivel("Não foi possível entrar no sistema");
+                return;
+            }
             if (usuario.isPresent()) {
                 if (lembrar.isSelected()) preferencias.put(CHAVE_USUARIO_LEMBRADO, login);
                 else preferencias.remove(CHAVE_USUARIO_LEMBRADO);

@@ -283,3 +283,53 @@
     -fx-border-radius: 6px;
     -fx-padding: 10px 14px;
 }
+
+/* ---------------------------------------------------------------------
+   Diálogos (Issue #18)
+   Sem estas regras o Alert do JavaFX abre com o cinza padrão do
+   Modena e destoa do resto do sistema. O DialogUtil aplica esta
+   folha ao DialogPane.
+   --------------------------------------------------------------------- */
+.dialog-pane {
+    -fx-background-color: -cor-fundo-card;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-width: 1px;
+    -fx-padding: 0;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-border-color: transparent transparent -cor-borda-clara transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 16px 20px;
+}
+.dialog-pane > .header-panel > .label {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+    -fx-wrap-text: true;
+}
+.dialog-pane > .content,
+.dialog-pane > .content.label {
+    -fx-text-fill: -cor-texto;
+    -fx-padding: 18px 20px;
+    -fx-wrap-text: true;
+}
+.dialog-pane > .button-bar > .container {
+    -fx-padding: 12px 16px 16px 16px;
+}
+.dialog-pane .button {
+    -fx-background-color: -cor-fundo-card;
+    -fx-text-fill: -cor-primaria;
+    -fx-border-color: -cor-primaria-borda;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 7px 18px;
+    -fx-cursor: hand;
+}
+.dialog-pane .button:hover { -fx-background-color: derive(-cor-primaria, 90%); }
+.dialog-pane .button:default {
+    -fx-background-color: -cor-primaria;
+    -fx-text-fill: white;
+    -fx-border-color: -cor-primaria;
+}
+.dialog-pane .button:default:hover { -fx-background-color: -cor-primaria-escura; }
