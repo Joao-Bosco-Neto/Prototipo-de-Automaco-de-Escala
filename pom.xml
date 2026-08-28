@@ -78,6 +78,30 @@
                     <debug>false</debug>
                 </configuration>
             </plugin>
+            <!--
+              Testes rodam com user.home apontando para dentro de target/.
+
+              ConexaoBanco e LogAplicacao montam seus caminhos a partir de
+              System.getProperty("user.home"), entao redirecionar a propriedade
+              aqui faz os testes criarem um banco (e logs) proprios e
+              descartaveis, sem tocar no ~/.sistema-escala do desenvolvedor.
+              Antes disso todo `mvn verify` sujava o banco real com as fixtures
+              dos testes de integracao.
+
+              Nao e preciso criar target/test-home antes: o ConexaoBanco chama
+              Files.createDirectories, que cria a cadeia inteira de diretorios
+              que faltar.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.6</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <user.home>${project.build.directory}/test-home</user.home>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <!-- Plugin para rodar a aplicação JavaFX via Maven -->
             <plugin>
                 <groupId>org.openjfx</groupId>
