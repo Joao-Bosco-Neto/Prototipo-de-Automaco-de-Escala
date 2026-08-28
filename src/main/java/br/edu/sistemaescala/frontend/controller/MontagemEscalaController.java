@@ -24,8 +24,12 @@ import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
+import br.edu.sistemaescala.backend.service.GeradorRodizioService;
+import br.edu.sistemaescala.backend.service.GeradorRodizioServiceImpl;
 import br.edu.sistemaescala.backend.service.RegraEscalaService;
 import br.edu.sistemaescala.backend.service.RegraEscalaServiceImpl;
+import br.edu.sistemaescala.backend.service.ResultadoGeracao;
+import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -63,6 +67,10 @@ import javafx.scene.layout.VBox;
  * painel; o painel, por sua vez, chama {@link #recarregar()} depois de cada
  * alteracao, para a celula do dia refletir a mudanca na hora.
  *
+ * O botao "Gerar rodizio" chama o {@link GeradorRodizioService} (issue #43),
+ * que preenche o mes exibido de uma vez; sobrescrever um mes que ja tem
+ * escala passa por confirmacao antes.
+ *
  * Os quatro estados visuais e a legenda sao escopo da issue #45: aqui existe
  * apenas o destaque do dia selecionado.
  */
@@ -81,6 +89,7 @@ public class MontagemEscalaController {
     private static final String CLASSE_DIA_SELECIONADO = "calendario-dia-selecionado";
 
     private final EscalaTurnoRepository escalaTurnoRepository;
+    private final GeradorRodizioService geradorRodizioService;
     private final Consumer<LocalDate> aoSelecionarDia;
     private final PainelAtribuicaoController painelAtribuicao;
 
@@ -91,6 +100,8 @@ public class MontagemEscalaController {
 
     private YearMonth mesExibido = YearMonth.now();
     private LocalDate diaSelecionado;
+    /** Se o mes exibido ja tem turnos, para o botao saber quando pedir confirmacao. */
+    private boolean mesExibidoTemEscala;
     /** Celula com o destaque de selecao no momento, para tirar o destaque dela ao trocar. */
     private Region celulaSelecionada;
 
@@ -116,7 +127,19 @@ public class MontagemEscalaController {
                                     FuncionarioService funcionarioService,
                                     RegraEscalaService regraEscalaService,
                                     Consumer<LocalDate> aoSelecionarDia) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
+                funcionarioService, regraEscalaService, new GeradorRodizioServiceImpl(), aoSelecionarDia);
+    }
+
+    public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository,
+                                    EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                    TipoTurnoRepository tipoTurnoRepository,
+                                    FuncionarioService funcionarioService,
+                                    RegraEscalaService regraEscalaService,
+                                    GeradorRodizioService geradorRodizioService,
+                                    Consumer<LocalDate> aoSelecionarDia) {
         this.escalaTurnoRepository = escalaTurnoRepository;
+        this.geradorRodizioService = geradorRodizioService;
         this.aoSelecionarDia = aoSelecionarDia != null ? aoSelecionarDia : dia -> { };
         // O painel recarrega a grade por this::recarregar depois de criar
         // turno, alocar ou remover agente.
@@ -183,9 +206,72 @@ public class MontagemEscalaController {
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
 
-        HBox barra = new HBox(12, anterior, rotuloMesAno, proximo, espacador);
+        Button gerarRodizio = new Button("Gerar rodízio");
+        gerarRodizio.getStyleClass().add("button-primario");
+        gerarRodizio.setOnAction(evento -> gerarRodizioDoMesExibido());
+
+        HBox barra = new HBox(12, anterior, rotuloMesAno, proximo, espacador, gerarRodizio);
         barra.setAlignment(Pos.CENTER_LEFT);
         return barra;
+    }
+
+    // -----------------------------------------------------------------
+    // Geracao automatica do rodizio (issue #43)
+    // -----------------------------------------------------------------
+
+    /**
+     * Gera o rodizio do mes exibido. Um mes que ja tem escala so e gerado de
+     * novo depois de confirmacao explicita, porque a escala atual e
+     * substituida inteira.
+     */
+    private void gerarRodizioDoMesExibido() {
+        boolean sobrescrever = mesExibidoTemEscala;
+        if (sobrescrever && !confirmarSubstituicao()) {
+            return;
+        }
+
+        try {
+            ResultadoGeracao resultado = geradorRodizioService.gerarMes(mesExibido, sobrescrever);
+
+            // O calendario e recarregado mesmo quando nada foi gerado: e o que
+            // mantem a tela fiel ao banco depois da tentativa.
+            limparSelecao();
+            painelAtribuicao.mostrarDia(null);
+            renderizarMes();
+
+            mostrarResultado(resultado);
+
+        } catch (RepositoryException excecao) {
+            DialogUtil.mostrarErroBancoIndisponivel("Não foi possível gerar o rodízio");
+        }
+    }
+
+    private boolean confirmarSubstituicao() {
+        return DialogUtil.mostrarConfirmacao("Substituir a escala de " + descreverMes(mesExibido) + "?",
+                "Este mês já tem escala montada. Gerar o rodízio agora apaga todos os turnos e "
+                + "alocações existentes do mês e monta a escala do zero.\n\n"
+                + "Esta ação não pode ser desfeita.");
+    }
+
+    /** Os numeros da geracao vao para o dialogo; o aviso de efetivo so aparece quando existe. */
+    private void mostrarResultado(ResultadoGeracao resultado) {
+        if (!resultado.gerado()) {
+            DialogUtil.mostrarInformacao("Rodízio não gerado", resultado.mensagem());
+            return;
+        }
+
+        StringBuilder detalhe = new StringBuilder()
+                .append("Turnos criados: ").append(resultado.turnosCriados()).append('\n')
+                .append("Alocações feitas: ").append(resultado.alocacoesCriadas()).append('\n')
+                .append("Dias sem efetivo suficiente: ").append(resultado.diasSemEfetivoSuficiente());
+
+        if (resultado.diasSemEfetivoSuficiente() > 0) {
+            detalhe.append("\n\nOs dias incompletos ficaram abaixo do mínimo de agentes e "
+                    + "precisam de ajuste manual no painel de atribuição.");
+        }
+
+        DialogUtil.mostrarInformacao("Rodízio de " + descreverMes(mesExibido) + " gerado",
+                detalhe.toString());
     }
 
     /**
@@ -427,10 +513,12 @@ public class MontagemEscalaController {
                 porDia.computeIfAbsent(turno.getInicio().toLocalDate(), data -> new ArrayList<>())
                         .add(turno);
             }
+            mesExibidoTemEscala = !turnos.isEmpty();
             esconderMensagem();
         } catch (RepositoryException excecao) {
             // A grade continua sendo desenhada vazia: navegar entre meses
             // precisa funcionar mesmo com o banco fora do ar.
+            mesExibidoTemEscala = false;
             exibirMensagem("Não foi possível carregar os turnos deste mês.");
         }
         return porDia;
