@@ -350,6 +350,21 @@
     -fx-min-width: 170px;
 }
 
+/* Indicador de carregamento da navegação entre meses (Issue #46).
+   Fica ao lado do rótulo do mês, pequeno de propósito: a consulta é rápida
+   e um indicador grande piscando a cada clique na seta incomodaria mais do
+   que ajudaria. Herda a cor institucional em vez do verde padrão do Modena,
+   que não existe na paleta deste projeto. */
+.calendario-carregando {
+    -fx-progress-color: -cor-primaria;
+    -fx-min-width: 16px;
+    -fx-pref-width: 16px;
+    -fx-max-width: 16px;
+    -fx-min-height: 16px;
+    -fx-pref-height: 16px;
+    -fx-max-height: 16px;
+}
+
 /* A grade em si fica sobre o fundo do card; o espaçamento entre células
    vem do hgap/vgap definido no controller. */
 .calendario-grade {
