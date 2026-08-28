@@ -116,12 +116,25 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
 
     @Override
     public EscalaTurno salvar(EscalaTurno turno) {
-        return turno.getId() == null ? inserir(turno) : atualizar(turno);
+        // Abre a conexao so para esta escrita e delega, para o SQL do
+        // INSERT/UPDATE existir num lugar unico.
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return salvar(turno, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao salvar turno", e);
+        }
     }
 
-    private EscalaTurno inserir(EscalaTurno turno) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
+    @Override
+    public EscalaTurno salvar(EscalaTurno turno, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        return turno.getId() == null ? inserir(turno, conexao) : atualizar(turno, conexao);
+    }
+
+    private EscalaTurno inserir(EscalaTurno turno, Connection conexao) {
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
 
             preencherCampos(stmt, turno);
             stmt.executeUpdate();
@@ -139,9 +152,8 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
         }
     }
 
-    private EscalaTurno atualizar(EscalaTurno turno) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_ATUALIZAR)) {
+    private EscalaTurno atualizar(EscalaTurno turno, Connection conexao) {
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_ATUALIZAR)) {
 
             int indice = preencherCampos(stmt, turno);
             stmt.setInt(indice, turno.getId());
@@ -157,8 +169,17 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
 
     @Override
     public void removerPorMes(YearMonth mes) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER_POR_MES)) {
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            removerPorMes(mes, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao remover turnos do mes " + mes, e);
+        }
+    }
+
+    @Override
+    public void removerPorMes(YearMonth mes, Connection conexao) {
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER_POR_MES)) {
 
             stmt.setObject(1, mes.atDay(1).atStartOfDay());
             stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());

@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.backend.repository;
 
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -25,6 +26,23 @@ public interface EscalaTurnoRepository {
     /** Insere (id nulo) ou atualiza (id preenchido) o turno e retorna a mesma instancia. */
     EscalaTurno salvar(EscalaTurno turno);
 
+    /**
+     * Mesmo salvamento, porem numa Connection recebida de fora — e assim que
+     * o turno participa de uma transacao aberta pelo TransacaoUtil, junto com
+     * as alocacoes que o gerador de rodizio cria para ele (issue #43).
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     */
+    EscalaTurno salvar(EscalaTurno turno, Connection conexao);
+
     /** Remove todos os turnos com inicio no mes informado ("Limpar mes"), em cascata sobre as coberturas. */
     void removerPorMes(YearMonth mes);
+
+    /**
+     * Mesma remocao, porem numa Connection recebida de fora. Sobrescrever um
+     * mes ja gerado precisa apagar o antigo e gravar o novo na mesma
+     * transacao, senao uma falha no meio deixaria o mes vazio.
+     */
+    void removerPorMes(YearMonth mes, Connection conexao);
 }
