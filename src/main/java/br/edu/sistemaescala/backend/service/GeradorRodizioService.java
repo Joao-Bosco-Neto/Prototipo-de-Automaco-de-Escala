@@ -16,9 +16,13 @@ import java.time.YearMonth;
  * <p>A geração não força nada: cada alocação passa por
  * {@link RegraEscalaService#podeAlocar} e
  * {@link RegraEscalaService#verificarDescanso} antes de entrar. Candidato
- * indisponível é pulado; se ninguém da fila estiver disponível, o turno fica
- * abaixo do mínimo e isso é contabilizado no {@link ResultadoGeracao}, sem
- * interromper a geração.</p>
+ * indisponível é pulado.</p>
+ *
+ * <p>Quando o mínimo de agentes de um turno não fecha, o turno fica vazio em
+ * vez de ficar com meia equipe, e o dia é contabilizado no
+ * {@link ResultadoGeracao} — sem interromper a geração. Escalar o agente
+ * solitário travaria o rodízio em duplas fixas, porque o descanso dele
+ * passaria a cair sempre na mesma fase do ciclo.</p>
  */
 public interface GeradorRodizioService {
 

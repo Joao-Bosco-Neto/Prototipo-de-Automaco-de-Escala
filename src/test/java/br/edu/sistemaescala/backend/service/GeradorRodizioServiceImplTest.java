@@ -10,9 +10,11 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.IntSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -295,6 +297,82 @@ class GeradorRodizioServiceImplTest {
         }
     }
 
+    // -----------------------------------------------------------------
+    // Distribuicao justa quando o efetivo nao fecha todos os dias
+    // -----------------------------------------------------------------
+
+    @Test
+    void naoFormaDuplaFixaQuandoOEfetivoNaoFechaTodosOsDias() {
+        // Cenário exato do relato: três agentes, dois por turno e 72h de
+        // descanso. Cada um só pode voltar a cada quatro dias, então nem todo
+        // dia tem como ser preenchido. O que não pode acontecer é dois deles
+        // virarem dupla fixa e o terceiro trabalhar sempre sozinho.
+        when(funcionarioRepository.listar(any(), any())).thenReturn(List.of(ANA, BRUNO, CARLA));
+        usarTipos(tipoTurno(10, "Plantão 24h", LocalTime.MIDNIGHT, 24, 72, 2));
+
+        ResultadoGeracao resultado = gerador.gerarMes(AGOSTO, false);
+
+        assertTrue(resultado.gerado());
+
+        Map<String, Integer> duplas = contarDuplas();
+        assertEquals(3, duplas.size(),
+                "Com três agentes o rodízio deveria formar as três duplas possíveis, e não uma só: " + duplas);
+
+        // Nenhum agente pode ficar de fora das duplas nem preso a um só parceiro.
+        Map<String, Integer> plantoes = contarPlantoes();
+        assertEquals(3, plantoes.size(), "Todos os três deveriam trabalhar: " + plantoes);
+        assertTrue(amplitude(plantoes) <= 2,
+                "A carga deveria ficar equilibrada entre os três: " + plantoes);
+
+        // E ninguém escalado sozinho: turno abaixo do mínimo fica vazio.
+        for (EscalaTurno turno : turnosGravados) {
+            int agentes = agentesDoTurno(turno).size();
+            assertTrue(agentes == 0 || agentes >= turno.getMinAgentes(),
+                    "Turno de " + turno.getInicio() + " ficou com " + agentes
+                            + " agente(s), abaixo do mínimo de " + turno.getMinAgentes());
+        }
+    }
+
+    @Test
+    void distribuiPlantoesEDuplasDeFormaEquilibradaAoLongoDoMes() {
+        // Sete agentes, dois por turno e 72h de descanso: a capacidade é de
+        // 1,75 agente por dia, então nem todos cabem por dia e o rodízio
+        // precisa girar de verdade em vez de repetir sempre as mesmas duplas.
+        List<Funcionario> equipe = List.of(
+                funcionario(1, "Ana Souza", "PC-1"), funcionario(2, "Bruno Lima", "PC-2"),
+                funcionario(3, "Carla Dias", "PC-3"), funcionario(4, "Diego Melo", "PC-4"),
+                funcionario(5, "Elisa Rocha", "PC-5"), funcionario(6, "Fabio Nunes", "PC-6"),
+                funcionario(7, "Gina Alves", "PC-7"));
+        when(funcionarioRepository.listar(any(), any())).thenReturn(equipe);
+        usarTipos(tipoTurno(10, "Plantão 24h", LocalTime.MIDNIGHT, 24, 72, 2));
+
+        ResultadoGeracao resultado = gerador.gerarMes(AGOSTO, false);
+
+        assertTrue(resultado.gerado());
+
+        // 1) Carga parecida: ninguém escalado muito mais (ou menos) que os outros.
+        Map<String, Integer> plantoes = contarPlantoes();
+        assertEquals(equipe.size(), plantoes.size(), "Todos deveriam ter trabalhado: " + plantoes);
+        assertTrue(amplitude(plantoes) <= 2,
+                "Entre o mais e o menos escalado deveria haver no máximo 2 plantões: " + plantoes);
+
+        // 2) Duplas variadas: um rodízio congelado produziria só três duplas
+        // fixas (uma por par de agentes que descansam em fase).
+        Map<String, Integer> duplas = contarDuplas();
+        assertTrue(duplas.size() >= equipe.size(),
+                "As duplas deveriam variar ao longo do mês, mas só apareceram " + duplas.size() + ": " + duplas);
+
+        // 3) Nenhuma dupla sistemática: a mais frequente não pode responder por
+        // mais de um quarto dos turnos escalados.
+        int turnosComAgentes = (int) turnosGravados.stream()
+                .filter(turno -> !agentesDoTurno(turno).isEmpty())
+                .count();
+        int maisRepetida = duplas.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        assertTrue(maisRepetida * 4 <= turnosComAgentes,
+                "A dupla mais frequente se repetiu " + maisRepetida + " vezes em " + turnosComAgentes
+                        + " turnos, o que indica dupla fixa: " + duplas);
+    }
+
     @Test
     void semTipoDeTurnoAtivoNaoGeraNada() {
         usarTipos();
@@ -399,6 +477,44 @@ class GeradorRodizioServiceImplTest {
         }
         porFuncionario.values().forEach(turnos -> turnos.sort(Comparator.comparing(EscalaTurno::getInicio)));
         return porFuncionario;
+    }
+
+    /** Quantos plantões cada matrícula recebeu na escala gravada. */
+    private Map<String, Integer> contarPlantoes() {
+        Map<String, Integer> plantoes = new TreeMap<>();
+        for (EscalaFuncionario alocacao : alocacoesGravadas) {
+            plantoes.merge(alocacao.getFuncionario().getMatricula(), 1, Integer::sum);
+        }
+        return plantoes;
+    }
+
+    /** Quantas vezes cada par de matrículas dividiu o mesmo turno. */
+    private Map<String, Integer> contarDuplas() {
+        Map<String, Integer> duplas = new TreeMap<>();
+        for (EscalaTurno turno : turnosGravados) {
+            List<String> agentes = new ArrayList<>(agentesDoTurno(turno));
+            agentes.sort(Comparator.naturalOrder());
+            for (int i = 0; i < agentes.size(); i++) {
+                for (int j = i + 1; j < agentes.size(); j++) {
+                    duplas.merge(agentes.get(i) + "+" + agentes.get(j), 1, Integer::sum);
+                }
+            }
+        }
+        return duplas;
+    }
+
+    private List<String> agentesDoTurno(EscalaTurno turno) {
+        return alocacoesGravadas.stream()
+                .filter(alocacao -> alocacao.getEscalaTurno() == turno)
+                .map(alocacao -> alocacao.getFuncionario().getMatricula())
+                .toList();
+    }
+
+    /** Diferença entre o mais e o menos escalado. */
+    private int amplitude(Map<String, Integer> plantoes) {
+        IntSummaryStatistics estatisticas =
+                plantoes.values().stream().mapToInt(Integer::intValue).summaryStatistics();
+        return estatisticas.getMax() - estatisticas.getMin();
     }
 
     private static Funcionario funcionario(int id, String nome, String matricula) {

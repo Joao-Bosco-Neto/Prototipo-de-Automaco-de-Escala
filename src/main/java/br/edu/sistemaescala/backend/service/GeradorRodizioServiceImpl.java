@@ -65,6 +65,11 @@ import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
  * {@link FuncionarioRepository#listar}, que ordena por nome (a ordem certa para
  * as telas de listagem), e é reordenada aqui.</p>
  *
+ * <p><b>Turno incompleto.</b> Um turno que não alcança o mínimo de agentes é
+ * descartado inteiro, em vez de ficar com meia equipe: ver
+ * {@link #preencherTurno}, onde está a razão — é o que impede o rodízio de
+ * congelar em duplas fixas.</p>
+ *
  * <p><b>Regime.</b> Não há caso especial por regime: um tipo de turno ativo
  * gera um turno por dia (24x72), dois tipos ativos geram dois turnos por dia
  * (12x36). O que muda é a configuração, não este laço.</p>
@@ -177,18 +182,32 @@ public class GeradorRodizioServiceImpl implements GeradorRodizioService {
     }
 
     /**
-     * Puxa agentes da fila circular até o turno bater o mínimo.
+     * Puxa agentes da fila circular até o turno bater o mínimo — ou não escala
+     * ninguém, se o mínimo não for alcançável.
      *
      * <p>Candidato que as regras recusam é pulado e a fila avança para o
-     * seguinte — nunca se força uma alocação. Se a fila inteira for percorrida
-     * sem ninguém disponível, o turno fica abaixo do mínimo e o dia é
-     * contabilizado como incompleto: escala incompleta pode ser salva com
-     * aviso, então a geração não para por isso.</p>
+     * seguinte; nunca se força uma alocação.</p>
      *
-     * @return a posição da fila em que o próximo turno deve começar
+     * <p><b>Tudo ou nada.</b> Quando a fila inteira é percorrida e o mínimo não
+     * fecha, a alocação parcial é desfeita e o turno fica vazio, com o dia
+     * contabilizado como incompleto. Não é só porque um turno abaixo do mínimo
+     * não é operacional: escalar o agente solitário é o que <b>congela o
+     * rodízio</b>. Ele passa a descansar em fase com aquele dia e volta a ficar
+     * livre sempre na mesma posição do ciclo, o que trava para sempre quem
+     * trabalha com quem — foi assim que "a e b" viraram dupla fixa e "c" passou
+     * o mês inteiro sozinho. Segurando esse agente, o ciclo de descanso dele
+     * desloca e as duplas voltam a girar (a+b, depois c+a, depois b+c).</p>
+     *
+     * <p>A troca não custa cobertura de verdade: o que se perde são turnos que
+     * já estavam abaixo do mínimo. A quantidade de turnos <i>completos</i> é a
+     * mesma, e onde o efetivo dá conta de todo dia nada muda.</p>
+     *
+     * @return a posição da fila em que o próximo turno deve começar; a fila não
+     *         anda quando o turno é descartado, porque ninguém foi consumido
      */
     private int preencherTurno(EscalaTurno turno, List<Funcionario> fila, int posicao,
                                RegraEscalaService regras, PlanoDoMes plano) {
+        int posicaoAntesDoTurno = posicao;
         int alocados = 0;
         int recusadosSeguidos = 0;
 
@@ -207,7 +226,9 @@ public class GeradorRodizioServiceImpl implements GeradorRodizioService {
         }
 
         if (alocados < turno.getMinAgentes()) {
+            plano.desfazerAlocacoes(turno);
             plano.marcarDiaIncompleto(turno.getInicio().toLocalDate());
+            return posicaoAntesDoTurno;
         }
         return posicao;
     }
@@ -459,6 +480,16 @@ public class GeradorRodizioServiceImpl implements GeradorRodizioService {
             alocacao.setEscalaTurno(turno);
             alocacao.setFuncionario(funcionario);
             alocacoes.add(alocacao);
+        }
+
+        /**
+         * Tira do plano o que já tinha sido escalado para o turno. Usado quando
+         * o mínimo de agentes não fecha: o turno é descartado inteiro e os
+         * agentes voltam a ficar livres, inclusive aos olhos das regras, que
+         * leem justamente esta lista.
+         */
+        void desfazerAlocacoes(EscalaTurno turno) {
+            alocacoes.removeIf(alocacao -> alocacao.getEscalaTurno() == turno);
         }
 
         void marcarDiaIncompleto(LocalDate dia) {
