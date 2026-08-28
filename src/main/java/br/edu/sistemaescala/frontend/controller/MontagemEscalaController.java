@@ -482,13 +482,15 @@ public class MontagemEscalaController {
         numero.getStyleClass().add("calendario-numero-dia");
         celula.getChildren().add(numero);
 
-        // O efetivo de cada turno e consultado uma vez so e reaproveitado
-        // pelo bloco e pelo estado da celula.
+        // O efetivo sai dos agentes que buscarPorPeriodo ja trouxe hidratados:
+        // a sobrecarga de verificarEfetivo que recebe a lista evita uma
+        // consulta por turno (31 num mes cheio, a cada redesenho da grade).
         boolean algumTurnoIncompleto = false;
         boolean algumaCoberturaRegistrada = false;
         for (EscalaTurno turno : turnosDoDia) {
-            ResultadoEfetivo efetivo = regraEscalaService.verificarEfetivo(turno);
-            boolean temCobertura = temCoberturaRegistrada(turno);
+            List<EscalaFuncionario> agentes = agentesDoTurno(turno);
+            ResultadoEfetivo efetivo = regraEscalaService.verificarEfetivo(turno, agentes);
+            boolean temCobertura = temCoberturaRegistrada(agentes);
 
             algumTurnoIncompleto |= !efetivo.completo();
             algumaCoberturaRegistrada |= temCobertura;
@@ -544,6 +546,15 @@ public class MontagemEscalaController {
     }
 
     /**
+     * Agentes que {@link EscalaTurnoRepository#buscarPorPeriodo} ja trouxe
+     * junto com o turno, no mesmo JOIN. Nunca null, para as regras e a
+     * contagem nao precisarem tratar o caso.
+     */
+    private List<EscalaFuncionario> agentesDoTurno(EscalaTurno turno) {
+        return turno.getAgentes() != null ? turno.getAgentes() : List.of();
+    }
+
+    /**
      * Um turno tem cobertura quando alguma de suas alocacoes aponta para a
      * alocacao que ela esta cobrindo ({@code coberturaDe} preenchido).
      *
@@ -554,12 +565,8 @@ public class MontagemEscalaController {
      * pronto para quando o M5 chegar, e nada foi inventado no banco so para
      * poder ver a cor.</p>
      */
-    private boolean temCoberturaRegistrada(EscalaTurno turno) {
-        List<EscalaFuncionario> alocacoes = turno.getAgentes();
-        if (alocacoes == null) {
-            return false;
-        }
-        return alocacoes.stream().anyMatch(alocacao -> alocacao.getCoberturaDe() != null);
+    private boolean temCoberturaRegistrada(List<EscalaFuncionario> agentes) {
+        return agentes.stream().anyMatch(alocacao -> alocacao.getCoberturaDe() != null);
     }
 
     /**

@@ -1,5 +1,8 @@
 package br.edu.sistemaescala.backend.service;
 
+import java.util.List;
+
+import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 
 /**
@@ -22,9 +25,27 @@ public interface RegraEscalaService {
 
     /**
      * Confere quantos agentes estão alocados no turno em relação ao mínimo
-     * exigido por ele.
+     * exigido por ele, consultando o banco para saber quem está alocado.
      */
     ResultadoEfetivo verificarEfetivo(EscalaTurno turno);
+
+    /**
+     * Mesma conferência, sobre uma lista de agentes que quem chama já tem em
+     * mãos — sem ir ao banco de novo.
+     *
+     * <p>Existe para quem já carregou os agentes junto com o turno, caso do
+     * {@code buscarPorPeriodo}, que traz o mês inteiro com os agentes
+     * hidratados num JOIN só. Sem esta sobrecarga, pintar o estado de cada
+     * célula do calendário custaria uma consulta por turno — 31 num mês
+     * cheio, a cada redesenho da grade.</p>
+     *
+     * <p>A regra e a mensagem são exatamente as mesmas: a versão que consulta
+     * o banco apenas busca a lista e delega para esta.</p>
+     *
+     * @param agentesDoTurno agentes já alocados no turno; lista vazia se não
+     *                       houver nenhum
+     */
+    ResultadoEfetivo verificarEfetivo(EscalaTurno turno, List<EscalaFuncionario> agentesDoTurno);
 
     /**
      * Confere se o funcionário respeita o intervalo de descanso exigido pelo
