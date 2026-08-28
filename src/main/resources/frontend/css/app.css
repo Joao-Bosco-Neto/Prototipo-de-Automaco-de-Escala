@@ -333,3 +333,119 @@
     -fx-border-color: -cor-primaria;
 }
 .dialog-pane .button:default:hover { -fx-background-color: -cor-primaria-escura; }
+
+/* ---------------------------------------------------------------------
+   Calendário mensal de montagem da escala (Issue #41)
+   Só existe aqui o necessário para a grade: célula, cabeçalho dos dias
+   da semana, dia fora do mês e dia selecionado. Os quatro estados
+   visuais (plantão completo, efetivo incompleto, cobertura registrada)
+   e a legenda são escopo da issue #45.
+   --------------------------------------------------------------------- */
+
+/* Rótulo "Agosto de 2026" entre as setas de navegação de mês. */
+.calendario-mes-ano {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+    -fx-min-width: 170px;
+}
+
+/* A grade em si fica sobre o fundo do card; o espaçamento entre células
+   vem do hgap/vgap definido no controller. */
+.calendario-grade {
+    -fx-background-color: transparent;
+}
+
+/* O ScrollPane que envolve a grade não pode pintar o cinza padrão do
+   Modena por cima do branco do card. */
+.calendario-rolagem,
+.calendario-rolagem > .viewport {
+    -fx-background-color: transparent;
+}
+.calendario-rolagem {
+    -fx-padding: 0;
+}
+
+/* Faixa com Domingo..Sábado no topo da grade. */
+.calendario-cabecalho-dia {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-text-fill: -cor-texto-secundario;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 6px 4px;
+    -fx-background-radius: 4px;
+}
+
+/* Célula de um dia do mês: é ela que recebe o clique de seleção. */
+.calendario-celula-dia {
+    -fx-background-color: -cor-fundo-card;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 6px 7px;
+    -fx-cursor: hand;
+}
+.calendario-celula-dia:hover {
+    -fx-border-color: -cor-primaria-borda;
+}
+
+/* Preenchimento do início e do fim da grade (dias de outro mês):
+   apagado e sem cursor de mão, já que o controller não registra clique. */
+.calendario-celula-fora-mes {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-border-color: transparent;
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
+/* Sem esta regra a célula de preenchimento acende a borda ao passar o
+   mouse: .calendario-celula-dia:hover tem classe + pseudo-classe e ganha
+   de .calendario-celula-fora-mes na especificidade. */
+.calendario-celula-fora-mes:hover {
+    -fx-border-color: transparent;
+}
+
+/* Dia selecionado. Destaque por borda em vez de fundo: derive() sobre a
+   primária cai num azul médio que briga com os blocos de turno dentro da
+   célula, e deixar o fundo livre evita colidir com os fundos dos quatro
+   estados visuais da issue #45. Declarado depois de .calendario-celula-dia
+   de propósito: mesma especificidade, então esta é a regra que vale. */
+.calendario-dia-selecionado {
+    -fx-border-color: -cor-primaria;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(31, 77, 122, 0.35), 6, 0, 0, 1);
+}
+.calendario-dia-selecionado:hover {
+    -fx-border-color: -cor-primaria;
+}
+/* Reforça o dia selecionado sem depender só da borda de 2px. */
+.calendario-dia-selecionado .calendario-numero-dia {
+    -fx-text-fill: -cor-primaria;
+}
+
+/* Número do dia, no canto superior da célula. */
+.calendario-numero-dia {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+
+/* Um bloco por turno dentro da célula — um dia pode ter vários
+   (12x36 tem diurno e noturno na mesma data). */
+.calendario-bloco-turno {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-background-radius: 3px;
+    -fx-padding: 3px 5px;
+}
+
+/* Nome do tipo de turno dentro do bloco. */
+.calendario-tipo-turno {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-primaria;
+}
+
+/* Agentes alocados no turno, em nome curto para caber na célula. */
+.calendario-agentes {
+    -fx-font-size: 10.5px;
+    -fx-text-fill: -cor-texto-secundario;
+}

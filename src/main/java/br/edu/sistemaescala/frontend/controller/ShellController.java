@@ -11,8 +11,10 @@ import br.edu.sistemaescala.backend.model.Configuracao;
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
+import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.repository.jdbc.EscalaTurnoRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
@@ -79,6 +81,7 @@ public class ShellController {
 
     private final ConfiguracaoRepository configuracaoRepository;
     private final TipoTurnoRepository tipoTurnoRepository;
+    private final EscalaTurnoRepository escalaTurnoRepository;
     private final GestaoUsuariosService gestaoUsuariosService;
     private final FuncionarioService funcionarioService;
     private final TipoTurnoService tipoTurnoService;
@@ -165,7 +168,23 @@ public class ShellController {
                            SessaoUsuario sessaoUsuario,
                            BloqueioInatividadeService bloqueioService,
                            Runnable aoSair) {
+        this(configuracaoRepository, tipoTurnoRepository, new EscalaTurnoRepositoryJdbc(),
+                gestaoUsuariosService, funcionarioService, tipoTurnoService, configuracaoService,
+                sessaoUsuario, bloqueioService, aoSair);
+    }
+
+    public ShellController(ConfiguracaoRepository configuracaoRepository,
+                           TipoTurnoRepository tipoTurnoRepository,
+                           EscalaTurnoRepository escalaTurnoRepository,
+                           GestaoUsuariosService gestaoUsuariosService,
+                           FuncionarioService funcionarioService,
+                           TipoTurnoService tipoTurnoService,
+                           ConfiguracaoService configuracaoService,
+                           SessaoUsuario sessaoUsuario,
+                           BloqueioInatividadeService bloqueioService,
+                           Runnable aoSair) {
         this.configuracaoRepository = configuracaoRepository;
+        this.escalaTurnoRepository = escalaTurnoRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.funcionarioService = funcionarioService;
@@ -369,6 +388,11 @@ public class ShellController {
         }
         if ("Tipos de turno".equals(item)) {
             return new TipoTurnoController(tipoTurnoService).criarTela();
+        }
+        if ("Montagem da escala".equals(item)) {
+            // O Consumer recebido aqui e o gancho do painel lateral da issue
+            // #42; enquanto ela nao existe, a selecao nao alimenta nada.
+            return new MontagemEscalaController(escalaTurnoRepository).criarTela();
         }
         if ("Configurações".equals(item) || "Configurações da organização".equals(item)) {
             return new ConfiguracaoController(configuracaoService, config -> {
