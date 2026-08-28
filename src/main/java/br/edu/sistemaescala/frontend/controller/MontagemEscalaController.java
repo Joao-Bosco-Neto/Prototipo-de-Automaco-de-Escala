@@ -31,6 +31,7 @@ import br.edu.sistemaescala.backend.service.LimpezaEscalaServiceImpl;
 import br.edu.sistemaescala.backend.service.RegraEscalaService;
 import br.edu.sistemaescala.backend.service.RegraEscalaServiceImpl;
 import br.edu.sistemaescala.backend.service.ResultadoGeracao;
+import br.edu.sistemaescala.backend.service.ResultadoEfetivo;
 import br.edu.sistemaescala.backend.service.ResultadoLimpeza;
 import br.edu.sistemaescala.backend.service.ResumoEscalaMes;
 import br.edu.sistemaescala.frontend.DialogUtil;
@@ -41,7 +42,9 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -77,8 +80,11 @@ import javafx.scene.layout.VBox;
  * {@link LimpezaEscalaService} (issue #44) e exige dupla confirmacao, porque
  * apaga a escala inteira sem colocar nada no lugar.
  *
- * Os quatro estados visuais e a legenda sao escopo da issue #45: aqui existe
- * apenas o destaque do dia selecionado.
+ * Estados visuais da celula (issue #45): a celula ganha uma classe de fundo
+ * conforme o dia esteja com plantao completo, com efetivo incompleto ou com
+ * cobertura registrada — ver {@link #estadoDoDia}. O destaque de selecao
+ * continua sendo borda, entao convive com qualquer um dos tres. A legenda no
+ * rodape do cartao usa as mesmas classes das celulas.
  */
 public class MontagemEscalaController {
 
@@ -94,9 +100,16 @@ public class MontagemEscalaController {
 
     private static final String CLASSE_DIA_SELECIONADO = "calendario-dia-selecionado";
 
+    /** Classes de estado da celula (issue #45), na ordem de precedencia de {@link #estadoDoDia}. */
+    private static final String CLASSE_DIA_INCOMPLETO = "calendario-dia-incompleto";
+    private static final String CLASSE_DIA_COBERTURA = "calendario-dia-cobertura";
+    private static final String CLASSE_DIA_COMPLETO = "calendario-dia-completo";
+
     private final EscalaTurnoRepository escalaTurnoRepository;
     private final GeradorRodizioService geradorRodizioService;
     private final LimpezaEscalaService limpezaEscalaService;
+    /** Fonte do estado da celula: quem decide se um turno bateu o minimo e a regra da #23. */
+    private final RegraEscalaService regraEscalaService;
     private final Consumer<LocalDate> aoSelecionarDia;
     private final PainelAtribuicaoController painelAtribuicao;
 
@@ -150,6 +163,7 @@ public class MontagemEscalaController {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.geradorRodizioService = geradorRodizioService;
         this.limpezaEscalaService = limpezaEscalaService;
+        this.regraEscalaService = regraEscalaService;
         this.aoSelecionarDia = aoSelecionarDia != null ? aoSelecionarDia : dia -> { };
         // O painel recarrega a grade por this::recarregar depois de criar
         // turno, alocar ou remover agente.
@@ -175,7 +189,7 @@ public class MontagemEscalaController {
         rolagem.getStyleClass().add("calendario-rolagem");
         VBox.setVgrow(rolagem, Priority.ALWAYS);
 
-        cartaoCalendario.getChildren().addAll(criarBarraNavegacao(), rotuloMensagem, rolagem);
+        cartaoCalendario.getChildren().addAll(criarBarraNavegacao(), rotuloMensagem, rolagem, criarLegenda());
 
         // Duas colunas: calendario ocupando o espaco livre e o painel de
         // atribuicao (#42) fixo a direita.
@@ -468,8 +482,23 @@ public class MontagemEscalaController {
         numero.getStyleClass().add("calendario-numero-dia");
         celula.getChildren().add(numero);
 
+        // O efetivo de cada turno e consultado uma vez so e reaproveitado
+        // pelo bloco e pelo estado da celula.
+        boolean algumTurnoIncompleto = false;
+        boolean algumaCoberturaRegistrada = false;
         for (EscalaTurno turno : turnosDoDia) {
-            celula.getChildren().add(criarBlocoTurno(turno));
+            ResultadoEfetivo efetivo = regraEscalaService.verificarEfetivo(turno);
+            boolean temCobertura = temCoberturaRegistrada(turno);
+
+            algumTurnoIncompleto |= !efetivo.completo();
+            algumaCoberturaRegistrada |= temCobertura;
+
+            celula.getChildren().add(criarBlocoTurno(turno, efetivo, temCobertura));
+        }
+
+        String estado = estadoDoDia(turnosDoDia, algumTurnoIncompleto, algumaCoberturaRegistrada);
+        if (estado != null) {
+            celula.getStyleClass().add(estado);
         }
 
         celula.setOnMouseClicked(evento -> selecionar(dia, celula));
@@ -480,20 +509,135 @@ public class MontagemEscalaController {
         return celula;
     }
 
-    /** Um bloco por turno: nome do tipo de turno e os agentes alocados nele. */
-    private VBox criarBlocoTurno(EscalaTurno turno) {
+    /**
+     * Classe de estado da celula, ou null para um dia sem turno nenhum (que
+     * fica com a celula neutra, como antes da issue #45).
+     *
+     * <p>Um mesmo dia pode ter turnos em estados diferentes — o 12x36 tem
+     * diurno e noturno na mesma data —, entao a precedencia importa:</p>
+     *
+     * <ol>
+     *   <li><b>incompleto</b>, se qualquer turno do dia estiver abaixo do
+     *       minimo. Vem primeiro porque e o unico estado que cobra acao do
+     *       gestor: esconder isso atras de um dia "completo" seria mostrar o
+     *       problema justamente para quem precisa resolve-lo;</li>
+     *   <li><b>cobertura</b>, se algum turno tiver alocacao de cobertura. E
+     *       informativo, nao pendencia;</li>
+     *   <li><b>completo</b>, o caso em que nao ha nada a fazer.</li>
+     * </ol>
+     *
+     * <p>So uma classe entra por celula. O detalhe turno a turno fica no selo
+     * de cada bloco e no painel lateral, que mostram o dia inteiro.</p>
+     */
+    private String estadoDoDia(List<EscalaTurno> turnosDoDia,
+                               boolean algumTurnoIncompleto, boolean algumaCoberturaRegistrada) {
+        if (turnosDoDia.isEmpty()) {
+            return null;
+        }
+        if (algumTurnoIncompleto) {
+            return CLASSE_DIA_INCOMPLETO;
+        }
+        if (algumaCoberturaRegistrada) {
+            return CLASSE_DIA_COBERTURA;
+        }
+        return CLASSE_DIA_COMPLETO;
+    }
+
+    /**
+     * Um turno tem cobertura quando alguma de suas alocacoes aponta para a
+     * alocacao que ela esta cobrindo ({@code coberturaDe} preenchido).
+     *
+     * <p><b>Este estado nao pode ser conferido na tela hoje.</b> Coberturas
+     * sao do milestone M5 e ainda nao existem: nenhum ponto do sistema grava
+     * {@code cobertura_de}, entao a classe de fundo e o selo existem mas nunca
+     * aparecem. E a mesma situacao da celula vazia na #41 — o codigo esta
+     * pronto para quando o M5 chegar, e nada foi inventado no banco so para
+     * poder ver a cor.</p>
+     */
+    private boolean temCoberturaRegistrada(EscalaTurno turno) {
+        List<EscalaFuncionario> alocacoes = turno.getAgentes();
+        if (alocacoes == null) {
+            return false;
+        }
+        return alocacoes.stream().anyMatch(alocacao -> alocacao.getCoberturaDe() != null);
+    }
+
+    /**
+     * Um bloco por turno: nome do tipo de turno, contador de efetivo, agentes
+     * alocados e, quando houver, a marca de cobertura.
+     *
+     * <p>O contador "alocados/minimo" repete em texto o que a cor do fundo da
+     * celula diz. E o que mantem os estados legiveis para quem tem
+     * dificuldade de distinguir cores, e usa o mesmo formato do selo do painel
+     * lateral (#42), para as duas telas nao discordarem.</p>
+     */
+    private VBox criarBlocoTurno(EscalaTurno turno, ResultadoEfetivo efetivo, boolean temCobertura) {
         Label nomeTipoTurno = new Label(descreverTipoTurno(turno));
         nomeTipoTurno.getStyleClass().add("calendario-tipo-turno");
         nomeTipoTurno.setWrapText(true);
+        HBox.setHgrow(nomeTipoTurno, Priority.ALWAYS);
+
+        Label contador = new Label(efetivo.alocados() + "/" + efetivo.minimoExigido());
+        contador.getStyleClass().addAll("calendario-selo-efetivo", efetivo.completo()
+                ? "calendario-selo-efetivo-completo"
+                : "calendario-selo-efetivo-incompleto");
+        contador.setMinWidth(Region.USE_PREF_SIZE);
+        contador.setTooltip(new Tooltip(efetivo.mensagem()));
+
+        HBox cabecalho = new HBox(4, nomeTipoTurno, contador);
+        cabecalho.setAlignment(Pos.CENTER_LEFT);
 
         Label agentes = new Label(descreverAgentes(turno));
         agentes.getStyleClass().add("calendario-agentes");
         agentes.setWrapText(true);
 
-        VBox bloco = new VBox(1, nomeTipoTurno, agentes);
+        VBox bloco = new VBox(1, cabecalho, agentes);
+        if (temCobertura) {
+            Label selo = new Label("cobertura");
+            selo.getStyleClass().add("calendario-selo-cobertura");
+            selo.setMinWidth(Region.USE_PREF_SIZE);
+            bloco.getChildren().add(selo);
+        }
         bloco.getStyleClass().add("calendario-bloco-turno");
         bloco.setMaxWidth(Double.MAX_VALUE);
         return bloco;
+    }
+
+    // -----------------------------------------------------------------
+    // Legenda (issue #45)
+    // -----------------------------------------------------------------
+
+    /**
+     * Legenda dos estados no rodape do cartao.
+     *
+     * <p>Cada amostra e uma celula de verdade: recebe
+     * {@code calendario-celula-dia} mais a classe do estado, igual ao que a
+     * grade monta. Dai a legenda nao ter como divergir da cor real da celula
+     * quando o CSS mudar — o unico estilo proprio dela e o tamanho.</p>
+     *
+     * <p>FlowPane em vez de HBox para a legenda quebrar em duas linhas em
+     * janela estreita, em vez de cortar o ultimo item.</p>
+     */
+    private FlowPane criarLegenda() {
+        FlowPane legenda = new FlowPane(16, 6,
+                criarItemDaLegenda("Plantão completo", CLASSE_DIA_COMPLETO),
+                criarItemDaLegenda("Efetivo incompleto", CLASSE_DIA_INCOMPLETO),
+                criarItemDaLegenda("Cobertura registrada", CLASSE_DIA_COBERTURA),
+                criarItemDaLegenda("Dia selecionado", CLASSE_DIA_SELECIONADO));
+        legenda.getStyleClass().add("calendario-legenda");
+        return legenda;
+    }
+
+    private HBox criarItemDaLegenda(String texto, String classeDeEstado) {
+        Region amostra = new Region();
+        amostra.getStyleClass().addAll("calendario-celula-dia", classeDeEstado, "calendario-legenda-amostra");
+
+        Label rotulo = new Label(texto);
+        rotulo.getStyleClass().add("calendario-legenda-texto");
+
+        HBox item = new HBox(6, amostra, rotulo);
+        item.setAlignment(Pos.CENTER_LEFT);
+        return item;
     }
 
     private String descreverTipoTurno(EscalaTurno turno) {
