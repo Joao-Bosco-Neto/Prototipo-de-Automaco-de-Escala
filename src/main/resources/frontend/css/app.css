@@ -449,3 +449,75 @@
     -fx-font-size: 10.5px;
     -fx-text-fill: -cor-texto-secundario;
 }
+
+/* ---------------------------------------------------------------------
+   Painel lateral de atribuição de agentes (Issue #42)
+   Fica à direita do calendário, mostrando o dia selecionado: escalados,
+   contador de efetivo e lista de disponíveis com o selo de
+   indisponibilidade calculado pelas regras das #23 e #40.
+   --------------------------------------------------------------------- */
+
+/* O painel é um .card com altura cheia; o espaçamento interno já vem de lá. */
+.painel-atribuicao {
+    -fx-min-height: 0;
+}
+
+/* O ScrollPane do corpo não pode pintar o cinza do Modena sobre o card. */
+.painel-atribuicao-rolagem,
+.painel-atribuicao-rolagem > .viewport {
+    -fx-background-color: transparent;
+}
+.painel-atribuicao-rolagem {
+    -fx-padding: 0;
+}
+
+/* Bloco de um turno do dia (um dia pode ter mais de um: 12x36 tem
+   diurno e noturno), separando visualmente os turnos entre si. */
+.painel-turno {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-background-radius: 6px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 6px;
+    -fx-padding: 12px;
+}
+
+/* Nome do tipo de turno e horário, no topo do bloco. */
+.painel-turno-titulo {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-primaria;
+}
+
+/* Rótulo das seções "Escalados" e "Disponíveis para alocar". */
+.painel-secao-titulo {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* Linha de um agente, tanto escalado quanto disponível. */
+.painel-linha-agente {
+    -fx-background-color: -cor-fundo-card;
+    -fx-background-radius: 4px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 4px;
+    -fx-padding: 6px 8px;
+}
+
+/* Variante compacta do secundário: os botões de adicionar e remover
+   ficam dentro de linhas estreitas, onde o padding padrão estoura. */
+.button-secundario-compacto {
+    -fx-background-color: transparent;
+    -fx-text-fill: -cor-primaria;
+    -fx-border-color: -cor-primaria-borda;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 3px 10px;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+}
+.button-secundario-compacto:hover { -fx-background-color: derive(-cor-primaria, 90%); }
+.button-secundario-compacto:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
