@@ -26,9 +26,13 @@ import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GeradorRodizioService;
 import br.edu.sistemaescala.backend.service.GeradorRodizioServiceImpl;
+import br.edu.sistemaescala.backend.service.LimpezaEscalaService;
+import br.edu.sistemaescala.backend.service.LimpezaEscalaServiceImpl;
 import br.edu.sistemaescala.backend.service.RegraEscalaService;
 import br.edu.sistemaescala.backend.service.RegraEscalaServiceImpl;
 import br.edu.sistemaescala.backend.service.ResultadoGeracao;
+import br.edu.sistemaescala.backend.service.ResultadoLimpeza;
+import br.edu.sistemaescala.backend.service.ResumoEscalaMes;
 import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -69,7 +73,9 @@ import javafx.scene.layout.VBox;
  *
  * O botao "Gerar rodizio" chama o {@link GeradorRodizioService} (issue #43),
  * que preenche o mes exibido de uma vez; sobrescrever um mes que ja tem
- * escala passa por confirmacao antes.
+ * escala passa por confirmacao antes. O botao "Limpar mes" chama o
+ * {@link LimpezaEscalaService} (issue #44) e exige dupla confirmacao, porque
+ * apaga a escala inteira sem colocar nada no lugar.
  *
  * Os quatro estados visuais e a legenda sao escopo da issue #45: aqui existe
  * apenas o destaque do dia selecionado.
@@ -90,6 +96,7 @@ public class MontagemEscalaController {
 
     private final EscalaTurnoRepository escalaTurnoRepository;
     private final GeradorRodizioService geradorRodizioService;
+    private final LimpezaEscalaService limpezaEscalaService;
     private final Consumer<LocalDate> aoSelecionarDia;
     private final PainelAtribuicaoController painelAtribuicao;
 
@@ -128,7 +135,8 @@ public class MontagemEscalaController {
                                     RegraEscalaService regraEscalaService,
                                     Consumer<LocalDate> aoSelecionarDia) {
         this(escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
-                funcionarioService, regraEscalaService, new GeradorRodizioServiceImpl(), aoSelecionarDia);
+                funcionarioService, regraEscalaService, new GeradorRodizioServiceImpl(),
+                new LimpezaEscalaServiceImpl(), aoSelecionarDia);
     }
 
     public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository,
@@ -137,9 +145,11 @@ public class MontagemEscalaController {
                                     FuncionarioService funcionarioService,
                                     RegraEscalaService regraEscalaService,
                                     GeradorRodizioService geradorRodizioService,
+                                    LimpezaEscalaService limpezaEscalaService,
                                     Consumer<LocalDate> aoSelecionarDia) {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.geradorRodizioService = geradorRodizioService;
+        this.limpezaEscalaService = limpezaEscalaService;
         this.aoSelecionarDia = aoSelecionarDia != null ? aoSelecionarDia : dia -> { };
         // O painel recarrega a grade por this::recarregar depois de criar
         // turno, alocar ou remover agente.
@@ -210,7 +220,11 @@ public class MontagemEscalaController {
         gerarRodizio.getStyleClass().add("button-primario");
         gerarRodizio.setOnAction(evento -> gerarRodizioDoMesExibido());
 
-        HBox barra = new HBox(12, anterior, rotuloMesAno, proximo, espacador, gerarRodizio);
+        Button limparMes = new Button("Limpar mês");
+        limparMes.getStyleClass().add("button-secundario");
+        limparMes.setOnAction(evento -> limparMesExibido());
+
+        HBox barra = new HBox(12, anterior, rotuloMesAno, proximo, espacador, limparMes, gerarRodizio);
         barra.setAlignment(Pos.CENTER_LEFT);
         return barra;
     }
@@ -272,6 +286,60 @@ public class MontagemEscalaController {
 
         DialogUtil.mostrarInformacao("Rodízio de " + descreverMes(mesExibido) + " gerado",
                 detalhe.toString());
+    }
+
+    // -----------------------------------------------------------------
+    // Limpar mes (issue #44)
+    // -----------------------------------------------------------------
+
+    /**
+     * Apaga a escala do mes exibido, com dupla confirmacao.
+     *
+     * A primeira confirmacao mostra os numeros reais do mes (consultados no
+     * banco na hora, nao um texto generico) e a segunda deixa claro que a
+     * acao nao tem volta. Basta cancelar uma das duas para nada acontecer.
+     *
+     * Mes vazio nem chega a perguntar: so avisa.
+     */
+    private void limparMesExibido() {
+        try {
+            ResumoEscalaMes resumo = limpezaEscalaService.resumir(mesExibido);
+            if (resumo.vazio()) {
+                DialogUtil.mostrarInformacao("Nada a limpar",
+                        descreverMes(mesExibido) + " já está sem turnos montados.");
+                return;
+            }
+
+            if (!confirmarLimpeza(resumo) || !confirmarLimpezaDefinitiva()) {
+                return;
+            }
+
+            ResultadoLimpeza resultado = limpezaEscalaService.limparMes(mesExibido);
+
+            limparSelecao();
+            painelAtribuicao.mostrarDia(null);
+            renderizarMes();
+
+            DialogUtil.mostrarInformacao("Mês limpo", resultado.mensagem());
+
+        } catch (RepositoryException excecao) {
+            DialogUtil.mostrarErroBancoIndisponivel("Não foi possível limpar o mês");
+        }
+    }
+
+    /** Primeira confirmacao: o que exatamente vai embora. */
+    private boolean confirmarLimpeza(ResumoEscalaMes resumo) {
+        return DialogUtil.mostrarConfirmacao("Limpar a escala de " + descreverMes(mesExibido) + "?",
+                String.format("Serão removidos %d turno(s) e %d alocação(ões) de agentes.",
+                        resumo.turnos(), resumo.alocacoes()));
+    }
+
+    /** Segunda confirmacao: o aviso de que nao da para desfazer. */
+    private boolean confirmarLimpezaDefinitiva() {
+        return DialogUtil.mostrarConfirmacao("Confirmar a limpeza definitiva?",
+                "Esta ação não pode ser desfeita: a escala do mês será apagada por completo, "
+                + "junto com os lançamentos de banco de horas vinculados a ela.\n\n"
+                + "Deseja mesmo continuar?");
     }
 
     /**

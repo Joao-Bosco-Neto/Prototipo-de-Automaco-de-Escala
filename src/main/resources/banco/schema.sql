@@ -119,7 +119,19 @@ CREATE TABLE IF NOT EXISTS motivo_cobertura (
 -- Alocacao de pessoas nos turnos
 -- inicio/fim nulos = cumpre o turno inteiro (caso normal).
 -- Preenchidos = turno parcial (meio plantao), sem tabela nova.
--- ON DELETE CASCADE: sem isso, "Limpar mes" falha por chave estrangeira.
+--
+-- Os dois ON DELETE CASCADE sustentam o "Limpar mes" (issue #44):
+--   escala_turno_id -> apaga as alocacoes junto com o turno;
+--   cobertura_de    -> apaga a alocacao de cobertura junto com a titular.
+--
+-- O segundo so aparece quando a cobertura esta num turno FORA do mes que
+-- esta sendo limpo: se as duas alocacoes caem no mesmo mes, elas ja somem
+-- juntas pela cascata do turno. Sem cascade nesse caso, a limpeza aborta
+-- com violacao de chave estrangeira. Coberturas so existem a partir do M5,
+-- entao hoje isso e prevencao. O efeito colateral fica registrado: limpar
+-- agosto tambem apaga uma cobertura de setembro que aponte para agosto.
+-- Se o M5 preferir preservar o plantao e so desfazer o vinculo, a troca e
+-- por ON DELETE SET NULL.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS escala_funcionario (
     id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -127,13 +139,17 @@ CREATE TABLE IF NOT EXISTS escala_funcionario (
     funcionario_id      INT NOT NULL REFERENCES funcionario(id),
     inicio              TIMESTAMP,
     fim                 TIMESTAMP,
-    cobertura_de        INT REFERENCES escala_funcionario(id),
+    cobertura_de        INT,
     motivo_cobertura_id INT REFERENCES motivo_cobertura(id),
     observacao          VARCHAR(500),
     lancou_banco_horas  BOOLEAN   NOT NULL DEFAULT FALSE,
     criado_em           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_ef_turno_func UNIQUE (escala_turno_id, funcionario_id),
-    CONSTRAINT ck_ef_periodo CHECK (inicio IS NULL OR fim IS NULL OR fim > inicio)
+    CONSTRAINT ck_ef_periodo CHECK (inicio IS NULL OR fim IS NULL OR fim > inicio),
+    -- Nomeada de proposito: uma FK anonima ganha nome gerado (CONSTRAINT_E5,
+    -- CONSTRAINT_E5C...) e nao da para corrigi-la depois por DDL fixo.
+    CONSTRAINT fk_ef_cobertura FOREIGN KEY (cobertura_de)
+        REFERENCES escala_funcionario(id) ON DELETE CASCADE
 );
 
 -- ---------------------------------------------------------------------
