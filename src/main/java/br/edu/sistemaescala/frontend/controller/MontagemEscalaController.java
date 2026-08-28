@@ -15,8 +15,17 @@ import java.util.stream.Collectors;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
+import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
+import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.repository.jdbc.EscalaFuncionarioRepositoryJdbc;
+import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
+import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.FuncionarioService;
+import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
+import br.edu.sistemaescala.backend.service.RegraEscalaService;
+import br.edu.sistemaescala.backend.service.RegraEscalaServiceImpl;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -48,9 +57,13 @@ import javafx.scene.layout.VBox;
  * Os dados de um mes inteiro vem de uma unica chamada a
  * {@link EscalaTurnoRepository#buscarPorPeriodo} — nunca uma consulta por dia.
  *
- * O clique num dia dispara o {@code aoSelecionarDia} recebido no construtor;
- * e por esse gancho que o painel lateral da issue #42 vai ser alimentado. Os
- * quatro estados visuais e a legenda sao escopo da issue #45: aqui existe
+ * A tela e de duas colunas: o cartao do calendario no centro e o painel de
+ * atribuicao da issue #42 a direita. O clique num dia dispara o
+ * {@code aoSelecionarDia} recebido no construtor e tambem alimenta esse
+ * painel; o painel, por sua vez, chama {@link #recarregar()} depois de cada
+ * alteracao, para a celula do dia refletir a mudanca na hora.
+ *
+ * Os quatro estados visuais e a legenda sao escopo da issue #45: aqui existe
  * apenas o destaque do dia selecionado.
  */
 public class MontagemEscalaController {
@@ -69,6 +82,7 @@ public class MontagemEscalaController {
 
     private final EscalaTurnoRepository escalaTurnoRepository;
     private final Consumer<LocalDate> aoSelecionarDia;
+    private final PainelAtribuicaoController painelAtribuicao;
 
     private final Label rotuloMesAno = new Label();
     private final Label rotuloMensagem = new Label();
@@ -80,15 +94,35 @@ public class MontagemEscalaController {
     /** Celula com o destaque de selecao no momento, para tirar o destaque dela ao trocar. */
     private Region celulaSelecionada;
 
-    /** Usado pelo shell enquanto o painel lateral (#42) nao existe: selecao sem consumidor. */
+    /** Monta as dependencias do painel a partir dos repositorios JDBC padrao. */
     public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository) {
-        this(escalaTurnoRepository, dia -> { });
+        this(escalaTurnoRepository, new EscalaFuncionarioRepositoryJdbc(), new TipoTurnoRepositoryJdbc(),
+                new FuncionarioServiceImpl(new FuncionarioRepositoryJdbc()), new RegraEscalaServiceImpl(),
+                dia -> { });
     }
 
     public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository,
+                                    EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                    TipoTurnoRepository tipoTurnoRepository,
+                                    FuncionarioService funcionarioService,
+                                    RegraEscalaService regraEscalaService) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
+                funcionarioService, regraEscalaService, dia -> { });
+    }
+
+    public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository,
+                                    EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                    TipoTurnoRepository tipoTurnoRepository,
+                                    FuncionarioService funcionarioService,
+                                    RegraEscalaService regraEscalaService,
                                     Consumer<LocalDate> aoSelecionarDia) {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.aoSelecionarDia = aoSelecionarDia != null ? aoSelecionarDia : dia -> { };
+        // O painel recarrega a grade por this::recarregar depois de criar
+        // turno, alocar ou remover agente.
+        this.painelAtribuicao = new PainelAtribuicaoController(
+                escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
+                funcionarioService, regraEscalaService, this::recarregar);
     }
 
     public Parent criarTela() {
@@ -110,8 +144,13 @@ public class MontagemEscalaController {
 
         cartaoCalendario.getChildren().addAll(criarBarraNavegacao(), rotuloMensagem, rolagem);
 
-        raiz.getChildren().addAll(criarCabecalho(), cartaoCalendario);
-        VBox.setVgrow(cartaoCalendario, Priority.ALWAYS);
+        // Duas colunas: calendario ocupando o espaco livre e o painel de
+        // atribuicao (#42) fixo a direita.
+        HBox colunas = new HBox(20, cartaoCalendario, painelAtribuicao.criarPainel());
+        HBox.setHgrow(cartaoCalendario, Priority.ALWAYS);
+
+        raiz.getChildren().addAll(criarCabecalho(), colunas);
+        VBox.setVgrow(colunas, Priority.ALWAYS);
 
         esconderMensagem();
         renderizarMes();
@@ -149,10 +188,20 @@ public class MontagemEscalaController {
         return barra;
     }
 
+    /**
+     * Recarrega os turnos do mes exibido e redesenha a grade, preservando o
+     * dia selecionado. E o que o painel de atribuicao chama depois de criar
+     * turno, alocar ou remover um agente, para a celula mudar na hora.
+     */
+    public void recarregar() {
+        renderizarMes();
+    }
+
     /** Troca o mes exibido, limpa a selecao e recarrega os dados do novo intervalo. */
     private void trocarMes(int meses) {
         mesExibido = mesExibido.plusMonths(meses);
         limparSelecao();
+        painelAtribuicao.mostrarDia(null);
         renderizarMes();
     }
 
@@ -338,6 +387,7 @@ public class MontagemEscalaController {
         }
         diaSelecionado = dia;
         aplicarDestaque(celula);
+        painelAtribuicao.mostrarDia(dia);
         aoSelecionarDia.accept(dia);
     }
 
