@@ -337,9 +337,9 @@
 /* ---------------------------------------------------------------------
    Calendário mensal de montagem da escala (Issue #41)
    Só existe aqui o necessário para a grade: célula, cabeçalho dos dias
-   da semana, dia fora do mês e dia selecionado. Os quatro estados
-   visuais (plantão completo, efetivo incompleto, cobertura registrada)
-   e a legenda são escopo da issue #45.
+   da semana, dia fora do mês e dia selecionado. Os estados visuais
+   (plantão completo, efetivo incompleto, cobertura registrada) e a
+   legenda chegaram na issue #45, no fim desta seção.
    --------------------------------------------------------------------- */
 
 /* Rótulo "Agosto de 2026" entre as setas de navegação de mês. */
@@ -448,6 +448,112 @@
 .calendario-agentes {
     -fx-font-size: 10.5px;
     -fx-text-fill: -cor-texto-secundario;
+}
+
+/* ---------------------------------------------------------------------
+   Estados visuais da célula (Issue #45)
+
+   Os três estados pintam SÓ o fundo da célula. A borda fica reservada ao
+   dia selecionado, que por isso continua legível por cima de qualquer
+   estado — foi exatamente para isso que a #41 deixou o fundo livre.
+   Selecionar um dia incompleto mostra as duas coisas: o fundo âmbar do
+   estado e a borda azul da seleção.
+
+   Cor não é o único sinal. Cada bloco de turno traz o contador
+   "alocados/mínimo" (.calendario-selo-efetivo), e a cobertura traz o selo
+   escrito — quem não distingue as cores continua lendo o estado.
+
+   Os fundos vêm de derive() sobre as variáveis de status do :root.
+   derive() clareia mas não dessatura: mesmo a 96% o verde ainda é um
+   #9ECEB6 de meio-tom, então não dá para chegar num pastel. 90% é o
+   ponto mais claro que ainda deixa os três bem separados entre si —
+   descer mais aproximaria o verde do azul.
+
+   Medido no pixel renderizado, cada estado fica a mais de 230 (soma dos
+   três canais) do branco do card, contra os 13 que tornaram um selo
+   invisível neste projeto. O texto da célula (-cor-texto sobre esses
+   fundos) fica acima de 7:1 de contraste.
+   --------------------------------------------------------------------- */
+
+/* Plantão completo: todos os turnos do dia bateram o mínimo de agentes.
+   É o estado "nada a fazer", então é o verde mais discreto dos três. */
+.calendario-dia-completo {
+    -fx-background-color: derive(-cor-sucesso, 90%);
+}
+
+/* Efetivo incompleto: algum turno do dia está abaixo do mínimo. Tem
+   precedência sobre os outros dois porque é o único que cobra ação do
+   gestor — ver estadoDoDia() no MontagemEscalaController. */
+.calendario-dia-incompleto {
+    -fx-background-color: derive(-cor-atencao, 90%);
+}
+
+/* Cobertura registrada: algum turno do dia tem alocação com cobertura_de
+   preenchido. Azul da família institucional, que não colide com o verde
+   nem com o âmbar; da seleção se diferencia por ser fundo, não borda. */
+.calendario-dia-cobertura {
+    -fx-background-color: derive(-cor-primaria, 90%);
+}
+
+/* Contador "alocados/mínimo" no canto do bloco de turno. Repete em texto
+   o que a cor do fundo diz, e casa com o selo do painel lateral (#42). */
+/* Os selos usam fundo do card com texto e borda na cor de status, e não
+   um fundo tingido: texto -cor-atencao sobre derive(-cor-atencao, 80%)
+   dá 2,8:1, baixo demais para 9,5px em negrito. Sobre o branco o mesmo
+   texto passa de 5,9:1, e o chip continua legível por cima de qualquer
+   um dos três fundos de estado. */
+.calendario-selo-efetivo {
+    -fx-font-size: 9.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 4px;
+    -fx-background-color: -cor-fundo-card;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+}
+.calendario-selo-efetivo-completo {
+    -fx-text-fill: -cor-sucesso;
+    -fx-border-color: -cor-sucesso;
+}
+.calendario-selo-efetivo-incompleto {
+    -fx-text-fill: -cor-atencao;
+    -fx-border-color: -cor-atencao;
+}
+
+/* Marca escrita de cobertura dentro do bloco de turno, no mesmo desenho. */
+.calendario-selo-cobertura {
+    -fx-font-size: 9.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 4px;
+    -fx-background-color: -cor-fundo-card;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-text-fill: -cor-primaria;
+    -fx-border-color: -cor-primaria;
+}
+
+/* Legenda no rodapé do cartão, separada da grade por uma linha fina. */
+.calendario-legenda {
+    -fx-border-color: -cor-borda-clara transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 10px 2px 0 2px;
+}
+.calendario-legenda-texto {
+    -fx-font-size: 11px;
+    -fx-text-fill: -cor-texto-secundario;
+}
+/* A amostra da legenda usa as MESMAS classes da célula (inclusive a do
+   estado): só o tamanho vem daqui. Assim a legenda não tem como divergir
+   da cor real da célula com o tempo. Declarada depois de
+   .calendario-celula-dia para vencer o padding e o cursor de mão. */
+.calendario-legenda-amostra {
+    -fx-min-width: 22px;
+    -fx-pref-width: 22px;
+    -fx-min-height: 14px;
+    -fx-pref-height: 14px;
+    -fx-padding: 0;
+    -fx-cursor: default;
 }
 
 /* ---------------------------------------------------------------------

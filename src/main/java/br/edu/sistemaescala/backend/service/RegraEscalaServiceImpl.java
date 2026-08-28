@@ -55,9 +55,18 @@ public class RegraEscalaServiceImpl implements RegraEscalaService {
     @Override
     public ResultadoEfetivo verificarEfetivo(EscalaTurno turno) {
         Objects.requireNonNull(turno, "turno não pode ser nulo");
+        return verificarEfetivo(turno, escalaFuncionarioRepository.listarPorTurno(turno.getId()));
+    }
 
+    @Override
+    public ResultadoEfetivo verificarEfetivo(EscalaTurno turno, List<EscalaFuncionario> agentesDoTurno) {
+        Objects.requireNonNull(turno, "turno não pode ser nulo");
+        Objects.requireNonNull(agentesDoTurno, "agentesDoTurno não pode ser nulo");
+
+        // Toda a regra e a mensagem vivem aqui; a sobrecarga acima só resolve
+        // de onde vem a lista de agentes.
         int minimoExigido = turno.getMinAgentes();
-        int alocados = escalaFuncionarioRepository.listarPorTurno(turno.getId()).size();
+        int alocados = agentesDoTurno.size();
 
         if (alocados < minimoExigido) {
             String mensagem = String.format("Faltam %d agente(s): %d de %d alocados.",

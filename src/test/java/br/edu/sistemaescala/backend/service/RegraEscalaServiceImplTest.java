@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
@@ -45,6 +46,50 @@ class RegraEscalaServiceImplTest {
 
         when(escalaFuncionarioRepository.listarPorTurno(anyInt())).thenReturn(List.of());
         when(escalaFuncionarioRepository.listarPorFuncionario(anyInt(), any(), any())).thenReturn(List.of());
+    }
+
+    // -----------------------------------------------------------------
+    // verificarEfetivo sobre agentes ja carregados (regressao de desempenho
+    // do calendario: uma consulta por turno a cada redesenho da grade)
+    // -----------------------------------------------------------------
+
+    @Test
+    void verificarEfetivoComAgentesJaCarregadosNaoConsultaOBanco() {
+        EscalaTurno turnoDeDoisAgentes = turno(TURNO_ID, INICIO_TURNO, FIM_TURNO, 2);
+
+        ResultadoEfetivo resultado = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes,
+                List.of(alocacaoDeTurnoInteiro(turnoDeDoisAgentes),
+                        alocacaoDeTurnoInteiro(turnoDeDoisAgentes)));
+
+        assertTrue(resultado.completo());
+        assertEquals(2, resultado.alocados());
+        verifyNoInteractions(escalaFuncionarioRepository);
+    }
+
+    @Test
+    void verificarEfetivoComAgentesJaCarregadosDaOMesmoResultadoDaVersaoQueConsulta() {
+        EscalaTurno turnoDeDoisAgentes = turno(TURNO_ID, INICIO_TURNO, FIM_TURNO, 2);
+        List<EscalaFuncionario> agentes = List.of(alocacaoDeTurnoInteiro(turnoDeDoisAgentes));
+        when(escalaFuncionarioRepository.listarPorTurno(TURNO_ID)).thenReturn(agentes);
+
+        ResultadoEfetivo consultando = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes);
+        ResultadoEfetivo comLista = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes, agentes);
+
+        // A regra e a mensagem sao as mesmas: muda so de onde vem a lista.
+        assertEquals(consultando, comLista);
+        assertFalse(comLista.completo());
+        assertTrue(comLista.mensagem().contains("Faltam 1 agente"), comLista.mensagem());
+    }
+
+    @Test
+    void verificarEfetivoComListaVaziaAcusaTurnoSemNinguem() {
+        EscalaTurno turnoDeDoisAgentes = turno(TURNO_ID, INICIO_TURNO, FIM_TURNO, 2);
+
+        ResultadoEfetivo resultado = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes, List.of());
+
+        assertFalse(resultado.completo());
+        assertEquals(0, resultado.alocados());
+        assertEquals(2, resultado.minimoExigido());
     }
 
     @Test
