@@ -9,9 +9,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import br.edu.sistemaescala.LogAplicacao;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
@@ -36,11 +39,13 @@ import br.edu.sistemaescala.backend.service.ResultadoLimpeza;
 import br.edu.sistemaescala.backend.service.ResumoEscalaMes;
 import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.ColumnConstraints;
@@ -80,6 +85,12 @@ import javafx.scene.layout.VBox;
  * {@link LimpezaEscalaService} (issue #44) e exige dupla confirmacao, porque
  * apaga a escala inteira sem colocar nada no lugar.
  *
+ * Navegacao entre meses (issue #46): trocar de mes consulta o banco numa
+ * {@link Task}, fora da thread da interface, e so desenha a grade quando o
+ * resultado chega. O {@link #recarregar()} usado pelo painel de atribuicao,
+ * pelo gerador e pela limpeza continua sincrono de proposito — ver o javadoc
+ * dele.
+ *
  * Estados visuais da celula (issue #45): a celula ganha uma classe de fundo
  * conforme o dia esteja com plantao completo, com efetivo incompleto ou com
  * cobertura registrada — ver {@link #estadoDoDia}. O destaque de selecao
@@ -117,6 +128,24 @@ public class MontagemEscalaController {
     private final Label rotuloMensagem = new Label();
     private final GridPane grade = new GridPane();
     private final ScrollPane rolagem = new ScrollPane(grade);
+    private final ProgressIndicator indicadorCarregamento = new ProgressIndicator();
+
+    /**
+     * Thread unica para as consultas de navegacao entre meses.
+     *
+     * Daemon de proposito: se a janela fechar com uma consulta em andamento, a
+     * JVM nao pode ficar presa esperando por ela. Uma so thread porque as
+     * consultas sao naturalmente sequenciais — o usuario navega para um mes de
+     * cada vez — e assim nao ha varias consultas concorrendo pelo banco.
+     */
+    private final ExecutorService executorNavegacao = Executors.newSingleThreadExecutor(corpo -> {
+        Thread thread = new Thread(corpo, "calendario-navegacao");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    /** Consulta de mes ainda em andamento, para ser cancelada quando outra comeca. */
+    private Task<Map<LocalDate, List<EscalaTurno>>> carregamentoEmAndamento;
 
     private YearMonth mesExibido = YearMonth.now();
     private LocalDate diaSelecionado;
@@ -227,6 +256,9 @@ public class MontagemEscalaController {
 
         rotuloMesAno.getStyleClass().add("calendario-mes-ano");
 
+        indicadorCarregamento.getStyleClass().add("calendario-carregando");
+        exibirIndicadorDeCarregamento(false);
+
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
 
@@ -238,7 +270,11 @@ public class MontagemEscalaController {
         limparMes.getStyleClass().add("button-secundario");
         limparMes.setOnAction(evento -> limparMesExibido());
 
-        HBox barra = new HBox(12, anterior, rotuloMesAno, proximo, espacador, limparMes, gerarRodizio);
+        // As setas continuam habilitadas durante o carregamento: desabilita-las
+        // esconderia a condicao de corrida em vez de resolve-la, e quem resolve
+        // e a conferencia de mes no setOnSucceeded.
+        HBox barra = new HBox(12, anterior, rotuloMesAno, indicadorCarregamento, proximo,
+                espacador, limparMes, gerarRodizio);
         barra.setAlignment(Pos.CENTER_LEFT);
         return barra;
     }
@@ -365,12 +401,90 @@ public class MontagemEscalaController {
         renderizarMes();
     }
 
-    /** Troca o mes exibido, limpa a selecao e recarrega os dados do novo intervalo. */
+    /**
+     * Troca o mes exibido e dispara a consulta do novo intervalo em segundo
+     * plano. Diferente do {@link #recarregar()}, que segue sincrono: trocar de
+     * mes e a unica navegacao que pode encarar um banco lento, e e nela que
+     * travar a interface apareceria.
+     */
     private void trocarMes(int meses) {
         mesExibido = mesExibido.plusMonths(meses);
         limparSelecao();
         painelAtribuicao.mostrarDia(null);
-        renderizarMes();
+        carregarMesEmSegundoPlano(mesExibido);
+    }
+
+    /**
+     * Consulta o mes numa {@link Task} e desenha a grade quando o resultado
+     * chega.
+     *
+     * <p><b>Divisao de trabalho entre as threads:</b> o {@code call()} apenas
+     * busca dados — nao pode tocar em Node nenhum, porque roda fora da thread
+     * da interface e o JavaFX so aceita alteracao de tela vinda dela. Toda a
+     * construcao da grade fica no {@code setOnSucceeded}, que o proprio JavaFX
+     * executa de volta na thread da interface.</p>
+     *
+     * <p><b>Corrida entre navegacoes:</b> clicar depressa nas setas dispara
+     * varias consultas, e nada garante que elas terminem na ordem em que
+     * comecaram — uma consulta antiga terminando depois sobrescreveria a grade
+     * com o mes errado. Quem resolve isso e a conferencia
+     * {@code mes.equals(mesExibido)} nos dois tratadores: resultado de um mes
+     * que nao esta mais na tela e simplesmente descartado. O cancelamento da
+     * consulta anterior e so uma economia — nao serve como garantia, porque
+     * {@code Task.cancel} nao interrompe uma consulta JDBC ja em andamento e
+     * nao alcanca uma que ja terminou.</p>
+     */
+    private void carregarMesEmSegundoPlano(YearMonth mes) {
+        rotuloMesAno.setText(descreverMes(mes));
+        esconderMensagem();
+        // A grade fica vazia enquanto carrega em vez de manter o mes anterior:
+        // titulo de um mes com os dias de outro pareceria dado errado.
+        limparGrade();
+        exibirIndicadorDeCarregamento(true);
+
+        if (carregamentoEmAndamento != null) {
+            // Se a anterior ainda nem comecou, o executor a descarta.
+            carregamentoEmAndamento.cancel(false);
+        }
+
+        Task<Map<LocalDate, List<EscalaTurno>>> tarefa = new Task<>() {
+            @Override
+            protected Map<LocalDate, List<EscalaTurno>> call() {
+                // Fora da thread da interface: aqui so pode haver consulta.
+                return buscarTurnosPorDia(mes);
+            }
+        };
+
+        tarefa.setOnSucceeded(evento -> {
+            if (!ehOMesExibido(mes)) {
+                return; // o usuario ja navegou para outro mes
+            }
+            exibirIndicadorDeCarregamento(false);
+            aplicarTurnos(tarefa.getValue());
+        });
+
+        tarefa.setOnFailed(evento -> {
+            if (!ehOMesExibido(mes)) {
+                return;
+            }
+            exibirIndicadorDeCarregamento(false);
+            aplicarFalhaDeCarregamento(mes, tarefa.getException());
+        });
+
+        // Cancelada = outra navegacao ja assumiu a tela, inclusive o indicador.
+        tarefa.setOnCancelled(evento -> { });
+
+        carregamentoEmAndamento = tarefa;
+        executorNavegacao.execute(tarefa);
+    }
+
+    private boolean ehOMesExibido(YearMonth mes) {
+        return mes.equals(mesExibido);
+    }
+
+    private void exibirIndicadorDeCarregamento(boolean visivel) {
+        indicadorCarregamento.setVisible(visivel);
+        indicadorCarregamento.setManaged(visivel);
     }
 
     private void configurarGrade() {
@@ -392,13 +506,55 @@ public class MontagemEscalaController {
     // Montagem da grade
     // -----------------------------------------------------------------
 
+    /**
+     * Caminho sincrono: consulta e desenha na hora, na thread da interface.
+     *
+     * <p>E o que o {@link #recarregar()} e a montagem inicial da tela usam. A
+     * consulta e de um mes so e o banco e local, entao segurar a interface por
+     * ela e o preco de a celula mudar no mesmo instante em que o agente e
+     * alocado. Quem pode encarar espera e a troca de mes, e essa vai por
+     * {@link #carregarMesEmSegundoPlano}.</p>
+     */
     private void renderizarMes() {
         rotuloMesAno.setText(descreverMes(mesExibido));
+        try {
+            aplicarTurnos(buscarTurnosPorDia(mesExibido));
+        } catch (RepositoryException excecao) {
+            aplicarFalhaDeCarregamento(mesExibido, excecao);
+        }
+    }
 
+    /** Estado de tela do carregamento bem-sucedido. Sempre na thread da interface. */
+    private void aplicarTurnos(Map<LocalDate, List<EscalaTurno>> turnosPorDia) {
+        mesExibidoTemEscala = !turnosPorDia.isEmpty();
+        esconderMensagem();
+        desenharGrade(turnosPorDia);
+    }
+
+    /**
+     * Estado de tela do carregamento que falhou. A grade continua sendo
+     * desenhada vazia: navegar entre meses precisa funcionar mesmo com o banco
+     * fora do ar.
+     *
+     * <p>A falha vai para o log com o stack trace. Sem isso, uma consulta que
+     * estoura dentro da Task nao deixaria rastro nenhum — o
+     * {@code setOnFailed} engole a excecao por natureza.</p>
+     */
+    private void aplicarFalhaDeCarregamento(YearMonth mes, Throwable erro) {
+        LogAplicacao.registrarErro("Falha ao carregar os turnos de " + mes, erro);
+        mesExibidoTemEscala = false;
+        exibirMensagem("Não foi possível carregar os turnos deste mês.");
+        desenharGrade(Map.of());
+    }
+
+    private void limparGrade() {
         grade.getChildren().clear();
         grade.getRowConstraints().clear();
+    }
 
-        Map<LocalDate, List<EscalaTurno>> turnosPorDia = carregarTurnosDoMes();
+    /** Monta a grade do mes exibido a partir de dados ja carregados. So UI, nada de banco. */
+    private void desenharGrade(Map<LocalDate, List<EscalaTurno>> turnosPorDia) {
+        limparGrade();
 
         for (int coluna = 0; coluna < COLUNAS; coluna++) {
             grade.add(criarCabecalhoDiaSemana(NOMES_DIAS_SEMANA.get(coluna)), coluna, 0);
@@ -718,27 +874,27 @@ public class MontagemEscalaController {
     /**
      * Uma unica consulta traz o mes inteiro com tipoTurno e agentes ja
      * hidratados; aqui os turnos so sao agrupados por data de inicio.
+     *
+     * <p><b>Nao toca em nenhum componente de tela</b>, de proposito: e este o
+     * metodo que roda dentro do {@code call()} da Task, fora da thread da
+     * interface. Mensagem de erro e estado da tela ficam por conta de quem
+     * chama, ja de volta na thread certa.</p>
+     *
+     * @throws RepositoryException se o banco nao responder; quem chama decide
+     *         entre tratar na hora (caminho sincrono) ou pelo setOnFailed
      */
-    private Map<LocalDate, List<EscalaTurno>> carregarTurnosDoMes() {
+    private Map<LocalDate, List<EscalaTurno>> buscarTurnosPorDia(YearMonth mes) {
+        List<EscalaTurno> turnos = escalaTurnoRepository.buscarPorPeriodo(
+                mes.atDay(1).atStartOfDay(),
+                mes.plusMonths(1).atDay(1).atStartOfDay());
+
         Map<LocalDate, List<EscalaTurno>> porDia = new LinkedHashMap<>();
-        try {
-            List<EscalaTurno> turnos = escalaTurnoRepository.buscarPorPeriodo(
-                    mesExibido.atDay(1).atStartOfDay(),
-                    mesExibido.plusMonths(1).atDay(1).atStartOfDay());
-            for (EscalaTurno turno : turnos) {
-                if (turno.getInicio() == null) {
-                    continue;
-                }
-                porDia.computeIfAbsent(turno.getInicio().toLocalDate(), data -> new ArrayList<>())
-                        .add(turno);
+        for (EscalaTurno turno : turnos) {
+            if (turno.getInicio() == null) {
+                continue;
             }
-            mesExibidoTemEscala = !turnos.isEmpty();
-            esconderMensagem();
-        } catch (RepositoryException excecao) {
-            // A grade continua sendo desenhada vazia: navegar entre meses
-            // precisa funcionar mesmo com o banco fora do ar.
-            mesExibidoTemEscala = false;
-            exibirMensagem("Não foi possível carregar os turnos deste mês.");
+            porDia.computeIfAbsent(turno.getInicio().toLocalDate(), data -> new ArrayList<>())
+                    .add(turno);
         }
         return porDia;
     }
