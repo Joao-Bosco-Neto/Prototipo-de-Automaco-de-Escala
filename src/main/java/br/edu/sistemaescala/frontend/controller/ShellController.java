@@ -23,6 +23,8 @@ import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
+import br.edu.sistemaescala.backend.service.CoberturaService;
+import br.edu.sistemaescala.backend.service.CoberturaServiceImpl;
 import br.edu.sistemaescala.backend.service.ConfiguracaoService;
 import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
@@ -88,6 +90,7 @@ public class ShellController {
     private final EscalaTurnoRepository escalaTurnoRepository;
     private final EscalaFuncionarioRepository escalaFuncionarioRepository;
     private final RegraEscalaService regraEscalaService;
+    private final CoberturaService coberturaService;
     private final GestaoUsuariosService gestaoUsuariosService;
     private final FuncionarioService funcionarioService;
     private final TipoTurnoService tipoTurnoService;
@@ -211,6 +214,7 @@ public class ShellController {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.escalaFuncionarioRepository = escalaFuncionarioRepository;
         this.regraEscalaService = regraEscalaService;
+        this.coberturaService = new CoberturaServiceImpl();
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.funcionarioService = funcionarioService;
@@ -418,6 +422,9 @@ public class ShellController {
         if ("Montagem da escala".equals(item)) {
             return new MontagemEscalaController(escalaTurnoRepository, escalaFuncionarioRepository,
                     tipoTurnoRepository, funcionarioService, regraEscalaService).criarTela();
+        }
+        if ("Coberturas".equals(item)) {
+            return new CoberturaController(coberturaService).criarTela();
         }
         if ("Configurações".equals(item) || "Configurações da organização".equals(item)) {
             return new ConfiguracaoController(configuracaoService, config -> {

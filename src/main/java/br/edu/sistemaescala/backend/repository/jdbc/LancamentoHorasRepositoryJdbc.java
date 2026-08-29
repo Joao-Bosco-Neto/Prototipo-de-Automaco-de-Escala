@@ -50,8 +50,21 @@ public class LancamentoHorasRepositoryJdbc implements LancamentoHorasRepository 
 
     @Override
     public LancamentoHoras salvar(LancamentoHoras lancamento) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
+        // Abre a conexao so para esta escrita e delega, para o SQL do INSERT
+        // existir num lugar unico.
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return salvar(lancamento, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao inserir lancamento de banco de horas", e);
+        }
+    }
+
+    @Override
+    public LancamentoHoras salvar(LancamentoHoras lancamento, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_INSERIR, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setInt(1, lancamento.getFuncionario().getId());
             setNullableInt(stmt, 2, lancamento.getEscalaFuncionario() != null

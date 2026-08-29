@@ -2,6 +2,7 @@ package br.edu.sistemaescala.backend.repository;
 
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -16,6 +17,17 @@ public interface LancamentoHorasRepository {
 
     /** Insere um lancamento e retorna a mesma instancia com o id gerado preenchido. */
     LancamentoHoras salvar(LancamentoHoras lancamento);
+
+    /**
+     * Mesma insercao, porem numa Connection recebida de fora — e assim que o
+     * lancamento participa de uma transacao aberta pelo TransacaoUtil, junto
+     * com a alocacao de cobertura que o originou (issue #33): o credito de quem
+     * cobre e o debito do ausente entram no banco de horas ou nenhum dos dois.
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     */
+    LancamentoHoras salvar(LancamentoHoras lancamento, Connection conexao);
 
     /**
      * Estorno: remove todos os lancamentos vinculados a uma escala_funcionario
