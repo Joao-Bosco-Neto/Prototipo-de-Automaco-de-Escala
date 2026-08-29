@@ -285,12 +285,8 @@ public class CoberturaController {
         }
 
         if (!substituto.disponivel()) {
-            boolean confirmar = DialogUtil.mostrarConfirmacao("Substituto com restrição",
-                    substituto.funcionario().getNome() + ": " + substituto.restricao()
-                    + "\n\nRegistrar a cobertura mesmo assim?");
-            if (!confirmar) {
-                return;
-            }
+            exibirErro("O sistema bloqueia a seleção: " + substituto.restricao());
+            return;
         }
 
         try {
