@@ -1,6 +1,6 @@
 package br.edu.sistemaescala.backend.service;
 
-import java.time.Duration;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -181,7 +181,7 @@ public class CoberturaServiceImpl implements CoberturaService {
             throw new RegraCoberturaException(descanso.mensagem());
         }
 
-        int minutosDoTurno = (int) Duration.between(turno.getInicio(), turno.getFim()).toMinutes();
+        int minutosDoTurno = turno.getTipoTurno().getDuracaoHoras().multiply(BigDecimal.valueOf(60)).intValue();
         LocalDate dataDoPlantao = turno.getInicio().toLocalDate();
         String observacaoLimpa = observacao == null || observacao.isBlank() ? null : observacao.trim();
 
