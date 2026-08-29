@@ -172,6 +172,15 @@ public class CoberturaServiceImpl implements CoberturaService {
             throw new RegraCoberturaException("O motivo de cobertura escolhido não existe mais.");
         }
 
+        ResultadoAlocacao alocacao = regraEscalaService.podeAlocar(substituto.getId(), turno);
+        if (!alocacao.permitido()) {
+            throw new RegraCoberturaException(alocacao.mensagem());
+        }
+        ResultadoDescanso descanso = regraEscalaService.verificarDescanso(substituto.getId(), turno);
+        if (!descanso.respeitado()) {
+            throw new RegraCoberturaException(descanso.mensagem());
+        }
+
         int minutosDoTurno = (int) Duration.between(turno.getInicio(), turno.getFim()).toMinutes();
         LocalDate dataDoPlantao = turno.getInicio().toLocalDate();
         String observacaoLimpa = observacao == null || observacao.isBlank() ? null : observacao.trim();
