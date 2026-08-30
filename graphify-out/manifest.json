@@ -95,9 +95,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/LancamentoHorasRepository.java": {
-    "mtime": 1788028709.7798288,
-    "seen": 1788029079.064173,
-    "ast_hash": "fff7ec7796f53fcd495327852523b174",
+    "mtime": 1788063630.6959412,
+    "seen": 1788063842.5251107,
+    "ast_hash": "8a23f63867719851b71b8d183fac58f8",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/RepositoryException.java": {
@@ -119,9 +119,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/jdbc/LancamentoHorasRepositoryJdbc.java": {
-    "mtime": 1788028709.7798288,
-    "seen": 1788029079.0641828,
-    "ast_hash": "b6047245f7c25d5423c05ffe81a2b2ed",
+    "mtime": 1788063639.3797758,
+    "seen": 1788063842.5264187,
+    "ast_hash": "927b4a2c84fef51910fba91ba7e521bb",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/jdbc/UsuarioRepositoryJdbc.java": {
@@ -219,9 +219,9 @@
     "semantic_hash": "80b9b200a035b0ab811163f342464791"
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/EscalaFuncionarioRepository.java": {
-    "mtime": 1787940384.590597,
-    "seen": 1788029079.0641696,
-    "ast_hash": "3e0f15c350e8e36a62ce8ef3810d57ee",
+    "mtime": 1788063646.703297,
+    "seen": 1788063842.5247908,
+    "ast_hash": "f06847430dd1645b8d41250971364c29",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/EscalaTurnoRepository.java": {
@@ -249,9 +249,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/jdbc/EscalaFuncionarioRepositoryJdbc.java": {
-    "mtime": 1787940384.5932324,
-    "seen": 1788029079.0641797,
-    "ast_hash": "365846ec3343e3c8a58b2b9874a18a1f",
+    "mtime": 1788063663.4080827,
+    "seen": 1788063842.5259113,
+    "ast_hash": "08e5400f22deedae45658651e8cb9f1e",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/repository/jdbc/EscalaTurnoRepositoryJdbc.java": {
@@ -560,15 +560,15 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/CoberturaService.java": {
-    "mtime": 1788028709.7798288,
-    "seen": 1788029079.0641952,
-    "ast_hash": "821da4c2b7a2b8a97466250e2569234f",
+    "mtime": 1788063687.542451,
+    "seen": 1788063842.5282416,
+    "ast_hash": "852632d03f9203bf6bb1b9f5c1916857",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/CoberturaServiceImpl.java": {
-    "mtime": 1788029638.2336667,
-    "seen": 1788029725.1910894,
-    "ast_hash": "1050fc211ef3316d6f3d97d4b7c4dabc",
+    "mtime": 1788063730.6069238,
+    "seen": 1788063842.5282435,
+    "ast_hash": "41462d0eb88b470c9917afbce2bbb144",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/ConfiguracaoService.java": {
@@ -608,9 +608,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/GeradorRodizioServiceImpl.java": {
-    "mtime": 1787940384.6004007,
-    "seen": 1788029079.0642037,
-    "ast_hash": "4845b2c7e78747b8bc23aaf620f2c288",
+    "mtime": 1788063674.9244604,
+    "seen": 1788063842.529185,
+    "ast_hash": "41440d4b34603f566494dc897c28adfc",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/LimpezaEscalaService.java": {
@@ -758,9 +758,9 @@
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/CoberturaServiceImplTest.java": {
-    "mtime": 1788028709.7946553,
-    "seen": 1788029079.0642633,
-    "ast_hash": "e37d066ce777e8d6aa07417d0d9e72fe",
+    "mtime": 1788063781.7206886,
+    "seen": 1788063842.5379164,
+    "ast_hash": "691d507856c522e7a1675f80b7ed63fd",
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/ConfiguracaoServiceImplTest.java": {

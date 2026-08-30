@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.backend.service;
 
+import java.sql.Connection;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -149,6 +150,81 @@ public class CoberturaServiceImpl implements CoberturaService {
     public EscalaFuncionario registrar(EscalaFuncionario alocacaoAusente, Funcionario substituto,
                                        Integer motivoCoberturaId, String observacao,
                                        boolean lancarBancoHoras) {
+        PreparoCobertura preparo = prepararCobertura(alocacaoAusente, substituto, motivoCoberturaId, observacao);
+        validarRegrasDaEscala(substituto, preparo.turno());
+
+        return TransacaoUtil.executar(conexao -> {
+            EscalaFuncionario cobertura = new EscalaFuncionario();
+            cobertura.setEscalaTurno(preparo.turno());
+            cobertura.setFuncionario(substituto);
+            cobertura.setCoberturaDe(alocacaoAusente);
+            cobertura.setMotivoCoberturaId(motivoCoberturaId);
+            cobertura.setObservacao(preparo.observacaoLimpa());
+            cobertura.setLancouBancoHoras(lancarBancoHoras);
+            escalaFuncionarioRepository.inserir(cobertura, conexao);
+
+            if (lancarBancoHoras) {
+                gravarLancamentos(conexao, cobertura, preparo, substituto);
+            }
+            return cobertura;
+        });
+    }
+
+    @Override
+    public EscalaFuncionario editar(EscalaFuncionario coberturaExistente, EscalaFuncionario alocacaoAusente,
+                                    Funcionario substituto, Integer motivoCoberturaId, String observacao,
+                                    boolean lancarBancoHoras) {
+        Objects.requireNonNull(coberturaExistente, "coberturaExistente não pode ser nulo");
+        if (coberturaExistente.getId() == null) {
+            throw new RegraCoberturaException("A cobertura a editar ainda não foi salva.");
+        }
+        PreparoCobertura preparo = prepararCobertura(alocacaoAusente, substituto, motivoCoberturaId, observacao);
+
+        // Sobre a própria alocação editada as regras acusariam "duplicidade"
+        // com ela mesma: só reavalia quando o substituto de fato muda.
+        Funcionario substitutoAtual = coberturaExistente.getFuncionario();
+        boolean trocouSubstituto = substitutoAtual == null || substitutoAtual.getId() == null
+                || !substituto.getId().equals(substitutoAtual.getId());
+        if (trocouSubstituto) {
+            validarRegrasDaEscala(substituto, preparo.turno());
+        }
+
+        return TransacaoUtil.executar(conexao -> {
+            coberturaExistente.setEscalaTurno(preparo.turno());
+            coberturaExistente.setFuncionario(substituto);
+            coberturaExistente.setCoberturaDe(alocacaoAusente);
+            coberturaExistente.setMotivoCoberturaId(motivoCoberturaId);
+            coberturaExistente.setObservacao(preparo.observacaoLimpa());
+            coberturaExistente.setLancouBancoHoras(lancarBancoHoras);
+            escalaFuncionarioRepository.atualizar(coberturaExistente, conexao);
+
+            // Zero-delta no extrato: apaga o par antigo e, se o checkbox seguir
+            // marcado, recria com a duração do turno corrente.
+            lancamentoHorasRepository.removerPorEscalaFuncionarioId(coberturaExistente.getId(), conexao);
+            if (lancarBancoHoras) {
+                gravarLancamentos(conexao, coberturaExistente, preparo, substituto);
+            }
+            return coberturaExistente;
+        });
+    }
+
+    @Override
+    public void excluir(EscalaFuncionario cobertura) {
+        Objects.requireNonNull(cobertura, "cobertura não pode ser nula");
+        if (cobertura.getId() == null) {
+            throw new RegraCoberturaException("A cobertura a excluir ainda não foi salva.");
+        }
+        // O par de lançamentos vinculado sai junto pela cascata do schema
+        // (lancamento_horas.escala_funcionario_id ON DELETE CASCADE).
+        TransacaoUtil.executar(conexao -> {
+            escalaFuncionarioRepository.remover(cobertura.getId(), conexao);
+            return null;
+        });
+    }
+
+    /** Valida os dados da cobertura e devolve o que a gravação vai precisar (turno, minutos, data, observação). */
+    private PreparoCobertura prepararCobertura(EscalaFuncionario alocacaoAusente, Funcionario substituto,
+                                               Integer motivoCoberturaId, String observacao) {
         EscalaTurno turno = turnoDe(alocacaoAusente);
         Funcionario ausente = alocacaoAusente.getFuncionario();
 
@@ -172,6 +248,13 @@ public class CoberturaServiceImpl implements CoberturaService {
             throw new RegraCoberturaException("O motivo de cobertura escolhido não existe mais.");
         }
 
+        int minutosDoTurno = (int) Duration.between(turno.getInicio(), turno.getFim()).toMinutes();
+        LocalDate dataDoPlantao = turno.getInicio().toLocalDate();
+        String observacaoLimpa = observacao == null || observacao.isBlank() ? null : observacao.trim();
+        return new PreparoCobertura(turno, ausente, minutosDoTurno, dataDoPlantao, observacaoLimpa);
+    }
+
+    private void validarRegrasDaEscala(Funcionario substituto, EscalaTurno turno) {
         ResultadoAlocacao alocacao = regraEscalaService.podeAlocar(substituto.getId(), turno);
         if (!alocacao.permitido()) {
             throw new RegraCoberturaException(alocacao.mensagem());
@@ -180,33 +263,25 @@ public class CoberturaServiceImpl implements CoberturaService {
         if (!descanso.respeitado()) {
             throw new RegraCoberturaException(descanso.mensagem());
         }
+    }
 
-        int minutosDoTurno = (int) Duration.between(turno.getInicio(), turno.getFim()).toMinutes();
-        LocalDate dataDoPlantao = turno.getInicio().toLocalDate();
-        String observacaoLimpa = observacao == null || observacao.isBlank() ? null : observacao.trim();
+    /** Grava o par crédito (substituto) / débito (ausente) na conexão da transação em curso. */
+    private void gravarLancamentos(Connection conexao, EscalaFuncionario cobertura,
+                                   PreparoCobertura preparo, Funcionario substituto) {
+        LocalDate data = preparo.dataDoPlantao();
+        lancamentoHorasRepository.salvar(lancamento(substituto, cobertura, data,
+                preparo.minutosDoTurno(), TipoLancamento.CREDITO_COBERTURA,
+                "Cobertura do plantão de " + preparo.ausente().getNome() + " em " + data.format(FORMATO_DATA)),
+                conexao);
+        lancamentoHorasRepository.salvar(lancamento(preparo.ausente(), cobertura, data,
+                -preparo.minutosDoTurno(), TipoLancamento.DEBITO_AUSENCIA,
+                "Ausência coberta por " + substituto.getNome() + " em " + data.format(FORMATO_DATA)),
+                conexao);
+    }
 
-        return TransacaoUtil.executar(conexao -> {
-            EscalaFuncionario cobertura = new EscalaFuncionario();
-            cobertura.setEscalaTurno(turno);
-            cobertura.setFuncionario(substituto);
-            cobertura.setCoberturaDe(alocacaoAusente);
-            cobertura.setMotivoCoberturaId(motivoCoberturaId);
-            cobertura.setObservacao(observacaoLimpa);
-            cobertura.setLancouBancoHoras(lancarBancoHoras);
-            escalaFuncionarioRepository.inserir(cobertura, conexao);
-
-            if (lancarBancoHoras) {
-                lancamentoHorasRepository.salvar(lancamento(substituto, cobertura, dataDoPlantao,
-                        minutosDoTurno, TipoLancamento.CREDITO_COBERTURA,
-                        "Cobertura do plantão de " + ausente.getNome() + " em " + dataDoPlantao.format(FORMATO_DATA)),
-                        conexao);
-                lancamentoHorasRepository.salvar(lancamento(ausente, cobertura, dataDoPlantao,
-                        -minutosDoTurno, TipoLancamento.DEBITO_AUSENCIA,
-                        "Ausência coberta por " + substituto.getNome() + " em " + dataDoPlantao.format(FORMATO_DATA)),
-                        conexao);
-            }
-            return cobertura;
-        });
+    /** O que {@link #prepararCobertura} apura para a gravação usar dentro da transação. */
+    private record PreparoCobertura(EscalaTurno turno, Funcionario ausente, int minutosDoTurno,
+                                    LocalDate dataDoPlantao, String observacaoLimpa) {
     }
 
     private LancamentoHoras lancamento(Funcionario funcionario, EscalaFuncionario cobertura, LocalDate dataReferencia,

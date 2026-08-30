@@ -185,6 +185,77 @@ class CoberturaServiceImplTest {
     }
 
     // -----------------------------------------------------------------
+    // Edição
+    // -----------------------------------------------------------------
+
+    @Test
+    void editarTrocaOParDeLancamentosSemDeixarRastro() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, true);
+
+        // Encolhe o turno para 6h: os lançamentos precisam refletir a nova duração.
+        int novaDuracao = 6 * 60;
+        try (Connection conexao = ConexaoBanco.getConnection();
+             Statement stmt = conexao.createStatement()) {
+            stmt.executeUpdate("UPDATE escala_turno SET fim = TIMESTAMP '"
+                    + TS.format(INICIO.plusHours(6)) + "' WHERE id = " + turnoId);
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+
+        EscalaFuncionario editada = servico.editar(cobertura, alocacaoAusente(), cobertura.getFuncionario(),
+                null, "Ajuste de duração", true);
+
+        assertEquals(cobertura.getId(), editada.getId());
+        assertEquals(2, contarLancamentosDaCobertura(cobertura.getId()), "sem duplicidade: exatamente o novo par");
+        assertEquals(novaDuracao, minutosDoLancamento(funcionarioSubstitutoId, cobertura.getId()));
+        assertEquals(-novaDuracao, minutosDoLancamento(funcionarioAusenteId, cobertura.getId()));
+    }
+
+    @Test
+    void editarDesmarcandoOCheckboxApagaOsLancamentos() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, true);
+
+        servico.editar(cobertura, alocacaoAusente(), cobertura.getFuncionario(), null, null, false);
+
+        assertFalse(lancouBancoHoras(cobertura.getId()));
+        assertEquals(0, contarLancamentosDaCobertura(cobertura.getId()));
+    }
+
+    @Test
+    void editarComFalhaNoLancamentoDesfazTudo() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, true);
+
+        CoberturaService servicoQueFalha = novoServico(new LancamentoHorasRepositoryJdbc() {
+            @Override
+            public LancamentoHoras salvar(LancamentoHoras lancamento, Connection conexao) {
+                throw new IllegalStateException("falha simulada");
+            }
+        });
+
+        assertThrows(IllegalStateException.class,
+                () -> servicoQueFalha.editar(cobertura, alocacaoAusente(), cobertura.getFuncionario(), null, "x", true));
+
+        // Rollback: o par original continua intacto.
+        assertEquals(2, contarLancamentosDaCobertura(cobertura.getId()));
+        assertEquals(MINUTOS_DO_TURNO, minutosDoLancamento(funcionarioSubstitutoId, cobertura.getId()));
+    }
+
+    // -----------------------------------------------------------------
+    // Exclusão
+    // -----------------------------------------------------------------
+
+    @Test
+    void excluirRemoveACoberturaEOsLancamentosPelaCascata() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, true);
+        assertEquals(2, contarLancamentosDaCobertura(cobertura.getId()));
+
+        servico.excluir(cobertura);
+
+        assertEquals(0, contarCoberturasDoTurno());
+        assertEquals(0, contarLancamentosDaCobertura(cobertura.getId()));
+    }
+
+    // -----------------------------------------------------------------
     // Apoio
     // -----------------------------------------------------------------
 

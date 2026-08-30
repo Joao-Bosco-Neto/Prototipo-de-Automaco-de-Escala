@@ -90,8 +90,22 @@ public class LancamentoHorasRepositoryJdbc implements LancamentoHorasRepository 
 
     @Override
     public int removerPorEscalaFuncionarioId(int escalaFuncionarioId) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER_POR_ESCALA_FUNCIONARIO)) {
+        // Abre a conexao so para esta escrita e delega, para o SQL do DELETE
+        // existir num lugar unico.
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return removerPorEscalaFuncionarioId(escalaFuncionarioId, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Falha ao estornar lancamentos da escala_funcionario " + escalaFuncionarioId, e);
+        }
+    }
+
+    @Override
+    public int removerPorEscalaFuncionarioId(int escalaFuncionarioId, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER_POR_ESCALA_FUNCIONARIO)) {
 
             stmt.setInt(1, escalaFuncionarioId);
             return stmt.executeUpdate();

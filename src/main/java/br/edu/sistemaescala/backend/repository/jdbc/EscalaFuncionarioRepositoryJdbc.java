@@ -56,6 +56,13 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
+    private static final String SQL_ATUALIZAR = """
+            UPDATE escala_funcionario
+               SET escala_turno_id = ?, funcionario_id = ?, inicio = ?, fim = ?,
+                   cobertura_de = ?, motivo_cobertura_id = ?, observacao = ?, lancou_banco_horas = ?
+             WHERE id = ?
+            """;
+
     private static final String SQL_REMOVER = "DELETE FROM escala_funcionario WHERE id = ?";
 
     private static final String SQL_BUSCAR_COBERTURAS_DO_MES = """
@@ -157,9 +164,51 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
     }
 
     @Override
+    public EscalaFuncionario atualizar(EscalaFuncionario escalaFuncionario, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_ATUALIZAR)) {
+
+            stmt.setInt(1, escalaFuncionario.getEscalaTurno().getId());
+            stmt.setInt(2, escalaFuncionario.getFuncionario().getId());
+            stmt.setObject(3, escalaFuncionario.getInicio());
+            stmt.setObject(4, escalaFuncionario.getFim());
+            setNullableInt(stmt, 5, escalaFuncionario.getCoberturaDe() != null
+                    ? escalaFuncionario.getCoberturaDe().getId() : null);
+            setNullableInt(stmt, 6, escalaFuncionario.getMotivoCoberturaId());
+            stmt.setString(7, escalaFuncionario.getObservacao());
+            stmt.setBoolean(8, escalaFuncionario.isLancouBancoHoras());
+            stmt.setInt(9, escalaFuncionario.getId());
+
+            if (stmt.executeUpdate() == 0) {
+                throw new RepositoryException(
+                        "Nenhuma alocacao encontrada para atualizar (id " + escalaFuncionario.getId() + ")", null);
+            }
+            return escalaFuncionario;
+
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Falha ao atualizar alocacao " + escalaFuncionario.getId(), e);
+        }
+    }
+
+    @Override
     public void remover(int id) {
-        try (Connection conexao = ConexaoBanco.getConnection();
-             PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER)) {
+        // Abre a conexao so para esta escrita e delega, para o SQL do DELETE
+        // existir num lugar unico.
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            remover(id, conexao);
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao remover alocacao " + id, e);
+        }
+    }
+
+    @Override
+    public void remover(int id, Connection conexao) {
+        // A conexao vem de fora (TransacaoUtil, por exemplo) e nao e fechada
+        // aqui: quem abriu decide a hora do commit, do rollback e do close.
+        try (PreparedStatement stmt = conexao.prepareStatement(SQL_REMOVER)) {
 
             stmt.setInt(1, id);
             if (stmt.executeUpdate() == 0) {
