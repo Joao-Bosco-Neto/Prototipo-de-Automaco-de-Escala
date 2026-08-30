@@ -21,6 +21,8 @@ import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.UsuarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.service.AutenticacaoServiceImpl;
 import br.edu.sistemaescala.backend.service.AutorizacaoService;
+import br.edu.sistemaescala.backend.service.BancoHorasService;
+import br.edu.sistemaescala.backend.service.BancoHorasServiceImpl;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeServiceImpl;
 import br.edu.sistemaescala.backend.service.CoberturaService;
@@ -91,6 +93,7 @@ public class ShellController {
     private final EscalaFuncionarioRepository escalaFuncionarioRepository;
     private final RegraEscalaService regraEscalaService;
     private final CoberturaService coberturaService;
+    private final BancoHorasService bancoHorasService;
     private final GestaoUsuariosService gestaoUsuariosService;
     private final FuncionarioService funcionarioService;
     private final TipoTurnoService tipoTurnoService;
@@ -215,6 +218,7 @@ public class ShellController {
         this.escalaFuncionarioRepository = escalaFuncionarioRepository;
         this.regraEscalaService = regraEscalaService;
         this.coberturaService = new CoberturaServiceImpl();
+        this.bancoHorasService = new BancoHorasServiceImpl();
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
         this.funcionarioService = funcionarioService;
@@ -425,6 +429,9 @@ public class ShellController {
         }
         if ("Coberturas".equals(item)) {
             return new CoberturaController(coberturaService).criarTela();
+        }
+        if ("Banco de horas".equals(item)) {
+            return new BancoHorasController(bancoHorasService).criarTela();
         }
         if ("Configurações".equals(item) || "Configurações da organização".equals(item)) {
             return new ConfiguracaoController(configuracaoService, config -> {

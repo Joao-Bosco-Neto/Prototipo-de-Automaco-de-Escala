@@ -410,9 +410,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/ShellController.java": {
-    "mtime": 1788028709.7889974,
-    "seen": 1788029079.0642486,
-    "ast_hash": "414342df66247d52cfbaed8cd819e397",
+    "mtime": 1788097409.6118364,
+    "seen": 1788097654.2702222,
+    "ast_hash": "7e0f52bf26711ab7b3eb5ce67235e4c1",
     "semantic_hash": ""
   },
   "docs/CONTEXTO_PARA_IA.md": {
@@ -488,15 +488,15 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/BloqueioController.java": {
-    "mtime": 1787940384.611889,
-    "seen": 1788029079.0642378,
-    "ast_hash": "0f412ebae4b5f4bd11326b817666e32d",
+    "mtime": 1788063972.8026178,
+    "seen": 1788097654.266786,
+    "ast_hash": "ffaf91f7636c6d4fd950707a889532e8",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/GestaoUsuariosController.java": {
-    "mtime": 1787940384.611889,
-    "seen": 1788029079.0642421,
-    "ast_hash": "fb5b5bc11947c1731e8af50a98150e35",
+    "mtime": 1788063961.225631,
+    "seen": 1788097654.2685032,
+    "ast_hash": "a6d0414108eb7720c3b05cd2296211fa",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/LoginController.java": {
@@ -512,9 +512,9 @@
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/BloqueioInatividadeServiceImplTest.java": {
-    "mtime": 1787940384.6224723,
-    "seen": 1788029079.0642624,
-    "ast_hash": "f771a4c1e5b229b43c8e504ffdb3aeb4",
+    "mtime": 1788064020.6036308,
+    "seen": 1788097654.2748575,
+    "ast_hash": "f4a21eca53dc67a5ab9f086fc74fa6c1",
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/GestaoUsuariosServiceImplTest.java": {
@@ -776,9 +776,9 @@
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/GeradorRodizioServiceImplTest.java": {
-    "mtime": 1787940384.6224723,
-    "seen": 1788029079.0642667,
-    "ast_hash": "3061c106f5a21d3ee5c2dab054fbcac7",
+    "mtime": 1788064025.6351225,
+    "seen": 1788097654.27615,
+    "ast_hash": "6246c61c774e42193843744470647cb7",
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/LimpezaEscalaServiceImplTest.java": {
@@ -803,6 +803,54 @@
     "mtime": 1787940384.6224723,
     "seen": 1788029079.0642745,
     "ast_hash": "5124e1c7e98eb759efca3938f798f203",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/repository/BancoHorasRepository.java": {
+    "mtime": 1788113884.6926494,
+    "seen": 1788114090.356338,
+    "ast_hash": "9031dce2aef0351549dc75c2a62dc53a",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/repository/jdbc/BancoHorasRepositoryJdbc.java": {
+    "mtime": 1788113917.2349787,
+    "seen": 1788114090.35957,
+    "ast_hash": "3a9750427508fbd78c920d85af2e1d51",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/BancoHorasListagemItem.java": {
+    "mtime": 1788097220.2733743,
+    "seen": 1788097654.247608,
+    "ast_hash": "9844e4510ae94205853c745e8e72d04f",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/BancoHorasService.java": {
+    "mtime": 1788113923.666739,
+    "seen": 1788114090.3620298,
+    "ast_hash": "d51be8b8725db64d1e37ba5ebb90d897",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/BancoHorasServiceImpl.java": {
+    "mtime": 1788113934.335437,
+    "seen": 1788114090.3620322,
+    "ast_hash": "25920a3ce261754abf54d4c653bda808",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/RegraBancoHorasException.java": {
+    "mtime": 1788097252.1888633,
+    "seen": 1788097654.255271,
+    "ast_hash": "e9fa4d2154b1363af0b151534421da23",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/controller/BancoHorasController.java": {
+    "mtime": 1788113994.4842856,
+    "seen": 1788114090.3690014,
+    "ast_hash": "3ac38648f7308f2ee5a1eb0eb43e1022",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/repository/BancoHorasRepositoryJdbcTest.java": {
+    "mtime": 1788114023.9243765,
+    "seen": 1788114090.37141,
+    "ast_hash": "44fcd53524762fbfdb8929a35bae6c77",
     "semantic_hash": ""
   }
 }
