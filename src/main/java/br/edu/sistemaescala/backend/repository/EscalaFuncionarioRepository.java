@@ -34,7 +34,27 @@ public interface EscalaFuncionarioRepository {
      */
     EscalaFuncionario inserir(EscalaFuncionario escalaFuncionario, Connection conexao);
 
+    /**
+     * Atualiza uma alocacao ja existente numa Connection recebida de fora — e
+     * assim que a edicao de uma cobertura (issue #33) entra na mesma transacao
+     * que refaz os lancamentos de banco de horas.
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     */
+    EscalaFuncionario atualizar(EscalaFuncionario escalaFuncionario, Connection conexao);
+
     void remover(int id);
+
+    /**
+     * Mesma remocao, porem numa Connection recebida de fora — a exclusao de uma
+     * cobertura (issue #33) roda em transacao, e o par de lancamentos vinculado
+     * sai junto pela cascata do schema.
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     */
+    void remover(int id, Connection conexao);
 
     /** Coberturas (cobertura_de preenchido) de turnos com inicio no mes informado. */
     List<EscalaFuncionario> buscarCoberturasDoMes(YearMonth mes);

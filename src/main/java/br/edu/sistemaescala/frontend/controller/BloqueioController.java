@@ -2,7 +2,6 @@ package br.edu.sistemaescala.frontend.controller;
 
 import java.util.Objects;
 
-import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.service.BloqueioInatividadeService;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
 import javafx.application.Platform;

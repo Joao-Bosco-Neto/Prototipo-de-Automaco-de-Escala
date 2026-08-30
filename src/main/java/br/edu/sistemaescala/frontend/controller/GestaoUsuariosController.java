@@ -3,7 +3,6 @@ package br.edu.sistemaescala.frontend.controller;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
@@ -34,7 +33,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**

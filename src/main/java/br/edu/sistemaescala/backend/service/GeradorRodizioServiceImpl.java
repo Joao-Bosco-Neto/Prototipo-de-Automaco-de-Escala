@@ -577,7 +577,17 @@ public class GeradorRodizioServiceImpl implements GeradorRodizioService {
         }
 
         @Override
+        public EscalaFuncionario atualizar(EscalaFuncionario escalaFuncionario, Connection conexao) {
+            throw new UnsupportedOperationException("Retrato de planejamento é somente leitura");
+        }
+
+        @Override
         public void remover(int id) {
+            throw new UnsupportedOperationException("Retrato de planejamento é somente leitura");
+        }
+
+        @Override
+        public void remover(int id, Connection conexao) {
             throw new UnsupportedOperationException("Retrato de planejamento é somente leitura");
         }
 

@@ -37,6 +37,19 @@ public interface LancamentoHorasRepository {
      */
     int removerPorEscalaFuncionarioId(int escalaFuncionarioId);
 
+    /**
+     * Mesmo estorno, porem numa Connection recebida de fora — e assim que a
+     * exclusao do par credito/debito participa da mesma transacao que atualiza
+     * a cobertura durante uma edicao (issue #33): ou os lancamentos antigos
+     * somem e os novos entram, ou nada muda.
+     *
+     * A conexao continua sendo de quem chamou: este metodo nao faz commit,
+     * rollback nem close.
+     *
+     * @return quantidade de lancamentos removidos
+     */
+    int removerPorEscalaFuncionarioId(int escalaFuncionarioId, Connection conexao);
+
     /** Extrato de um funcionario no periodo (inclusive), ordenado por data. */
     List<LancamentoHoras> buscarExtrato(int funcionarioId, LocalDate inicio, LocalDate fim);
 

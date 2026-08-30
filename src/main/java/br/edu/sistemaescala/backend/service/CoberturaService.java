@@ -70,4 +70,43 @@ public interface CoberturaService {
                                 Integer motivoCoberturaId,
                                 String observacao,
                                 boolean lancarBancoHoras);
+
+    /**
+     * Edita uma cobertura já registrada. Atualiza a alocação de cobertura
+     * ({@code coberturaExistente}, identificada pelo id) com o turno, o
+     * substituto, o motivo, a observação e o {@code lancou_banco_horas} novos e,
+     * no extrato, apaga o par crédito/débito anterior recriando-o do zero
+     * quando {@code lancarBancoHoras} continua true — sem cálculo de delta,
+     * tudo dentro de uma única transação.
+     *
+     * <p>As regras de duplicidade/sobreposição/descanso só são reavaliadas
+     * quando o substituto muda; refiná-las para troca de turno é assunto da
+     * issue #35.</p>
+     *
+     * @param coberturaExistente alocação de cobertura a alterar (id preenchido)
+     * @param alocacaoAusente    alocação do titular ausente, que define o turno
+     * @param substituto         funcionário que vai cobrir
+     * @param motivoCoberturaId  id do motivo escolhido, ou {@code null}
+     * @param observacao         texto livre, ou {@code null}
+     * @param lancarBancoHoras   se deve manter o crédito e o débito
+     * @return a alocação de cobertura atualizada
+     * @throws RegraCoberturaException se os dados forem inconsistentes
+     */
+    EscalaFuncionario editar(EscalaFuncionario coberturaExistente,
+                             EscalaFuncionario alocacaoAusente,
+                             Funcionario substituto,
+                             Integer motivoCoberturaId,
+                             String observacao,
+                             boolean lancarBancoHoras);
+
+    /**
+     * Exclui uma cobertura registrada. Remove a alocação de cobertura; o par
+     * crédito/débito vinculado sai junto pela cascata do schema
+     * ({@code lancamento_horas.escala_funcionario_id ON DELETE CASCADE}),
+     * dentro de uma única transação.
+     *
+     * @param cobertura alocação de cobertura a excluir (id preenchido)
+     * @throws RegraCoberturaException se a cobertura não tiver id
+     */
+    void excluir(EscalaFuncionario cobertura);
 }
