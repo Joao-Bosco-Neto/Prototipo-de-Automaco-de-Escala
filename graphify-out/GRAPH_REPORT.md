@@ -1,27 +1,27 @@
 # Graph Report - Prototipo-de-Automaco-de-Escala  (2026-08-30)
 
 ## Corpus Check
-- 136 files · ~94,445 words
+- 136 files · ~94,829 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1896 nodes · 5879 edges · 153 communities (46 shown, 107 thin omitted)
-- Extraction: 79% EXTRACTED · 21% INFERRED · 0% AMBIGUOUS · INFERRED: 1224 edges (avg confidence: 0.8)
+- 1899 nodes · 5895 edges · 162 communities (58 shown, 104 thin omitted)
+- Extraction: 79% EXTRACTED · 21% INFERRED · 0% AMBIGUOUS · INFERRED: 1226 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e7c21771`
+- Built from commit: `2af60e2b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- .buscarPorLogin
+- AutenticacaoService
 - LancamentoHoras
 - BancoHorasController
 - Banco de Dados (README)
 - Prototipo Visual das Telas (HTML standalone)
-- UsuarioRepository
-- AutenticacaoServiceImpl
+- .criarTelaLogin
+- RoleUsuario
 - Configuracao
 - Clean Scan: 0 Vulnerabilities Found (13/13 dependencies)
 - .getConnection
@@ -128,36 +128,44 @@
 - Issue #8 — Criar Classes de Domínio
 - GestaoUsuariosController
 - BloqueioInatividadeServiceImpl
-- Usuario
+- org.junit.jupiter.api.BeforeEach
 - MontagemEscalaController
-- PainelAtribuicaoController
+- javafx.scene.layout.VBox
 - CoberturaServiceImpl
-- .atualizar
+- Usuario
 - GEMINI.md - Diretrizes do Projeto Sistema de Escala
 - org.junit.jupiter.api.Test
-- java.sql.Connection
-- javafx.scene.layout.VBox
+- ShellController.java
+- MotivoCobertura
 - TipoTurnoController
 - FuncionarioListagemItem
-- .mapear
 - TipoTurnoService
-- .limparMesExibido
+- ConexaoBanco
 - java.time.YearMonth
 - GeradorRodizioServiceImpl
-- .executar
+- java.sql.Connection
 - SessaoUsuario
-- .setEscalaTurno
+- GeradorRodizioServiceImplTest
 - GestaoUsuariosServiceImplTest
 - CoberturaController
-- UsuarioRepositoryJdbc
-- RegraEscalaServiceImpl
+- .executaOperacoesDeUsuario
+- LancamentoHorasRepositoryJdbcTest
 - CoberturaServiceImplTest
-- TipoTurnoController.java
+- FiltroStatusTurno
 - FuncionarioServiceImpl
-- LoginController.java
-- SimpleStringProperty
+- FuncionarioServiceImplTest
+- TipoTurnoServiceImpl
+- org.junit.jupiter.api.BeforeAll
 - .getId
 - Funcionario
+- CoberturaController.java
+- LancamentoHorasRepositoryJdbc
+- PainelAtribuicaoController.java
+- TipoLancamento
+- BancoHorasListagemItem
+- UsuarioRepositoryJdbc
+- FuncionarioService
+- FiltroStatus
 - SenhaInvalidaException
 - seed-teste.sql (test fixtures)
 - Tema CSS Obrigatorio Rule
@@ -195,15 +203,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (153 total, 107 thin omitted)
+## Communities (162 total, 104 thin omitted)
+
+### Community 0 - "AutenticacaoService"
+Cohesion: 0.17
+Nodes (4): AutenticacaoService, Override, PrimeiroAcessoServiceImpl, AutenticacaoServiceImplTest
 
 ### Community 1 - "LancamentoHoras"
-Cohesion: 0.07
-Nodes (13): Override, LancamentoHoras, deValor(), Override, TipoLancamento, AJUSTE_MANUAL, CREDITO_COBERTURA, CREDITO_EXTRA (+5 more)
+Cohesion: 0.14
+Nodes (3): Override, LancamentoHoras, Override
 
 ### Community 2 - "BancoHorasController"
-Cohesion: 0.12
-Nodes (9): javafx.scene.layout.HBox, Override, BancoHorasListagemItem, BancoHorasService, BancoHorasController, HBox, Label, VBox (+1 more)
+Cohesion: 0.19
+Nodes (5): BancoHorasController, HBox, Label, VBox, TableColumn
 
 ### Community 3 - "Banco de Dados (README)"
 Cohesion: 1.00
@@ -213,44 +225,44 @@ Nodes (3): Banco de Dados (README), Risco Residual Aceito, Limite da Protecao (c
 Cohesion: 0.67
 Nodes (3): Prototipo de Referencia Rule, Prototipo Visual das Telas (HTML standalone), Prototipo das Telas (README)
 
-### Community 5 - "UsuarioRepository"
-Cohesion: 0.14
-Nodes (9): javafx.stage.Stage, UsuarioRepository, AutenticacaoService, PrimeiroAcessoService, Override, PrimeiroAcessoServiceImpl, Override, Main (+1 more)
+### Community 5 - ".criarTelaLogin"
+Cohesion: 0.13
+Nodes (7): java.util.logging.Logger, javafx.application.Application, javafx.stage.Stage, TratadorErroGlobal, LogAplicacao, Override, Main
 
-### Community 6 - "AutenticacaoServiceImpl"
-Cohesion: 0.28
-Nodes (3): java.util.function.LongConsumer, AutenticacaoServiceImpl, Override
+### Community 6 - "RoleUsuario"
+Cohesion: 0.12
+Nodes (8): java.util.function.LongConsumer, deValor(), RoleUsuario, ADMIN, GESTOR, UsuarioRepository, AutenticacaoServiceImpl, Override
 
 ### Community 7 - "Configuracao"
-Cohesion: 0.06
-Nodes (18): javafx.scene.control.ComboBox, javafx.scene.control.TextField, Configuracao, Override, ConfiguracaoRepository, ConfiguracaoRepositoryJdbc, Override, ConfiguracaoService (+10 more)
+Cohesion: 0.07
+Nodes (11): Configuracao, Override, Override, ConfiguracaoService, Override, ConfiguracaoController, Label, Override (+3 more)
 
 ### Community 8 - "Clean Scan: 0 Vulnerabilities Found (13/13 dependencies)"
 Cohesion: 0.14
 Nodes (14): OWASP Dependency-Check Report (sistema-escala), h2-2.2.224.jar, h2-2.2.224.jar: data.zip: table.js, h2-2.2.224.jar: data.zip: tree.js, javafx-base-21.0.2.jar, javafx-base-21.0.2-linux.jar, javafx-controls-21.0.2.jar, javafx-controls-21.0.2-linux.jar (+6 more)
 
 ### Community 9 - ".getConnection"
-Cohesion: 0.05
-Nodes (10): Override, MotivoCobertura, Override, Override, MotivoCoberturaRepositoryJdbc, MotivoCoberturaRepository, EscalaFuncionarioRepositoryJdbcTest, EscalaTurnoRepositoryJdbcTest (+2 more)
+Cohesion: 0.09
+Nodes (4): TransacaoUtilTest, EscalaFuncionarioRepositoryJdbcTest, EscalaTurnoRepositoryJdbcTest, LimpezaEscalaTransacaoTest
 
 ### Community 10 - "EscalaTurno"
-Cohesion: 0.12
-Nodes (3): EscalaTurno, Override, Override
+Cohesion: 0.10
+Nodes (7): EscalaTurno, Override, Override, Override, Periodo, RegraEscalaServiceImpl, ResultadoAlocacao
 
 ### Community 11 - "Legado README Overview"
 Cohesion: 0.14
 Nodes (13): Serviço Postgres do Docker Compose Legado, Schema PostgreSQL Legado, Documento Original de Requisitos da Delegacia, Legado README Overview, Issue #3 — Implementar Schema do Banco de Dados, Issue #7 — Conexão H2 e Inicialização Automática do Banco, Issue #71 — Repositórios de TipoTurno, MotivoCobertura e Configuracao, BancoInicializador.executarScript() (+5 more)
 
 ### Community 12 - "EscalaFuncionario"
-Cohesion: 0.12
-Nodes (4): EscalaFuncionario, Override, Override, VisaoDeAlocacoes
+Cohesion: 0.13
+Nodes (5): EscalaFuncionario, Override, Override, Override, VisaoDeAlocacoes
 
 ### Community 13 - "Backlog de Issues — Sistema de Automação de Escala"
 Cohesion: 0.02
 Nodes (120): Backlog de Issues — Sistema de Automação de Escala, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, ✅ Critérios de Aceite (+112 more)
 
 ### Community 14 - "TipoTurno"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (3): Override, TipoTurno, Override
 
 ### Community 15 - "Guia de Contribuição"
@@ -266,7 +278,7 @@ Cohesion: 0.14
 Nodes (13): Arquitetura, Banco de dados, Comandos, Como responder, Conceitos centrais, Contexto do Projeto — cole isto antes de pedir ajuda a uma IA, Estado atual, Fluxo de trabalho (+5 more)
 
 ### Community 18 - "javafx.scene.control.Label"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (7): Alert, javafx.scene.control.Label, FuncionarioController, Button, HBox, Label, VBox
 
 ### Community 19 - "sincronizar_issues.py"
@@ -290,16 +302,16 @@ Cohesion: 0.40
 Nodes (5): RF05 — Validar Conflito de Horário, RF10 — Mínimo de 2 Agentes por Plantão, RNF06 — Bloquear Conflito de Horário Não Resolvido, RNF08 — Bloquear Violação de Mínimo de Agentes / Descanso, Issue #26 — Mínimo de Agentes e Bloqueio de Duplicidade (RF05, RF10)
 
 ### Community 24 - "GestaoUsuariosController.java"
-Cohesion: 0.09
-Nodes (15): javafx.beans.property.SimpleStringProperty, javafx.collections.ObservableList, javafx.scene.control.TableView, AcessoNegadoException, RegraBancoHorasException, RegraFuncionarioException, RegraUsuarioException, SenhaFracaException (+7 more)
+Cohesion: 0.10
+Nodes (21): javafx.beans.property.SimpleStringProperty, javafx.collections.ObservableList, javafx.scene.control.Button, javafx.scene.control.CheckBox, javafx.scene.control.ComboBox, javafx.scene.control.TableColumn, javafx.scene.control.TableView, javafx.scene.control.TextArea (+13 more)
 
 ### Community 25 - "CLAUDE.md"
 Cohesion: 0.40
 Nodes (4): graphify, Protótipo de referência das telas, Graphify PreToolUse Hooks, Tema CSS — regra obrigatória
 
 ### Community 33 - "ShellController"
-Cohesion: 0.06
-Nodes (21): javafx.animation.Timeline, javafx.scene.control.Button, javafx.scene.control.MenuBar, javafx.scene.control.PasswordField, javafx.scene.layout.GridPane, javafx.scene.Parent, MenuBar, BloqueioInatividadeService (+13 more)
+Cohesion: 0.07
+Nodes (20): javafx.animation.Timeline, javafx.scene.control.MenuBar, javafx.scene.control.PasswordField, javafx.scene.layout.GridPane, javafx.scene.layout.StackPane, MenuBar, PrimeiroAcessoService, BloqueioController (+12 more)
 
 ### Community 34 - "Modelagem de ameaças: banco local"
 Cohesion: 0.33
@@ -310,92 +322,132 @@ Cohesion: 0.40
 Nodes (5): configuracao table, Diagrama MER (Entity-Relationship Diagram), funcionario table, tipo_turno table, usuario table
 
 ### Community 111 - "GestaoUsuariosController"
-Cohesion: 0.09
-Nodes (10): AlertType, javafx.scene.control.Alert, javafx.scene.control.DialogPane, GestaoUsuariosController, HBox, Label, PasswordField, VBox (+2 more)
+Cohesion: 0.22
+Nodes (4): GestaoUsuariosController, HBox, Label, VBox
 
-### Community 113 - "Usuario"
-Cohesion: 0.13
-Nodes (10): java.lang.System.Logger, org.junit.jupiter.api.BeforeEach, deValor(), Override, RoleUsuario, ADMIN, GESTOR, toString() (+2 more)
+### Community 113 - "org.junit.jupiter.api.BeforeEach"
+Cohesion: 0.16
+Nodes (5): org.junit.jupiter.api.BeforeEach, Override, toString(), ConfiguracaoRepository, ConfiguracaoServiceImpl
 
 ### Community 114 - "MontagemEscalaController"
-Cohesion: 0.12
+Cohesion: 0.09
 Nodes (11): FlowPane, javafx.concurrent.Task, javafx.scene.control.ProgressIndicator, javafx.scene.layout.FlowPane, javafx.scene.layout.Region, HBox, Label, Region (+3 more)
 
-### Community 115 - "PainelAtribuicaoController"
-Cohesion: 0.19
-Nodes (5): HBox, Label, Region, VBox, PainelAtribuicaoController
+### Community 115 - "javafx.scene.layout.VBox"
+Cohesion: 0.08
+Nodes (17): java.util.prefs.Preferences, javafx.scene.layout.BorderPane, javafx.scene.layout.VBox, SimpleStringProperty, ResultadoDescanso, VBox, LoginController, HBox (+9 more)
 
 ### Community 116 - "CoberturaServiceImpl"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (4): CoberturaServiceImpl, Override, PreparoCobertura, SubstitutoDisponivel
+
+### Community 117 - "Usuario"
+Cohesion: 0.19
+Nodes (4): Override, Usuario, GestaoUsuariosServiceImpl, Override
 
 ### Community 118 - "GEMINI.md - Diretrizes do Projeto Sistema de Escala"
 Cohesion: 0.13
 Nodes (14): 10. Diretrizes para Assistentes de IA (Gemini / Antigravity), 1. Sobre o Projeto, 2. Stack Tecnológica e Restrições, 3. Arquitetura e Estrutura de Pastas, 4. Banco de Dados e Regras de SQL, 5. Regras de Negócio do Domínio, 6. Padrões de Interface (JavaFX & CSS), 7. Fora de Escopo do Protótipo (+6 more)
 
 ### Community 119 - "org.junit.jupiter.api.Test"
-Cohesion: 0.06
-Nodes (10): FunctionalInterface, org.junit.jupiter.api.Test, org.mockito.MockedStatic, FuncaoTransacional, FuncionarioService, LimpezaEscalaService, FuncionarioServiceImplTest, GeradorRodizioServiceImplTest (+2 more)
+Cohesion: 0.08
+Nodes (6): org.junit.jupiter.api.Test, BloqueioInatividadeService, RegraEscalaService, BancoHorasRepositoryJdbcTest, BloqueioInatividadeServiceImplTest, RegraEscalaServiceImplTest
 
-### Community 120 - "java.sql.Connection"
-Cohesion: 0.06
-Nodes (32): java.security.SecureRandom, java.sql.Connection, java.sql.PreparedStatement, java.sql.ResultSet, java.util.logging.Logger, javafx.scene.control.ScrollPane, javafx.scene.layout.StackPane, org.junit.jupiter.api.AfterAll (+24 more)
+### Community 120 - "ShellController.java"
+Cohesion: 0.20
+Nodes (8): EscalaFuncionarioRepository, EscalaTurnoRepository, FuncionarioRepository, EscalaFuncionarioRepositoryJdbc, EscalaTurnoRepositoryJdbc, FuncionarioRepositoryJdbc, TipoTurnoRepositoryJdbc, TipoTurnoRepository
 
-### Community 121 - "javafx.scene.layout.VBox"
-Cohesion: 0.31
-Nodes (6): javafx.application.Application, javafx.scene.control.TableColumn, javafx.scene.layout.VBox, Override, VBox, VitrineComponentesApp
+### Community 121 - "MotivoCobertura"
+Cohesion: 0.12
+Nodes (5): Override, MotivoCobertura, Override, MotivoCoberturaRepositoryJdbc, MotivoCoberturaRepository
 
 ### Community 122 - "TipoTurnoController"
 Cohesion: 0.18
 Nodes (5): Button, HBox, Label, VBox, TipoTurnoController
 
-### Community 124 - ".mapear"
-Cohesion: 0.18
-Nodes (3): Override, TipoTurnoServiceImpl, TipoTurnoRepositoryJdbcTest
+### Community 126 - "ConexaoBanco"
+Cohesion: 0.20
+Nodes (7): java.security.SecureRandom, java.sql.PreparedStatement, java.sql.ResultSet, org.junit.jupiter.api.AfterAll, BancoInicializador, ConexaoBanco, ConfiguracaoRepositoryJdbc
 
 ### Community 127 - "java.time.YearMonth"
-Cohesion: 0.29
-Nodes (4): java.time.YearMonth, GeradorRodizioService, Override, LimpezaEscalaServiceImpl
+Cohesion: 0.14
+Nodes (7): java.time.YearMonth, LimpezaEscalaService, Override, LimpezaEscalaServiceImpl, ResultadoLimpeza, ResumoEscalaMes, LimpezaEscalaServiceImplTest
+
+### Community 128 - "GeradorRodizioServiceImpl"
+Cohesion: 0.16
+Nodes (3): GeradorRodizioServiceImpl, PlanoDoMes, ResultadoGeracao
+
+### Community 129 - "java.sql.Connection"
+Cohesion: 0.15
+Nodes (6): FunctionalInterface, java.sql.Connection, org.mockito.MockedStatic, FuncaoTransacional, TransacaoUtil, RepositoryException
 
 ### Community 130 - "SessaoUsuario"
-Cohesion: 0.21
-Nodes (4): AutorizacaoService, SessaoUsuario, AutorizacaoServiceTest, SessaoUsuarioTest
+Cohesion: 0.17
+Nodes (5): java.lang.System.Logger, AutorizacaoService, SessaoUsuario, AutorizacaoServiceTest, SessaoUsuarioTest
 
 ### Community 133 - "CoberturaController"
-Cohesion: 0.12
-Nodes (10): javafx.scene.control.CheckBox, javafx.scene.control.DatePicker, javafx.scene.control.ListCell, javafx.scene.control.TextArea, RegraCoberturaException, CoberturaController, Label, ListCell (+2 more)
+Cohesion: 0.19
+Nodes (5): javafx.scene.control.ListCell, CoberturaController, Label, ListCell, VBox
 
-### Community 135 - "RegraEscalaServiceImpl"
+### Community 136 - "CoberturaServiceImplTest"
+Cohesion: 0.15
+Nodes (3): org.junit.jupiter.api.AfterEach, CoberturaService, CoberturaServiceImplTest
+
+### Community 137 - "FiltroStatusTurno"
+Cohesion: 0.50
+Nodes (4): FiltroStatusTurno, ATIVOS, INATIVOS, TODOS
+
+### Community 141 - "TipoTurnoServiceImpl"
+Cohesion: 0.18
+Nodes (4): ResultadoViabilidadeTurno, Override, TipoTurnoServiceImpl, TipoTurnoRepositoryJdbcTest
+
+### Community 144 - "Funcionario"
+Cohesion: 0.18
+Nodes (3): Funcionario, Override, Override
+
+### Community 145 - "CoberturaController.java"
+Cohesion: 0.21
+Nodes (6): AlertType, javafx.scene.control.Alert, javafx.scene.control.DatePicker, javafx.scene.control.DialogPane, RegraCoberturaException, DialogUtil
+
+### Community 146 - "LancamentoHorasRepositoryJdbc"
+Cohesion: 0.32
+Nodes (5): BancoHorasRepository, BancoHorasRepositoryJdbc, LancamentoHorasRepositoryJdbc, LancamentoHorasRepository, BancoHorasServiceImpl
+
+### Community 147 - "PainelAtribuicaoController.java"
+Cohesion: 0.24
+Nodes (4): javafx.scene.control.ScrollPane, AcessoNegadoException, RegraConfiguracaoException, ResultadoEfetivo
+
+### Community 148 - "TipoLancamento"
 Cohesion: 0.20
-Nodes (5): Override, Periodo, RegraEscalaServiceImpl, ResultadoAlocacao, ResultadoDescanso
+Nodes (8): deValor(), Override, TipoLancamento, AJUSTE_MANUAL, CREDITO_COBERTURA, CREDITO_EXTRA, DEBITO_AUSENCIA, toString()
 
-### Community 137 - "TipoTurnoController.java"
-Cohesion: 0.16
-Nodes (8): RegraTipoTurnoException, ResultadoViabilidadeTurno, FiltroStatusTurno, ATIVOS, INATIVOS, TODOS, Override, toString()
+### Community 149 - "BancoHorasListagemItem"
+Cohesion: 0.18
+Nodes (3): Override, BancoHorasListagemItem, BancoHorasService
 
-### Community 140 - "LoginController.java"
-Cohesion: 0.33
-Nodes (4): java.util.prefs.Preferences, javafx.scene.layout.BorderPane, VBox, LoginController
+### Community 152 - "FiltroStatus"
+Cohesion: 0.50
+Nodes (4): FiltroStatus, ATIVOS, INATIVOS, TODOS
 
 ## Knowledge Gaps
 - **314 isolated node(s):** `br.edu.sistemaescala:sistema-escala`, `ADMIN`, `GESTOR`, `CREDITO_COBERTURA`, `DEBITO_AUSENCIA` (+309 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **107 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **104 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TipoTurno` connect `TipoTurno` to `GeradorRodizioServiceImpl`, `CoberturaController`, `TipoTurnoController.java`, `EscalaTurno`, `.mapearTurno`, `EscalaFuncionario`, `org.junit.jupiter.api.Test`, `java.sql.Connection`, `TipoTurnoController`, `.mapear`, `TipoTurnoService`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
-- **Why does `EscalaFuncionario` connect `EscalaFuncionario` to `GeradorRodizioServiceImpl`, `LancamentoHoras`, `.executar`, `.setEscalaTurno`, `CoberturaController`, `RegraEscalaServiceImpl`, `CoberturaServiceImplTest`, `.getConnection`, `EscalaTurno`, `FuncionarioServiceImpl`, `Funcionario`, `MontagemEscalaController`, `PainelAtribuicaoController`, `CoberturaServiceImpl`, `org.junit.jupiter.api.Test`, `java.sql.Connection`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
-- **Why does `Funcionario` connect `Funcionario` to `GeradorRodizioServiceImpl`, `LancamentoHoras`, `.setEscalaTurno`, `CoberturaServiceImplTest`, `.getConnection`, `FuncionarioServiceImpl`, `EscalaTurno`, `EscalaFuncionario`, `.getId`, `PainelAtribuicaoController`, `CoberturaServiceImpl`, `org.junit.jupiter.api.Test`, `java.sql.Connection`, `GestaoUsuariosController.java`, `FuncionarioListagemItem`, `java.time.YearMonth`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+- **Why does `TipoTurno` connect `TipoTurno` to `GeradorRodizioServiceImpl`, `java.sql.Connection`, `GeradorRodizioServiceImplTest`, `EscalaTurno`, `.criarTurno`, `TipoTurnoServiceImpl`, `org.junit.jupiter.api.BeforeEach`, `PainelAtribuicaoController.java`, `javafx.scene.layout.VBox`, `ShellController.java`, `GestaoUsuariosController.java`, `TipoTurnoController`, `.mapearTurno`, `TipoTurnoService`, `ConexaoBanco`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `EscalaFuncionario` connect `EscalaFuncionario` to `GeradorRodizioServiceImpl`, `LancamentoHoras`, `java.sql.Connection`, `GeradorRodizioServiceImplTest`, `CoberturaController`, `LancamentoHorasRepositoryJdbcTest`, `CoberturaServiceImplTest`, `.getConnection`, `EscalaTurno`, `.criarTurno`, `FuncionarioServiceImpl`, `Funcionario`, `CoberturaController.java`, `PainelAtribuicaoController.java`, `TipoLancamento`, `FuncionarioService`, `org.junit.jupiter.api.BeforeEach`, `MontagemEscalaController`, `javafx.scene.layout.VBox`, `CoberturaServiceImpl`, `org.junit.jupiter.api.Test`, `ShellController.java`, `MotivoCobertura`, `FuncionarioListagemItem`, `ConexaoBanco`, `java.time.YearMonth`?**
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._
+- **Why does `Funcionario` connect `Funcionario` to `GeradorRodizioServiceImpl`, `LancamentoHoras`, `java.sql.Connection`, `GeradorRodizioServiceImplTest`, `LancamentoHorasRepositoryJdbcTest`, `CoberturaServiceImplTest`, `FuncionarioServiceImpl`, `.criarTurno`, `EscalaFuncionario`, `FuncionarioServiceImplTest`, `.getId`, `LancamentoHorasRepositoryJdbc`, `PainelAtribuicaoController.java`, `TipoLancamento`, `GestaoUsuariosController.java`, `org.junit.jupiter.api.BeforeEach`, `javafx.scene.layout.VBox`, `CoberturaServiceImpl`, `org.junit.jupiter.api.Test`, `ShellController.java`, `MotivoCobertura`, `FuncionarioListagemItem`, `ConexaoBanco`, `java.time.YearMonth`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **What connects `br.edu.sistemaescala:sistema-escala`, `ADMIN`, `GESTOR` to the rest of the system?**
   _314 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `LancamentoHoras` be split into smaller, more focused modules?**
-  _Cohesion score 0.06829573934837092 - nodes in this community are weakly interconnected._
-- **Should `BancoHorasController` be split into smaller, more focused modules?**
-  _Cohesion score 0.12233285917496443 - nodes in this community are weakly interconnected._
-- **Should `UsuarioRepository` be split into smaller, more focused modules?**
-  _Cohesion score 0.13675213675213677 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
+- **Should `.criarTelaLogin` be split into smaller, more focused modules?**
+  _Cohesion score 0.13227513227513227 - nodes in this community are weakly interconnected._
+- **Should `RoleUsuario` be split into smaller, more focused modules?**
+  _Cohesion score 0.12307692307692308 - nodes in this community are weakly interconnected._

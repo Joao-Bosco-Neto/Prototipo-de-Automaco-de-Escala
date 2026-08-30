@@ -19,6 +19,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
@@ -40,9 +41,10 @@ import javafx.util.StringConverter;
  * à direita que alterna entre o <b>Extrato</b> e o formulário de <b>Ajuste
  * manual</b>.</p>
  *
- * <p>A barra de filtros seleciona Mês/Ano e refiltra as colunas de métricas
- * (plantões e coberturas). A coluna <b>Saldo</b> ignora esse filtro: mostra
- * sempre o somatório histórico de {@code lancamento_horas}.</p>
+ * <p>A barra de filtros seleciona Mês/Ano e recorta tanto as colunas de métricas
+ * (plantões e coberturas) quanto a coluna <b>Saldo</b> e o <b>Extrato</b> do card
+ * lateral. Marcar <b>"Ver todo o histórico"</b> remove o recorte e mostra o
+ * acumulado de {@code lancamento_horas}.</p>
  */
 public class BancoHorasController {
 
@@ -55,6 +57,7 @@ public class BancoHorasController {
     private final TableView<BancoHorasListagemItem> tabela = new TableView<>();
     private final ComboBox<Month> comboMes = new ComboBox<>();
     private final ComboBox<Integer> comboAno = new ComboBox<>();
+    private final CheckBox chkVerTudo = new CheckBox("Ver todo o histórico");
     private final Label contadorRegistros = new Label();
 
     // Card lateral: um único card com o conteúdo trocado conforme o modo.
@@ -95,8 +98,8 @@ public class BancoHorasController {
         titulo.getStyleClass().add("titulo-1");
 
         Label subtitulo = new Label(
-                "Métricas de plantões e coberturas no mês selecionado e o saldo "
-                + "consolidado do banco de horas de cada funcionário.");
+                "Métricas de plantões e coberturas e o saldo do banco de horas de cada "
+                + "funcionário no mês selecionado — ou em todo o histórico.");
         subtitulo.getStyleClass().add("texto-secundario");
         subtitulo.setWrapText(true);
 
@@ -129,8 +132,8 @@ public class BancoHorasController {
 
         Label notaSaldo = new Label(
                 "Saldo positivo indica horas a compensar em favor do funcionário; negativo, "
-                + "horas devidas. As colunas de plantões e coberturas consideram o mês "
-                + "selecionado; o saldo soma todo o histórico de lançamentos.");
+                + "horas devidas. Todas as colunas — inclusive o saldo — consideram o mês "
+                + "selecionado; marque \"Ver todo o histórico\" para o acumulado de lançamentos.");
         notaSaldo.getStyleClass().add("texto-secundario");
         notaSaldo.setWrapText(true);
 
@@ -169,7 +172,7 @@ public class BancoHorasController {
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
 
-        HBox barra = new HBox(10, rotulo, comboMes, comboAno, espacador);
+        HBox barra = new HBox(10, rotulo, comboMes, comboAno, chkVerTudo, espacador);
         barra.setAlignment(Pos.CENTER_LEFT);
         return barra;
     }
@@ -299,13 +302,17 @@ public class BancoHorasController {
         if (item == null) {
             return;
         }
-        tituloLateral.setText("Extrato — " + item.nome());
+        YearMonth periodo = mesSelecionado();
+        tituloLateral.setText("Extrato — " + item.nome()
+                + (periodo != null ? " (" + rotuloMes(periodo) + ")" : ""));
 
         VBox lista = new VBox(8);
         try {
-            List<LancamentoHoras> extrato = bancoHorasService.buscarExtrato(item.funcionarioId());
+            List<LancamentoHoras> extrato = bancoHorasService.buscarExtrato(item.funcionarioId(), periodo);
             if (extrato.isEmpty()) {
-                lista.getChildren().add(textoSecundario("Nenhum lançamento registrado."));
+                lista.getChildren().add(textoSecundario(periodo != null
+                        ? "Nenhum lançamento neste mês."
+                        : "Nenhum lançamento registrado."));
             } else {
                 for (LancamentoHoras lancamento : extrato) {
                     lista.getChildren().add(linhaExtrato(lancamento));
@@ -315,7 +322,8 @@ public class BancoHorasController {
             lista.getChildren().add(textoSecundario("Não foi possível carregar o extrato."));
         }
 
-        Label total = new Label("Saldo consolidado: " + formatarSaldo(item.saldoMinutos()));
+        Label total = new Label((periodo != null ? "Saldo no mês: " : "Saldo consolidado: ")
+                + formatarSaldo(item.saldoMinutos()));
         total.getStyleClass().add("texto-secundario");
 
         ScrollPane rolagem = new ScrollPane(lista);
@@ -419,6 +427,11 @@ public class BancoHorasController {
     private void configurarEventos() {
         comboMes.valueProperty().addListener((obs, antigo, novo) -> carregarDados());
         comboAno.valueProperty().addListener((obs, antigo, novo) -> carregarDados());
+        chkVerTudo.selectedProperty().addListener((obs, antigo, novo) -> {
+            comboMes.setDisable(novo);
+            comboAno.setDisable(novo);
+            carregarDados();
+        });
     }
 
     private void prepararSeletorMesAno() {
@@ -427,16 +440,29 @@ public class BancoHorasController {
         comboAno.setValue(agora.getYear());
     }
 
+    /** Mês/ano do filtro, ou {@code null} quando "Ver todo o histórico" está marcado. */
     private YearMonth mesSelecionado() {
+        if (chkVerTudo.isSelected()) {
+            return null;
+        }
         Month mes = comboMes.getValue() != null ? comboMes.getValue() : YearMonth.now().getMonth();
         Integer ano = comboAno.getValue() != null ? comboAno.getValue() : YearMonth.now().getYear();
         return YearMonth.of(ano, mes);
     }
 
+    private String rotuloMes(YearMonth mes) {
+        String nome = mes.getMonth().getDisplayName(TextStyle.FULL, PT_BR);
+        return nome.substring(0, 1).toUpperCase(PT_BR) + nome.substring(1) + "/" + mes.getYear();
+    }
+
     private void carregarDados() {
         try {
             List<BancoHorasListagemItem> itens = bancoHorasService.listarMensal(mesSelecionado());
+            tabela.getSelectionModel().clearSelection();
             listaExibicao.setAll(itens);
+            // Sem o refresh o JavaFX reaproveita células cujo valor "não mudou"
+            // entre recargas e a linha fica com o número do filtro anterior.
+            tabela.refresh();
             contadorRegistros.setText(itens.isEmpty()
                     ? "Nenhum funcionário encontrado."
                     : itens.size() + (itens.size() == 1 ? " funcionário." : " funcionários."));

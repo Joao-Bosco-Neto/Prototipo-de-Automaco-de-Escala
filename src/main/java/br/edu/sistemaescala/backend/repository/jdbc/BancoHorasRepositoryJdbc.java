@@ -18,9 +18,10 @@ import br.edu.sistemaescala.backend.service.BancoHorasListagemItem;
  * Implementação JDBC de {@link BancoHorasRepository}, sempre com PreparedStatement.
  *
  * <p>Uma consulta só: as três métricas do mês são subqueries correlacionadas
- * sobre {@code escala_funcionario} e o saldo é o somatório incondicional de
- * {@code lancamento_horas} — este último de propósito fora do recorte de mês,
- * porque o saldo é um valor contínuo.</p>
+ * sobre {@code escala_funcionario} e o saldo é o somatório de
+ * {@code lancamento_horas} no mesmo recorte. Quando {@code mesReferencia} é
+ * {@code null}, o recorte vira uma janela ampla e tudo soma o histórico
+ * completo.</p>
  *
  * <ul>
  *   <li><b>Plantões cumpridos</b>: alocações do mês que não são cobertura
@@ -34,6 +35,10 @@ import br.edu.sistemaescala.backend.service.BancoHorasListagemItem;
  * <p>Apenas funcionários ativos entram na listagem ({@code f.ativo = TRUE}).</p>
  */
 public class BancoHorasRepositoryJdbc implements BancoHorasRepository {
+
+    /** Janela ampla usada quando não há mês selecionado (saldo/métricas do histórico). */
+    private static final LocalDate INICIO_DOS_TEMPOS = LocalDate.of(2000, 1, 1);
+    private static final LocalDate FIM_DOS_TEMPOS = LocalDate.of(2100, 1, 1);
 
     private static final String SQL_LISTAR_MENSAL = """
             SELECT f.id, f.nome, f.matricula,
@@ -64,6 +69,7 @@ public class BancoHorasRepositoryJdbc implements BancoHorasRepository {
                 (SELECT COALESCE(SUM(lh.minutos), 0)
                    FROM lancamento_horas lh
                   WHERE lh.funcionario_id = f.id
+                    AND lh.data_referencia >= ? AND lh.data_referencia < ?
                 ) AS saldo_minutos
             FROM funcionario f
             WHERE f.ativo = TRUE
@@ -72,18 +78,22 @@ public class BancoHorasRepositoryJdbc implements BancoHorasRepository {
 
     @Override
     public List<BancoHorasListagemItem> listarMensal(YearMonth mesReferencia) {
-        YearMonth mes = mesReferencia != null ? mesReferencia : YearMonth.now();
-        LocalDate inicioMes = mes.atDay(1);
-        LocalDate inicioProximoMes = mes.plusMonths(1).atDay(1);
+        LocalDate inicio = mesReferencia != null ? mesReferencia.atDay(1) : INICIO_DOS_TEMPOS;
+        LocalDate fimExclusivo = mesReferencia != null
+                ? mesReferencia.plusMonths(1).atDay(1)
+                : FIM_DOS_TEMPOS;
 
         try (Connection conexao = ConexaoBanco.getConnection();
              PreparedStatement stmt = conexao.prepareStatement(SQL_LISTAR_MENSAL)) {
 
-            // Os três pares de parâmetros repetem o mesmo recorte de mês.
+            // Os três primeiros pares (métricas, sobre escala_turno.inicio) repetem
+            // o mesmo recorte; o quarto par é o do saldo, sobre data_referencia.
             for (int par = 0; par < 3; par++) {
-                stmt.setObject(par * 2 + 1, inicioMes.atStartOfDay());
-                stmt.setObject(par * 2 + 2, inicioProximoMes.atStartOfDay());
+                stmt.setObject(par * 2 + 1, inicio.atStartOfDay());
+                stmt.setObject(par * 2 + 2, fimExclusivo.atStartOfDay());
             }
+            stmt.setObject(7, inicio);
+            stmt.setObject(8, fimExclusivo);
 
             List<BancoHorasListagemItem> itens = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
@@ -101,7 +111,8 @@ public class BancoHorasRepositoryJdbc implements BancoHorasRepository {
             return itens;
 
         } catch (SQLException e) {
-            throw new RepositoryException("Falha ao listar o banco de horas do mês " + mes, e);
+            throw new RepositoryException("Falha ao listar o banco de horas "
+                    + (mesReferencia != null ? "do mês " + mesReferencia : "(histórico completo)"), e);
         }
     }
 }

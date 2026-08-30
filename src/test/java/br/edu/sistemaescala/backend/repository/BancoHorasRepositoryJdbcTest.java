@@ -93,18 +93,26 @@ class BancoHorasRepositoryJdbcTest {
     }
 
     @Test
-    void metricasDoMesEHistoricoDoSaldo() {
+    void metricasESaldoRecortadosPeloMes() {
         BancoHorasListagemItem a = buscar(repositorio.listarMensal(YearMonth.of(2026, 6)), idA);
         assertEquals(1, a.plantoesCumpridos(), "ef1 conta; ef2 não conta por ter sido coberto");
         assertEquals(0, a.coberturasFeitas());
         assertEquals(1, a.plantoesCobertos(), "ef2 foi assumido por B");
-        assertEquals(240, a.saldoMinutos(), "480 de junho - 240 de maio, saldo é histórico");
+        assertEquals(480, a.saldoMinutos(), "só o lançamento de junho; o -240 de maio fica de fora");
 
         BancoHorasListagemItem b = buscar(repositorio.listarMensal(YearMonth.of(2026, 6)), idB);
         assertEquals(0, b.plantoesCumpridos(), "ef3 é cobertura, não plantão próprio");
         assertEquals(1, b.coberturasFeitas());
         assertEquals(0, b.plantoesCobertos());
         assertEquals(240, b.saldoMinutos());
+    }
+
+    @Test
+    void semMesSelecionadoSomaTodoOHistorico() {
+        BancoHorasListagemItem a = buscar(repositorio.listarMensal(null), idA);
+        assertEquals(1, a.plantoesCumpridos());
+        assertEquals(1, a.plantoesCobertos());
+        assertEquals(240, a.saldoMinutos(), "480 de junho - 240 de maio");
     }
 
     @Test
@@ -115,12 +123,12 @@ class BancoHorasRepositoryJdbcTest {
     }
 
     @Test
-    void mesSemAtuacaoZeraMetricasMasNaoOSaldo() {
+    void mesSemMovimentoZeraMetricasESaldo() {
         BancoHorasListagemItem a = buscar(repositorio.listarMensal(YearMonth.of(2026, 9)), idA);
         assertEquals(0, a.plantoesCumpridos());
         assertEquals(0, a.coberturasFeitas());
         assertEquals(0, a.plantoesCobertos());
-        assertEquals(240, a.saldoMinutos());
+        assertEquals(0, a.saldoMinutos(), "nenhum lançamento em setembro");
     }
 
     private static BancoHorasListagemItem buscar(List<BancoHorasListagemItem> itens, int funcionarioId) {

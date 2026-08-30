@@ -11,15 +11,16 @@ import br.edu.sistemaescala.backend.model.LancamentoHoras;
 public interface BancoHorasService {
 
     /**
-     * Listagem da tela: uma linha por funcionário, com as métricas do mês
-     * informado ({@code null} assume o mês corrente) e o saldo consolidado.
+     * Listagem da tela: uma linha por funcionário, com as métricas e o saldo do
+     * mês informado. {@code null} soma todo o histórico (sem filtro de mês).
      */
     List<BancoHorasListagemItem> listarMensal(YearMonth mesReferencia);
 
     /**
-     * Extrato cronológico completo de {@code lancamento_horas} do funcionário.
+     * Extrato cronológico de {@code lancamento_horas} do funcionário no mês
+     * informado. {@code null} traz o extrato completo.
      */
-    List<LancamentoHoras> buscarExtrato(int funcionarioId);
+    List<LancamentoHoras> buscarExtrato(int funcionarioId, YearMonth mesReferencia);
 
     /**
      * Lança um ajuste manual (tipo {@code ajuste_manual}) no banco de horas.

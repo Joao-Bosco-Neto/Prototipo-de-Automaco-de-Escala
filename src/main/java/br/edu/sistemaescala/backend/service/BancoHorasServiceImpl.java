@@ -17,7 +17,7 @@ public class BancoHorasServiceImpl implements BancoHorasService {
 
     /** Janela ampla para o "extrato completo": buscarExtrato exige um período. */
     private static final LocalDate INICIO_DOS_TEMPOS = LocalDate.of(2000, 1, 1);
-    private static final LocalDate FIM_DOS_TEMPOS = LocalDate.of(2100, 1, 1);
+    private static final LocalDate FIM_DOS_TEMPOS = LocalDate.of(2100, 12, 31);
 
     private final BancoHorasRepository bancoHorasRepository;
     private final LancamentoHorasRepository lancamentoHorasRepository;
@@ -36,12 +36,14 @@ public class BancoHorasServiceImpl implements BancoHorasService {
 
     @Override
     public List<BancoHorasListagemItem> listarMensal(YearMonth mesReferencia) {
-        return bancoHorasRepository.listarMensal(mesReferencia != null ? mesReferencia : YearMonth.now());
+        return bancoHorasRepository.listarMensal(mesReferencia);
     }
 
     @Override
-    public List<LancamentoHoras> buscarExtrato(int funcionarioId) {
-        return lancamentoHorasRepository.buscarExtrato(funcionarioId, INICIO_DOS_TEMPOS, FIM_DOS_TEMPOS);
+    public List<LancamentoHoras> buscarExtrato(int funcionarioId, YearMonth mesReferencia) {
+        LocalDate inicio = mesReferencia != null ? mesReferencia.atDay(1) : INICIO_DOS_TEMPOS;
+        LocalDate fim = mesReferencia != null ? mesReferencia.atEndOfMonth() : FIM_DOS_TEMPOS;
+        return lancamentoHorasRepository.buscarExtrato(funcionarioId, inicio, fim);
     }
 
     @Override
