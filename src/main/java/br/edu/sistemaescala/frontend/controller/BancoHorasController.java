@@ -1,5 +1,7 @@
 package br.edu.sistemaescala.frontend.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -7,10 +9,13 @@ import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 
+import br.edu.sistemaescala.LogAplicacao;
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 import br.edu.sistemaescala.backend.service.BancoHorasListagemItem;
 import br.edu.sistemaescala.backend.service.BancoHorasService;
+import br.edu.sistemaescala.backend.service.ExportacaoRelatorioService;
 import br.edu.sistemaescala.backend.service.RegraBancoHorasException;
+import br.edu.sistemaescala.frontend.DialogUtil;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -19,8 +24,11 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -31,6 +39,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
 /**
@@ -45,13 +54,20 @@ import javafx.util.StringConverter;
  * (plantões e coberturas) quanto a coluna <b>Saldo</b> e o <b>Extrato</b> do card
  * lateral. Marcar <b>"Ver todo o histórico"</b> remove o recorte e mostra o
  * acumulado de {@code lancamento_horas}.</p>
+ *
+ * <p>Os botões de exportação gravam em PDF ou CSV exatamente as linhas que
+ * estão na tabela — a apuração estanque do mês já vem feita da consulta, e a
+ * escrita do arquivo fica toda em {@link ExportacaoRelatorioService}.</p>
  */
 public class BancoHorasController {
 
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
+    private static final String FORMATO_PDF = "pdf";
+    private static final String FORMATO_CSV = "csv";
 
     private final BancoHorasService bancoHorasService;
+    private final ExportacaoRelatorioService exportacaoService = new ExportacaoRelatorioService();
     private final ObservableList<BancoHorasListagemItem> listaExibicao = FXCollections.observableArrayList();
 
     private final TableView<BancoHorasListagemItem> tabela = new TableView<>();
@@ -144,6 +160,12 @@ public class BancoHorasController {
     private HBox criarBarraFiltros() {
         Label rotulo = new Label("Mês de referência");
         rotulo.getStyleClass().add("texto-secundario");
+        // Sem o minWidth o HBox encolhe rótulo, combos e checkbox abaixo do
+        // tamanho do texto em janela estreita, e tudo vira reticências.
+        rotulo.setMinWidth(Region.USE_PREF_SIZE);
+        chkVerTudo.setMinWidth(Region.USE_PREF_SIZE);
+        comboMes.setMinWidth(Region.USE_PREF_SIZE);
+        comboAno.setMinWidth(Region.USE_PREF_SIZE);
 
         comboMes.setItems(FXCollections.observableArrayList(Month.values()));
         comboMes.setConverter(new StringConverter<>() {
@@ -172,7 +194,12 @@ public class BancoHorasController {
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
 
-        HBox barra = new HBox(10, rotulo, comboMes, comboAno, chkVerTudo, espacador);
+        javafx.scene.control.Button botaoExportar = new javafx.scene.control.Button("Exportar");
+        botaoExportar.getStyleClass().add("button-secundario");
+        botaoExportar.setMinWidth(Region.USE_PREF_SIZE);
+        botaoExportar.setOnAction(e -> exportar());
+
+        HBox barra = new HBox(10, rotulo, comboMes, comboAno, chkVerTudo, espacador, botaoExportar);
         barra.setAlignment(Pos.CENTER_LEFT);
         return barra;
     }
@@ -470,6 +497,100 @@ public class BancoHorasController {
             listaExibicao.clear();
             contadorRegistros.setText("Erro ao carregar o banco de horas.");
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Exportação
+    // -----------------------------------------------------------------
+
+    /**
+     * Pergunta o formato e salva a listagem atual.
+     *
+     * <p>Exporta exatamente as linhas que estão na tabela — que já vêm
+     * recortadas pelo mês na consulta do repositório —, então o arquivo nunca
+     * mostra saldo diferente do que o usuário acabou de ver na tela. O destino
+     * é escolhido pelo diálogo nativo do sistema; o controller não conhece
+     * pasta nenhuma.</p>
+     */
+    private void exportar() {
+        if (listaExibicao.isEmpty()) {
+            DialogUtil.mostrarInformacao("Nada a exportar",
+                    "Não há funcionários na listagem do período selecionado.");
+            return;
+        }
+
+        YearMonth periodo = mesSelecionado();
+
+        String formato = escolherFormato(periodo);
+        if (formato == null) {
+            return; // o usuário fechou a caixa sem escolher
+        }
+
+        FileChooser seletor = new FileChooser();
+        seletor.setTitle("Salvar relatório do banco de horas");
+        seletor.setInitialFileName(exportacaoService.nomeArquivoSugerido(periodo, formato));
+        seletor.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Arquivo " + formato.toUpperCase(PT_BR), "*." + formato));
+
+        File escolhido = seletor.showSaveDialog(
+                tabela.getScene() != null ? tabela.getScene().getWindow() : null);
+        if (escolhido == null) {
+            return; // o usuário cancelou o diálogo
+        }
+        File destino = garantirExtensao(escolhido, formato);
+
+        List<BancoHorasListagemItem> itens = List.copyOf(listaExibicao);
+        try {
+            if (FORMATO_PDF.equals(formato)) {
+                exportacaoService.exportarPdf(itens, periodo, destino);
+            } else {
+                exportacaoService.exportarCsv(itens, periodo, destino);
+            }
+            DialogUtil.mostrarInformacao("Exportação concluída",
+                    "Relatório de " + exportacaoService.rotuloPeriodo(periodo) + " salvo em:\n"
+                    + destino.getAbsolutePath());
+        } catch (IOException | RuntimeException e) {
+            LogAplicacao.registrarErro("Falha ao exportar o banco de horas para " + destino, e);
+            DialogUtil.mostrarErro("Falha na exportação",
+                    "Não foi possível gravar o arquivo. Verifique se você tem permissão de "
+                    + "escrita na pasta escolhida e se o arquivo não está aberto em outro programa.");
+        }
+    }
+
+    /**
+     * Caixa de escolha do formato, antes do diálogo de salvamento.
+     *
+     * <p>Um botão por formato em vez de um combo: são só duas opções, e assim
+     * a escolha e a confirmação viram um clique só. Devolve {@code null} se o
+     * usuário cancelar ou fechar a janela.</p>
+     */
+    private String escolherFormato(YearMonth periodo) {
+        ButtonType opcaoPdf = new ButtonType("PDF", ButtonBar.ButtonData.OTHER);
+        ButtonType opcaoCsv = new ButtonType("CSV", ButtonBar.ButtonData.OTHER);
+
+        Dialog<ButtonType> dialogo = new Dialog<>();
+        dialogo.setTitle("Sistema de Escala");
+        dialogo.setHeaderText("Exportar o relatório de " + exportacaoService.rotuloPeriodo(periodo));
+        dialogo.getDialogPane().setContentText("Escolha o formato do arquivo.");
+        dialogo.getDialogPane().getButtonTypes().addAll(opcaoPdf, opcaoCsv, ButtonType.CANCEL);
+        DialogUtil.aplicarTema(dialogo.getDialogPane());
+
+        ButtonType escolha = dialogo.showAndWait().orElse(ButtonType.CANCEL);
+        if (escolha == opcaoPdf) {
+            return FORMATO_PDF;
+        }
+        return escolha == opcaoCsv ? FORMATO_CSV : null;
+    }
+
+    /**
+     * Nem todo sistema acrescenta a extensão do filtro quando o usuário digita
+     * o nome à mão; sem ela o arquivo salvo não abre com dois cliques.
+     */
+    private File garantirExtensao(File destino, String formato) {
+        String sufixo = "." + formato;
+        return destino.getName().toLowerCase(PT_BR).endsWith(sufixo)
+                ? destino
+                : new File(destino.getPath() + sufixo);
     }
 
     private BancoHorasListagemItem buscarNaLista(int funcionarioId) {

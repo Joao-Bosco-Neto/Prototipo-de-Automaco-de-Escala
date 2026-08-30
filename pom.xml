@@ -15,6 +15,7 @@
         <javafx.version>21.0.2</javafx.version>
         <h2.version>2.4.240</h2.version>
         <bcrypt.version>0.10.2</bcrypt.version>
+        <openpdf.version>2.4.0</openpdf.version>
     </properties>
 
     <dependencies>
@@ -44,6 +45,25 @@
             <groupId>at.favre.lib</groupId>
             <artifactId>bcrypt</artifactId>
             <version>${bcrypt.version}</version>
+        </dependency>
+
+        <!-- OpenPDF: geracao dos relatorios em PDF.
+             Escolhido no lugar do iText moderno por causa da licenca (LGPL/MPL,
+             sem a clausula viral do AGPL).
+
+             E o artefato openpdf-core-modern (pacote org.openpdf), nao o
+             openpdf: este ultimo e a linha "legacy" com.lowagie, cujas classes
+             ja estao todas marcadas @Deprecated. Os dois sao a mesma
+             biblioteca na mesma versao, so muda o nome do pacote.
+
+             A linha 2.x declara todas as dependencias dela como optional,
+             entao nao entra nenhum jar transitivo e nada exige rede. A 3.x
+             arrasta brotli4j com binario nativo por plataforma, o que
+             quebraria o empacotamento offline. -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf-core-modern</artifactId>
+            <version>${openpdf.version}</version>
         </dependency>
 
         <!-- Testes -->
