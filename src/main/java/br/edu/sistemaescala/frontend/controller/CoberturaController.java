@@ -21,6 +21,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -50,7 +51,8 @@ public class CoberturaController {
     private final ComboBox<SubstitutoDisponivel> comboSubstituto = new ComboBox<>();
     private final ComboBox<MotivoCobertura> comboMotivo = new ComboBox<>();
     private final TextArea campoObservacoes = new TextArea();
-    private final CheckBox checkBancoHoras = new CheckBox("Lançar no banco de horas");
+    private final CheckBox checkBancoHoras = new CheckBox();
+    private final Label labelBancoHoras = new Label("Lançar no banco de horas");
 
     private final Label labelMensagem = new Label();
     private final Button botaoRegistrar = new Button("Registrar cobertura");
@@ -61,7 +63,7 @@ public class CoberturaController {
     }
 
     public Parent criarTela() {
-        VBox raiz = new VBox(18);
+        VBox raiz = new VBox(20);
         raiz.setPadding(new Insets(24));
         raiz.getStyleClass().add("area-conteudo");
 
@@ -73,7 +75,10 @@ public class CoberturaController {
         campoData.setValue(LocalDate.now());
         recarregarAusentes();
 
-        return raiz;
+        ScrollPane scroll = new ScrollPane(raiz);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        return scroll;
     }
 
     private VBox criarCabecalho() {
@@ -90,14 +95,15 @@ public class CoberturaController {
     }
 
     private VBox criarCardFormulario() {
-        VBox card = new VBox(12);
+        VBox card = new VBox(16);
         card.getStyleClass().add("card");
-        card.setMaxWidth(560);
+        card.setMaxWidth(680);
 
         Label tituloForm = new Label("Nova cobertura");
         tituloForm.getStyleClass().add("titulo-2");
 
         ajudaAusente.getStyleClass().add("texto-secundario");
+        ajudaAusente.setWrapText(true);
 
         Label ajudaSubstituto = new Label(
                 "Qualquer funcionário pode cobrir. Quem está em descanso mínimo "
@@ -117,21 +123,46 @@ public class CoberturaController {
 
         botaoRegistrar.getStyleClass().add("button-primario");
         botaoLimpar.getStyleClass().add("button-secundario");
-        HBox barraBotoes = new HBox(10, botaoRegistrar, botaoLimpar);
+        HBox barraBotoes = new HBox(12, botaoRegistrar, botaoLimpar);
         barraBotoes.setAlignment(Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(
                 tituloForm,
-                new Label("Data do plantão *"), campoData,
-                new Label("Funcionário ausente *"), comboAusente, ajudaAusente,
-                new Label("Funcionário que irá cobrir *"), comboSubstituto, ajudaSubstituto,
-                new Label("Motivo"), comboMotivo,
-                new Label("Observações"), campoObservacoes,
-                checkBancoHoras, ajudaBancoHoras,
+                grupoCampo(new Label("Data do plantão *"), campoData),
+                grupoCampo(new Label("Funcionário ausente *"), comboAusente, ajudaAusente),
+                grupoCampo(new Label("Funcionário que irá cobrir *"), comboSubstituto, ajudaSubstituto),
+                grupoCampo(new Label("Motivo"), comboMotivo),
+                grupoCampo(new Label("Observações"), campoObservacoes),
+                grupoCampo(linhaBancoHoras(), ajudaBancoHoras),
                 labelMensagem,
                 barraBotoes);
 
         return card;
+    }
+
+    /**
+     * Agrupa o rótulo e o controle de um campo com espaçamento curto entre si,
+     * separando os campos entre si pelo espaçamento maior do card — mesmo padrão
+     * da tela de Configurações da Organização.
+     */
+    private VBox grupoCampo(javafx.scene.Node... nos) {
+        for (javafx.scene.Node no : nos) {
+            // Um Label recém-criado já traz a classe "label"; o rótulo do campo é
+            // todo Label que ainda não recebeu classe própria (os textos de ajuda
+            // chegam aqui com "texto-secundario" e devem ficar como estão).
+            if (no instanceof Label rotulo && !rotulo.getStyleClass().contains("texto-secundario")) {
+                rotulo.getStyleClass().add("rotulo-campo");
+            }
+        }
+        return new VBox(4, nos);
+    }
+
+    /** Deixa o texto "Lançar no banco de horas" ao lado da checkbox. */
+    private HBox linhaBancoHoras() {
+        labelBancoHoras.getStyleClass().add("rotulo-campo");
+        HBox linha = new HBox(8, checkBancoHoras, labelBancoHoras);
+        linha.setAlignment(Pos.CENTER_LEFT);
+        return linha;
     }
 
     private void configurarCampos() {
@@ -160,6 +191,7 @@ public class CoberturaController {
 
         comboMotivo.setMaxWidth(Double.MAX_VALUE);
         comboMotivo.setPromptText("Sem motivo específico");
+        comboMotivo.setPlaceholder(new Label("Nenhum motivo cadastrado."));
         comboMotivo.setConverter(new StringConverter<>() {
             @Override
             public String toString(MotivoCobertura motivo) {

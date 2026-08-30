@@ -50,6 +50,12 @@
 .texto-secundario {
     -fx-text-fill: -cor-texto-secundario;
 }
+/* Rótulo de campo de formulário (label acima do input), conforme o protótipo. */
+.rotulo-campo {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
 
 /* ---------------------------------------------------------------------
    Botões
