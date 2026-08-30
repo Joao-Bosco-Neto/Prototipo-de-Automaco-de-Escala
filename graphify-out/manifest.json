@@ -722,9 +722,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/CoberturaController.java": {
-    "mtime": 1788029633.4373126,
-    "seen": 1788029725.1967652,
-    "ast_hash": "b7066a34c685edec5d8131e541f10c05",
+    "mtime": 1788115395.7191556,
+    "seen": 1788115452.1638336,
+    "ast_hash": "04b7acb4e4fcf3515fa7a42cc685f1cd",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/ConfiguracaoController.java": {
