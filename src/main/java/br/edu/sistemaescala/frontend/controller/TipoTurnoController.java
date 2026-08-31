@@ -239,8 +239,10 @@ public class TipoTurnoController {
             private final HBox container = new HBox(6, botaoEditar, botaoAlternar);
 
             {
-                botaoEditar.getStyleClass().add("button-secundario");
-                botaoAlternar.getStyleClass().add("button-secundario");
+                // Variante compacta: com o padding do secundário cheio os
+                // rótulos saem cortados ("E...", "Desat...") na largura da célula.
+                botaoEditar.getStyleClass().add("button-secundario-compacto");
+                botaoAlternar.getStyleClass().add("button-secundario-compacto");
                 container.setAlignment(Pos.CENTER);
 
                 botaoEditar.setOnAction(event -> {

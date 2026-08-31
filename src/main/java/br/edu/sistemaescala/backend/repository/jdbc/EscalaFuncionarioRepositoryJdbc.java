@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
+import br.edu.sistemaescala.backend.service.CoberturaListagemItem;
 
 /** Implementacao JDBC de {@link EscalaFuncionarioRepository}. */
 public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioRepository {
@@ -76,6 +78,37 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
             FROM escala_funcionario ef
             JOIN escala_turno et ON et.id = ef.escala_turno_id
             JOIN funcionario f ON f.id = ef.funcionario_id
+            WHERE ef.cobertura_de IS NOT NULL
+              AND et.inicio >= ? AND et.inicio < ?
+            ORDER BY et.inicio, ef.id
+            """;
+
+    /**
+     * Consulta da tabela da tela de Coberturas.
+     *
+     * O LEFT JOIN volta a escala_funcionario para alcancar o titular coberto
+     * (ef_aus) e dai chegar ao nome dele (f_aus); motivo_cobertura entra pelo
+     * nome do motivo. Sao LEFT porque cobertura_de aponta para uma linha que
+     * pode ter sido apagada em cascata e motivo_cobertura_id e opcional.
+     */
+    private static final String SQL_LISTAR_PARA_LISTAGEM = """
+            SELECT ef.id AS ef_id, ef.escala_turno_id AS ef_escala_turno_id,
+                   ef.funcionario_id AS ef_funcionario_id, ef.inicio AS ef_inicio, ef.fim AS ef_fim,
+                   ef.cobertura_de AS ef_cobertura_de, ef.motivo_cobertura_id AS ef_motivo_cobertura_id,
+                   ef.observacao AS ef_observacao, ef.lancou_banco_horas AS ef_lancou_banco_horas,
+                   ef.criado_em AS ef_criado_em,
+                   et.inicio AS et_inicio, et.fim AS et_fim,
+                   f.nome AS f_nome, f.matricula AS f_matricula, f.telefone AS f_telefone,
+                   f.observacoes AS f_observacoes, f.ativo AS f_ativo, f.criado_em AS f_criado_em,
+                   ef_aus.funcionario_id AS aus_funcionario_id,
+                   f_aus.nome AS aus_nome, f_aus.matricula AS aus_matricula,
+                   mc.nome AS mc_nome
+            FROM escala_funcionario ef
+            JOIN escala_turno et ON et.id = ef.escala_turno_id
+            JOIN funcionario f ON f.id = ef.funcionario_id
+            LEFT JOIN escala_funcionario ef_aus ON ef_aus.id = ef.cobertura_de
+            LEFT JOIN funcionario f_aus ON f_aus.id = ef_aus.funcionario_id
+            LEFT JOIN motivo_cobertura mc ON mc.id = ef.motivo_cobertura_id
             WHERE ef.cobertura_de IS NOT NULL
               AND et.inicio >= ? AND et.inicio < ?
             ORDER BY et.inicio, ef.id
@@ -238,6 +271,69 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao buscar coberturas do mes " + mes, e);
         }
+    }
+
+    @Override
+    public List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_LISTAR_PARA_LISTAGEM)) {
+
+            stmt.setObject(1, mes.atDay(1).atStartOfDay());
+            stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());
+            List<CoberturaListagemItem> itens = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    itens.add(mapearItemDeListagem(rs));
+                }
+            }
+            return itens;
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao listar coberturas do mes " + mes, e);
+        }
+    }
+
+    /**
+     * Monta a linha da tabela e, junto, a entidade hidratada que a edicao e a
+     * exclusao vao usar: substituto e ausente com nome e matricula, e o turno
+     * com inicio e fim.
+     */
+    private CoberturaListagemItem mapearItemDeListagem(ResultSet rs) throws SQLException {
+        EscalaFuncionario cobertura = mapearCamposBase(rs);
+
+        EscalaTurno turno = new EscalaTurno();
+        turno.setId(rs.getInt("ef_escala_turno_id"));
+        turno.setInicio(rs.getObject("et_inicio", LocalDateTime.class));
+        turno.setFim(rs.getObject("et_fim", LocalDateTime.class));
+        cobertura.setEscalaTurno(turno);
+
+        cobertura.setFuncionario(mapearFuncionario(rs));
+
+        // mapearCamposBase deixa o coberturaDe so com o id; aqui ele ganha o
+        // funcionario ausente, que e o nome exibido na coluna "Ausente".
+        String nomeAusente = rs.getString("aus_nome");
+        int ausenteFuncionarioId = rs.getInt("aus_funcionario_id");
+        if (!rs.wasNull() && cobertura.getCoberturaDe() != null) {
+            Funcionario ausente = new Funcionario();
+            ausente.setId(ausenteFuncionarioId);
+            ausente.setNome(nomeAusente);
+            ausente.setMatricula(rs.getString("aus_matricula"));
+            cobertura.getCoberturaDe().setFuncionario(ausente);
+        }
+
+        int minutosDoTurno = turno.getInicio() != null && turno.getFim() != null
+                ? (int) Duration.between(turno.getInicio(), turno.getFim()).toMinutes()
+                : 0;
+
+        return new CoberturaListagemItem(
+                cobertura.getId(),
+                turno.getInicio() != null ? turno.getInicio().toLocalDate() : null,
+                cobertura.getFuncionario().getNome(),
+                nomeAusente,
+                rs.getString("mc_nome"),
+                cobertura.isLancouBancoHoras(),
+                minutosDoTurno,
+                cobertura);
     }
 
     private void setNullableInt(PreparedStatement stmt, int indice, Integer valor) throws SQLException {

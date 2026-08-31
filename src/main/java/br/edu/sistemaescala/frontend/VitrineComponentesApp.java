@@ -71,7 +71,19 @@ public class VitrineComponentesApp extends Application {
 
         HBox linha = new HBox(12, primario, secundario, perigo, desabilitado);
         linha.setAlignment(Pos.CENTER_LEFT);
-        return new VBox(12, rotulo, linha);
+
+        // Variantes compactas: cabem dentro de célula de tabela e de linha
+        // estreita, onde o padding dos botões acima estoura.
+        Button secundarioCompacto = new Button("Secundário compacto");
+        secundarioCompacto.getStyleClass().add("button-secundario-compacto");
+
+        Button perigoCompacto = new Button("Perigo compacto");
+        perigoCompacto.getStyleClass().add("button-perigo-compacto");
+
+        HBox linhaCompacta = new HBox(12, secundarioCompacto, perigoCompacto);
+        linhaCompacta.setAlignment(Pos.CENTER_LEFT);
+
+        return new VBox(12, rotulo, linha, linhaCompacta);
     }
 
     private VBox secaoCampos() {

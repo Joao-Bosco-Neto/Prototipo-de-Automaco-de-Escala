@@ -3,6 +3,7 @@ package br.edu.sistemaescala.backend.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -131,6 +133,50 @@ class CoberturaServiceImplTest {
                 .findFirst()
                 .orElseThrow();
         assertTrue(substituto.disponivel(), "o substituto não tem outro plantão: está livre");
+    }
+
+    @Test
+    void listarSubstitutosParaEdicaoMantemQuemCobreHojeComoDisponivel() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, false);
+
+        // Sem a cobertura em mãos, quem cobre hoje some da lista: ele passou a
+        // ocupar o turno no instante em que a cobertura foi registrada.
+        assertTrue(servico.listarSubstitutos(alocacaoAusente()).stream()
+                        .noneMatch(s -> s.funcionario().getId() == funcionarioSubstitutoId),
+                "no modo de registro ele conta como já escalado");
+
+        List<SubstitutoDisponivel> paraEdicao = servico.listarSubstitutos(alocacaoAusente(), cobertura);
+
+        SubstitutoDisponivel atual = paraEdicao.stream()
+                .filter(s -> s.funcionario().getId() == funcionarioSubstitutoId)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("quem cobre hoje precisa aparecer na edição"));
+        assertTrue(atual.disponivel(),
+                "manter quem já cobre não muda a escala: as regras acusariam duplicidade com a própria linha");
+
+        // Os demais ocupantes do turno continuam de fora.
+        assertTrue(paraEdicao.stream().noneMatch(s -> s.funcionario().getId() == funcionarioTerceiroId));
+        assertTrue(paraEdicao.stream().noneMatch(s -> s.funcionario().getId() == funcionarioAusenteId));
+    }
+
+    @Test
+    void listarCoberturasParaListagemTrazACoberturaDoMesResolvida() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, "Troca", true);
+
+        List<CoberturaListagemItem> itens = servico.listarCoberturasParaListagem(YearMonth.from(DIA));
+        assertEquals(1, itens.size());
+
+        CoberturaListagemItem item = itens.get(0);
+        assertEquals(cobertura.getId(), item.coberturaId());
+        assertEquals(DIA, item.dataPlantao());
+        assertEquals(PREFIXO + " SUB", item.nomeSubstituto());
+        assertEquals(PREFIXO + " AUS", item.nomeAusente());
+        assertNull(item.motivoDescricao(), "registrada sem motivo");
+        assertTrue(item.lancouBancoHoras());
+        assertEquals(MINUTOS_DO_TURNO, item.minutosDoTurno(), "o selo mostra a duração do turno");
+
+        assertTrue(servico.listarCoberturasParaListagem(YearMonth.from(DIA).minusMonths(1)).isEmpty(),
+                "o filtro é estanque: nada vaza do mês anterior");
     }
 
     // -----------------------------------------------------------------

@@ -254,8 +254,10 @@ public class BancoHorasController {
             private final HBox container = new HBox(6, botaoExtrato, botaoEditar);
 
             {
-                botaoExtrato.getStyleClass().add("button-secundario");
-                botaoEditar.getStyleClass().add("button-secundario");
+                // Variante compacta: com o padding do secundário cheio os
+                // rótulos saem cortados ("Ver ext...", "E...") na largura da célula.
+                botaoExtrato.getStyleClass().add("button-secundario-compacto");
+                botaoEditar.getStyleClass().add("button-secundario-compacto");
                 container.setAlignment(Pos.CENTER);
                 botaoExtrato.setOnAction(e -> mostrarExtrato(getTableView().getItems().get(getIndex())));
                 botaoEditar.setOnAction(e -> mostrarEdicao(getTableView().getItems().get(getIndex())));

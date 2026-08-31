@@ -1,6 +1,7 @@
 package br.edu.sistemaescala.backend.service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
@@ -47,6 +48,34 @@ public interface CoberturaService {
      * {@code disponivel = false}.</p>
      */
     List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario alocacaoAusente);
+
+    /**
+     * Mesma lista, porém montada para <em>editar</em> a
+     * {@code coberturaEmEdicao} informada.
+     *
+     * <p>Difere da versão de um argumento em dois pontos, os dois pela mesma
+     * razão — a cobertura que está sendo alterada já ocupa o turno: ela não
+     * conta como ocupação (senão quem cobre hoje sumiria do combo e a tela não
+     * teria como mostrar o valor gravado) e o substituto atual volta sempre
+     * disponível, porque manter quem já cobre não muda nada na escala. É a
+     * mesma decisão que {@link #editar} toma ao só reavaliar as regras quando o
+     * substituto de fato muda.</p>
+     *
+     * <p>Com {@code coberturaEmEdicao} nulo o comportamento é idêntico ao de
+     * {@link #listarSubstitutos(EscalaFuncionario)}.</p>
+     */
+    List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario alocacaoAusente,
+                                                 EscalaFuncionario coberturaEmEdicao);
+
+    /**
+     * Coberturas registradas em turnos que começam no mês informado, prontas
+     * para a tabela da tela de Coberturas.
+     *
+     * <p>Cada item já traz o nome do ausente, o nome de quem cobriu, a
+     * descrição do motivo, a duração do turno e a própria alocação hidratada —
+     * o controller não resolve nenhum dado nem volta ao banco por linha.</p>
+     */
+    List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes);
 
     /**
      * Registra a cobertura: insere a alocação do substituto (com

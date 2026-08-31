@@ -1,7 +1,9 @@
 package br.edu.sistemaescala.backend.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
@@ -9,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -24,6 +27,7 @@ import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.repository.jdbc.EscalaFuncionarioRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.CoberturaListagemItem;
 
 /**
  * Testes de integracao contra o H2 real. Fixtures (funcionario, tipo_turno,
@@ -38,6 +42,7 @@ class EscalaFuncionarioRepositoryJdbcTest {
     private static final List<Integer> ESCALA_TURNO_IDS = new ArrayList<>();
     private static final List<Integer> TIPO_TURNO_IDS = new ArrayList<>();
     private static final List<Integer> FUNCIONARIO_IDS = new ArrayList<>();
+    private static final List<Integer> MOTIVO_COBERTURA_IDS = new ArrayList<>();
 
     @BeforeAll
     static void prepararBanco() {
@@ -59,6 +64,9 @@ class EscalaFuncionarioRepositoryJdbcTest {
             }
             for (int id : FUNCIONARIO_IDS) {
                 executar(conexao, "DELETE FROM funcionario WHERE id = ?", id);
+            }
+            for (int id : MOTIVO_COBERTURA_IDS) {
+                executar(conexao, "DELETE FROM motivo_cobertura WHERE id = ?", id);
             }
         }
     }
@@ -160,6 +168,78 @@ class EscalaFuncionarioRepositoryJdbcTest {
         assertTrue(REPOSITORIO.buscarCoberturasDoMes(YearMonth.of(2026, 11)).isEmpty());
     }
 
+    @Test
+    void listarCoberturasParaListagemResolveAusenteMotivoEDuracaoNaPropriaConsulta() {
+        int tipoTurnoId = inserirTipoTurno("TESTE-EF-TIPO-D");
+        int funcionarioTitularId = inserirFuncionario("TESTE-EF-FUNC-TITULAR-D");
+        int funcionarioCoberturaId = inserirFuncionario("TESTE-EF-FUNC-COBERTURA-D");
+        int motivoId = inserirMotivoCobertura("TESTE-EF-MOTIVO-D");
+        // Turno de 12h: a duracao vem do turno, nao de campo gravado na cobertura.
+        int escalaTurnoId = inserirEscalaTurno(tipoTurnoId,
+                LocalDateTime.of(2026, 9, 14, 19, 0), LocalDateTime.of(2026, 9, 15, 7, 0));
+
+        int titularId = inserirEscalaFuncionario(escalaTurnoId, funcionarioTitularId, null);
+        int coberturaId = inserirCobertura(escalaTurnoId, funcionarioCoberturaId, titularId, motivoId, true);
+
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(funcionarioTitularId);
+        FUNCIONARIO_IDS.add(funcionarioCoberturaId);
+        MOTIVO_COBERTURA_IDS.add(motivoId);
+        ESCALA_TURNO_IDS.add(escalaTurnoId);
+        ESCALA_FUNCIONARIO_IDS.add(titularId);
+        ESCALA_FUNCIONARIO_IDS.add(coberturaId);
+
+        List<CoberturaListagemItem> itens = REPOSITORIO.listarCoberturasParaListagem(YearMonth.of(2026, 9));
+        assertEquals(1, itens.size());
+
+        CoberturaListagemItem item = itens.get(0);
+        assertEquals(coberturaId, item.coberturaId());
+        assertEquals(LocalDate.of(2026, 9, 14), item.dataPlantao());
+        assertEquals("TESTE-EF-FUNC-COBERTURA-D", item.nomeSubstituto());
+        assertEquals("TESTE-EF-FUNC-TITULAR-D", item.nomeAusente());
+        assertEquals("TESTE-EF-MOTIVO-D", item.motivoDescricao());
+        assertTrue(item.lancouBancoHoras());
+        assertEquals(12 * 60, item.minutosDoTurno());
+
+        // A entidade vai inteira para editar/excluir: sem ela a auditoria da
+        // exclusao nao teria as matriculas nem a data do plantao.
+        EscalaFuncionario cobertura = item.cobertura();
+        assertNotNull(cobertura.getEscalaTurno().getInicio());
+        assertEquals("TESTE-EF-FUNC-COBERTURA-D", cobertura.getFuncionario().getMatricula());
+        assertEquals(titularId, cobertura.getCoberturaDe().getId());
+        assertEquals("TESTE-EF-FUNC-TITULAR-D", cobertura.getCoberturaDe().getFuncionario().getMatricula());
+
+        assertTrue(REPOSITORIO.listarCoberturasParaListagem(YearMonth.of(2026, 8)).isEmpty());
+    }
+
+    @Test
+    void listarCoberturasParaListagemAceitaCoberturaSemMotivoESemLancamento() {
+        int tipoTurnoId = inserirTipoTurno("TESTE-EF-TIPO-E");
+        int funcionarioTitularId = inserirFuncionario("TESTE-EF-FUNC-TITULAR-E");
+        int funcionarioCoberturaId = inserirFuncionario("TESTE-EF-FUNC-COBERTURA-E");
+        int escalaTurnoId = inserirEscalaTurno(tipoTurnoId,
+                LocalDateTime.of(2026, 12, 3, 8, 0), LocalDateTime.of(2026, 12, 4, 8, 0));
+
+        int titularId = inserirEscalaFuncionario(escalaTurnoId, funcionarioTitularId, null);
+        int coberturaId = inserirCobertura(escalaTurnoId, funcionarioCoberturaId, titularId, null, false);
+
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(funcionarioTitularId);
+        FUNCIONARIO_IDS.add(funcionarioCoberturaId);
+        ESCALA_TURNO_IDS.add(escalaTurnoId);
+        ESCALA_FUNCIONARIO_IDS.add(titularId);
+        ESCALA_FUNCIONARIO_IDS.add(coberturaId);
+
+        List<CoberturaListagemItem> itens = REPOSITORIO.listarCoberturasParaListagem(YearMonth.of(2026, 12));
+        assertEquals(1, itens.size());
+
+        CoberturaListagemItem item = itens.get(0);
+        // O LEFT JOIN em motivo_cobertura precisa devolver a linha mesmo assim.
+        assertNull(item.motivoDescricao());
+        assertFalse(item.lancouBancoHoras());
+        assertEquals(24 * 60, item.minutosDoTurno());
+    }
+
     private int inserirTipoTurno(String nome) {
         try (Connection conexao = ConexaoBanco.getConnection()) {
             return inserirRetornandoId(conexao,
@@ -196,6 +276,28 @@ class EscalaFuncionarioRepositoryJdbcTest {
             return inserirRetornandoId(conexao,
                     "INSERT INTO escala_funcionario (escala_turno_id, funcionario_id, cobertura_de) VALUES (?, ?, ?)",
                     escalaTurnoId, funcionarioId, coberturaDe);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private int inserirMotivoCobertura(String nome) {
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return inserirRetornandoId(conexao,
+                    "INSERT INTO motivo_cobertura (nome) VALUES (?)", nome);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private int inserirCobertura(int escalaTurnoId, int funcionarioId, Integer coberturaDe,
+                                 Integer motivoCoberturaId, boolean lancouBancoHoras) {
+        try (Connection conexao = ConexaoBanco.getConnection()) {
+            return inserirRetornandoId(conexao,
+                    "INSERT INTO escala_funcionario "
+                            + "(escala_turno_id, funcionario_id, cobertura_de, motivo_cobertura_id, lancou_banco_horas) "
+                            + "VALUES (?, ?, ?, ?, ?)",
+                    escalaTurnoId, funcionarioId, coberturaDe, motivoCoberturaId, lancouBancoHoras);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

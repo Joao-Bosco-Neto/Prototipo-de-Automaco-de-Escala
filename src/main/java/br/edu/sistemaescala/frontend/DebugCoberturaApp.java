@@ -2,6 +2,7 @@ package br.edu.sistemaescala.frontend;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import java.awt.image.BufferedImage;
@@ -11,6 +12,7 @@ import javax.imageio.ImageIO;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.model.MotivoCobertura;
+import br.edu.sistemaescala.backend.service.CoberturaListagemItem;
 import br.edu.sistemaescala.backend.service.CoberturaService;
 import br.edu.sistemaescala.backend.service.SubstitutoDisponivel;
 import br.edu.sistemaescala.frontend.controller.CoberturaController;
@@ -28,6 +30,8 @@ public class DebugCoberturaApp extends Application {
         public List<EscalaFuncionario> listarEscaladosNaData(LocalDate d) { return List.of(); }
         public List<MotivoCobertura> listarMotivos() { return List.of(); }
         public List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario a) { return List.of(); }
+        public List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario a, EscalaFuncionario c) { return List.of(); }
+        public List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth m) { return List.of(); }
         public EscalaFuncionario registrar(EscalaFuncionario a, Funcionario s, Integer m, String o, boolean b) { return null; }
         public EscalaFuncionario editar(EscalaFuncionario c, EscalaFuncionario a, Funcionario s, Integer m, String o, boolean b) { return null; }
         public void excluir(EscalaFuncionario c) { }

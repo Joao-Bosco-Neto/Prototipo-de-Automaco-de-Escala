@@ -268,8 +268,10 @@ public class FuncionarioController {
             private final HBox containerAcoes = new HBox(6, botaoEditarLinha, botaoAlternarLinha);
 
             {
-                botaoEditarLinha.getStyleClass().add("button-secundario");
-                botaoAlternarLinha.getStyleClass().add("button-secundario");
+                // Variante compacta: com o padding do secundário cheio os
+                // rótulos saem cortados ("Ed...", "Desati...") na largura da célula.
+                botaoEditarLinha.getStyleClass().add("button-secundario-compacto");
+                botaoAlternarLinha.getStyleClass().add("button-secundario-compacto");
                 containerAcoes.setAlignment(Pos.CENTER);
 
                 botaoEditarLinha.setOnAction(event -> {
