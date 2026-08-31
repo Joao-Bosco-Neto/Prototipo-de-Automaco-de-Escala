@@ -83,7 +83,7 @@ class LimpezaEscalaTransacaoTest {
 
     @Test
     void limpezaRemoveTurnosAlocacoesELancamentosEmCascata() {
-        LimpezaEscalaService servico = new LimpezaEscalaServiceImpl(REPOSITORIO);
+        LimpezaEscalaService servico = new LimpezaEscalaServiceImpl(REPOSITORIO, new LogSegurancaFake());
 
         ResultadoLimpeza resultado = servico.limparMes(AGOSTO);
 
@@ -133,7 +133,8 @@ class LimpezaEscalaTransacaoTest {
             }
         };
 
-        LimpezaEscalaService servico = new LimpezaEscalaServiceImpl(repositorioQueFalhaDepoisDeApagar);
+        LimpezaEscalaService servico =
+                new LimpezaEscalaServiceImpl(repositorioQueFalhaDepoisDeApagar, new LogSegurancaFake());
 
         assertThrows(IllegalStateException.class, () -> servico.limparMes(AGOSTO));
 

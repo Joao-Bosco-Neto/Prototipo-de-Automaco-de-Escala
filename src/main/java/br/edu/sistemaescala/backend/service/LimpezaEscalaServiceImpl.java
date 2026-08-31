@@ -8,7 +8,9 @@ import java.util.Locale;
 import java.util.Objects;
 
 import br.edu.sistemaescala.backend.dao.TransacaoUtil;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
 import br.edu.sistemaescala.backend.repository.jdbc.EscalaTurnoRepositoryJdbc;
 
@@ -32,14 +34,22 @@ public class LimpezaEscalaServiceImpl implements LimpezaEscalaService {
             DateTimeFormatter.ofPattern("MMMM 'de' yyyy", LOCALE_BR);
 
     private final EscalaTurnoRepository escalaTurnoRepository;
+    private final LogSegurancaService logSegurancaService;
 
     public LimpezaEscalaServiceImpl() {
         this(new EscalaTurnoRepositoryJdbc());
     }
 
     public LimpezaEscalaServiceImpl(EscalaTurnoRepository escalaTurnoRepository) {
+        this(escalaTurnoRepository, new LogSegurancaServiceImpl());
+    }
+
+    public LimpezaEscalaServiceImpl(EscalaTurnoRepository escalaTurnoRepository,
+                                    LogSegurancaService logSegurancaService) {
         this.escalaTurnoRepository = Objects.requireNonNull(escalaTurnoRepository,
                 "escalaTurnoRepository não pode ser nulo");
+        this.logSegurancaService = Objects.requireNonNull(logSegurancaService,
+                "logSegurancaService não pode ser nulo");
     }
 
     @Override
@@ -67,6 +77,14 @@ public class LimpezaEscalaServiceImpl implements LimpezaEscalaService {
 
         String mensagem = String.format("Escala de %s limpa: %d turno(s) e %d alocação(ões) removidos.",
                 descreverMes(mes), resumo.turnos(), resumo.alocacoes());
+
+        // Exclusao em massa é evento de seguranca (OWASP A09): fica na trilha
+        // com quem mandou limpar, o mes e o tamanho do estrago. Só depois do
+        // commit — mês que não foi apagado não vira registro de auditoria.
+        logSegurancaService.registrar(AcaoSeguranca.ESCALA_MES_LIMPA, ResultadoSeguranca.SUCESSO,
+                String.format("mês %s: %d turno(s) e %d alocação(ões) removidos",
+                        mes, resumo.turnos(), resumo.alocacoes()));
+
         return new ResultadoLimpeza(true, resumo.turnos(), resumo.alocacoes(), mensagem);
     }
 

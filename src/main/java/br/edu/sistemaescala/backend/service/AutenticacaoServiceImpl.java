@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongConsumer;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
 
@@ -20,16 +22,27 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
     private static final long ATRASO_MAXIMO_MS = 8_000L;
 
     private final UsuarioRepository usuarioRepository;
+    private final LogSegurancaService logSegurancaService;
     private final String hashDummyTiming;
     private final Map<String, Integer> falhasPorLogin = new ConcurrentHashMap<>();
     private final LongConsumer esperar;
 
     public AutenticacaoServiceImpl(UsuarioRepository usuarioRepository) {
-        this(usuarioRepository, AutenticacaoServiceImpl::esperarComInterrupcao);
+        this(usuarioRepository, new LogSegurancaServiceImpl());
+    }
+
+    public AutenticacaoServiceImpl(UsuarioRepository usuarioRepository, LogSegurancaService logSegurancaService) {
+        this(usuarioRepository, logSegurancaService, AutenticacaoServiceImpl::esperarComInterrupcao);
     }
 
     AutenticacaoServiceImpl(UsuarioRepository usuarioRepository, LongConsumer esperar) {
+        this(usuarioRepository, new LogSegurancaServiceImpl(), esperar);
+    }
+
+    AutenticacaoServiceImpl(UsuarioRepository usuarioRepository, LogSegurancaService logSegurancaService,
+                            LongConsumer esperar) {
         this.usuarioRepository = usuarioRepository;
+        this.logSegurancaService = logSegurancaService;
         this.esperar = esperar;
         this.hashDummyTiming = gerarHashDummyTiming();
     }
@@ -44,6 +57,9 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
         try {
             if (usuarioEncontrado.isEmpty()) {
                 BCrypt.verifyer().verify(senhaChars, hashDummyTiming);
+                // A string tentada vai para a trilha como o usuario digitou;
+                // quem limpa as quebras de linha dela e o LogSegurancaService.
+                registrarFalhaDeLogin(login, "usuario inexistente");
                 aplicarAtraso(login);
                 return Optional.empty();
             }
@@ -55,12 +71,18 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
             // Optional.empty(), sem diferenca observavel de fora: nao da
             // para saber qual dos tres casos aconteceu.
             if (!usuario.isAtivo() || !senhaCorreta) {
+                // A trilha distingue os casos porque so o administrador do
+                // banco a le; o retorno para quem chamou continua sendo o
+                // mesmo Optional.empty() dos tres casos.
+                registrarFalhaDeLogin(login, !usuario.isAtivo() ? "usuario inativo" : "senha incorreta");
                 aplicarAtraso(login);
                 return Optional.empty();
             }
 
             falhasPorLogin.remove(chaveLogin(login));
             usuarioRepository.registrarUltimoLogin(usuario.getId(), LocalDateTime.now());
+            logSegurancaService.registrar(AcaoSeguranca.LOGIN, usuario.getLogin(),
+                    ResultadoSeguranca.SUCESSO, null);
             return Optional.of(usuario);
         } finally {
             Arrays.fill(senhaChars, '0');
@@ -98,6 +120,19 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
         String novoHash = gerarHash(senhaNova);
         usuarioRepository.atualizarSenha(usuarioId, novoHash);
+    }
+
+    /**
+     * Grava a tentativa falha antes do atraso, na mesma posicao nos dois
+     * caminhos de falha: gravar depois do {@link #aplicarAtraso} em so um
+     * deles criaria diferenca de tempo entre "usuario inexistente" e "senha
+     * errada" — exatamente o que o atraso existe para esconder.
+     *
+     * <p>Nem a senha nem o hash entram no registro (CWE-532): so o login
+     * tentado e o motivo em texto.</p>
+     */
+    private void registrarFalhaDeLogin(String loginTentado, String motivo) {
+        logSegurancaService.registrar(AcaoSeguranca.LOGIN, loginTentado, ResultadoSeguranca.FALHA, motivo);
     }
 
     private void aplicarAtraso(String login) {

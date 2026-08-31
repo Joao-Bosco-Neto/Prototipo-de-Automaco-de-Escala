@@ -12,11 +12,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import br.edu.sistemaescala.backend.dao.TransacaoUtil;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 import br.edu.sistemaescala.backend.model.MotivoCobertura;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.TipoLancamento;
 import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
@@ -58,11 +60,16 @@ public class CoberturaServiceImpl implements CoberturaService {
     private final MotivoCoberturaRepository motivoCoberturaRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final RegraEscalaService regraEscalaService;
+    private final LogSegurancaService logSegurancaService;
 
     public CoberturaServiceImpl() {
+        this(new LogSegurancaServiceImpl());
+    }
+
+    public CoberturaServiceImpl(LogSegurancaService logSegurancaService) {
         this(new EscalaTurnoRepositoryJdbc(), new EscalaFuncionarioRepositoryJdbc(),
                 new LancamentoHorasRepositoryJdbc(), new MotivoCoberturaRepositoryJdbc(),
-                new FuncionarioRepositoryJdbc(), new RegraEscalaServiceImpl());
+                new FuncionarioRepositoryJdbc(), new RegraEscalaServiceImpl(), logSegurancaService);
     }
 
     public CoberturaServiceImpl(EscalaTurnoRepository escalaTurnoRepository,
@@ -71,6 +78,18 @@ public class CoberturaServiceImpl implements CoberturaService {
                                 MotivoCoberturaRepository motivoCoberturaRepository,
                                 FuncionarioRepository funcionarioRepository,
                                 RegraEscalaService regraEscalaService) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, lancamentoHorasRepository,
+                motivoCoberturaRepository, funcionarioRepository, regraEscalaService,
+                new LogSegurancaServiceImpl());
+    }
+
+    public CoberturaServiceImpl(EscalaTurnoRepository escalaTurnoRepository,
+                                EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                LancamentoHorasRepository lancamentoHorasRepository,
+                                MotivoCoberturaRepository motivoCoberturaRepository,
+                                FuncionarioRepository funcionarioRepository,
+                                RegraEscalaService regraEscalaService,
+                                LogSegurancaService logSegurancaService) {
         this.escalaTurnoRepository = Objects.requireNonNull(escalaTurnoRepository,
                 "escalaTurnoRepository não pode ser nulo");
         this.escalaFuncionarioRepository = Objects.requireNonNull(escalaFuncionarioRepository,
@@ -83,6 +102,8 @@ public class CoberturaServiceImpl implements CoberturaService {
                 "funcionarioRepository não pode ser nulo");
         this.regraEscalaService = Objects.requireNonNull(regraEscalaService,
                 "regraEscalaService não pode ser nulo");
+        this.logSegurancaService = Objects.requireNonNull(logSegurancaService,
+                "logSegurancaService não pode ser nulo");
     }
 
     // -----------------------------------------------------------------
@@ -214,12 +235,45 @@ public class CoberturaServiceImpl implements CoberturaService {
         if (cobertura.getId() == null) {
             throw new RegraCoberturaException("A cobertura a excluir ainda não foi salva.");
         }
+        // Descreve a cobertura antes de apagar: depois do DELETE não há mais
+        // de onde tirar o nome de quem cobria e a data do plantão.
+        String descricao = descreverParaAuditoria(cobertura);
+
         // O par de lançamentos vinculado sai junto pela cascata do schema
         // (lancamento_horas.escala_funcionario_id ON DELETE CASCADE).
         TransacaoUtil.executar(conexao -> {
             escalaFuncionarioRepository.remover(cobertura.getId(), conexao);
             return null;
         });
+
+        // Exclusão em escala é evento de segurança (OWASP A09), gravado só
+        // depois do commit.
+        logSegurancaService.registrar(AcaoSeguranca.COBERTURA_EXCLUIDA, ResultadoSeguranca.SUCESSO, descricao);
+    }
+
+    /**
+     * Resumo da cobertura para a trilha de auditoria, tolerante a campo não
+     * hidratado.
+     *
+     * <p>Identifica os agentes pela <em>matrícula</em>, não pelo nome: a issue
+     * proíbe dado pessoal completo no log (CWE-532), e a matrícula é o
+     * identificador que o sistema já usa em todas as telas. O administrador
+     * chega ao nome por join quando precisar.</p>
+     */
+    private String descreverParaAuditoria(EscalaFuncionario cobertura) {
+        StringBuilder texto = new StringBuilder("cobertura id=").append(cobertura.getId());
+        if (cobertura.getFuncionario() != null) {
+            texto.append(", substituto matrícula=").append(cobertura.getFuncionario().getMatricula());
+        }
+        EscalaFuncionario ausente = cobertura.getCoberturaDe();
+        if (ausente != null && ausente.getFuncionario() != null) {
+            texto.append(", ausente matrícula=").append(ausente.getFuncionario().getMatricula());
+        }
+        EscalaTurno turno = cobertura.getEscalaTurno();
+        if (turno != null && turno.getInicio() != null) {
+            texto.append(", plantão=").append(turno.getInicio().toLocalDate().format(FORMATO_DATA));
+        }
+        return texto.toString();
     }
 
     /** Valida os dados da cobertura e devolve o que a gravação vai precisar (turno, minutos, data, observação). */

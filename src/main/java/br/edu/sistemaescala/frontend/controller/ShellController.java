@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
 import br.edu.sistemaescala.backend.model.Configuracao;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.ConfiguracaoRepository;
@@ -31,8 +33,13 @@ import br.edu.sistemaescala.backend.service.ConfiguracaoService;
 import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
+import br.edu.sistemaescala.backend.service.EscalaExcecaoServiceImpl;
+import br.edu.sistemaescala.backend.service.GeradorRodizioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
+import br.edu.sistemaescala.backend.service.LimpezaEscalaServiceImpl;
+import br.edu.sistemaescala.backend.service.LogSegurancaService;
+import br.edu.sistemaescala.backend.service.LogSegurancaServiceImpl;
 import br.edu.sistemaescala.backend.service.RegraEscalaService;
 import br.edu.sistemaescala.backend.service.RegraEscalaServiceImpl;
 import br.edu.sistemaescala.backend.service.SessaoUsuario;
@@ -101,6 +108,7 @@ public class ShellController {
     private final SessaoUsuario sessaoUsuario;
     private final BloqueioInatividadeService bloqueioService;
     private final AutorizacaoService autorizacaoService;
+    private final LogSegurancaService logSegurancaService;
     private final Runnable aoSair;
 
     private final BorderPane raiz = new BorderPane();
@@ -217,7 +225,10 @@ public class ShellController {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.escalaFuncionarioRepository = escalaFuncionarioRepository;
         this.regraEscalaService = regraEscalaService;
-        this.coberturaService = new CoberturaServiceImpl();
+        // A trilha de auditoria (issue #64) precisa saber quem agiu; e o shell
+        // que tem a sessao em maos para entregar aos servicos criados aqui.
+        this.logSegurancaService = new LogSegurancaServiceImpl(sessaoUsuario);
+        this.coberturaService = new CoberturaServiceImpl(logSegurancaService);
         this.bancoHorasService = new BancoHorasServiceImpl();
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.gestaoUsuariosService = gestaoUsuariosService;
@@ -299,8 +310,16 @@ public class ShellController {
 
     private void executarSaida() {
         pararMonitorInatividade();
+        // Registra antes de encerrar: depois do encerrar() a sessao nao sabe
+        // mais quem estava logado.
+        registrarLogout();
         sessaoUsuario.encerrar();
         aoSair.run();
+    }
+
+    private void registrarLogout() {
+        String login = sessaoUsuario.usuarioAtual().map(Usuario::getLogin).orElse(null);
+        logSegurancaService.registrar(AcaoSeguranca.LOGOUT, login, ResultadoSeguranca.SUCESSO, null);
     }
 
     // -----------------------------------------------------------------
@@ -424,8 +443,15 @@ public class ShellController {
             return new TipoTurnoController(tipoTurnoService).criarTela();
         }
         if ("Montagem da escala".equals(item)) {
+            // Limpar mes e autorizar excecao sao eventos de seguranca: os dois
+            // servicos vao montados com a trilha e com a sessao (quem agiu),
+            // em vez dos construtores sem argumentos.
             return new MontagemEscalaController(escalaTurnoRepository, escalaFuncionarioRepository,
-                    tipoTurnoRepository, funcionarioService, regraEscalaService).criarTela();
+                    tipoTurnoRepository, funcionarioService, regraEscalaService,
+                    new GeradorRodizioServiceImpl(),
+                    new LimpezaEscalaServiceImpl(new EscalaTurnoRepositoryJdbc(), logSegurancaService),
+                    new EscalaExcecaoServiceImpl(sessaoUsuario),
+                    dia -> { }).criarTela();
         }
         if ("Coberturas".equals(item)) {
             return new CoberturaController(coberturaService).criarTela();

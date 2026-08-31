@@ -3,6 +3,8 @@ package br.edu.sistemaescala.backend.service;
 import java.util.List;
 import java.util.Optional;
 
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
@@ -13,6 +15,7 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
     private final AutenticacaoService autenticacaoService;
     private final SessaoUsuario sessaoUsuario;
     private final AutorizacaoService autorizacaoService;
+    private final LogSegurancaService logSegurancaService;
 
     public GestaoUsuariosServiceImpl(UsuarioRepository usuarioRepository,
                                      AutenticacaoService autenticacaoService,
@@ -24,10 +27,20 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
                                      AutenticacaoService autenticacaoService,
                                      SessaoUsuario sessaoUsuario,
                                      AutorizacaoService autorizacaoService) {
+        this(usuarioRepository, autenticacaoService, sessaoUsuario, autorizacaoService,
+                new LogSegurancaServiceImpl(sessaoUsuario));
+    }
+
+    public GestaoUsuariosServiceImpl(UsuarioRepository usuarioRepository,
+                                     AutenticacaoService autenticacaoService,
+                                     SessaoUsuario sessaoUsuario,
+                                     AutorizacaoService autorizacaoService,
+                                     LogSegurancaService logSegurancaService) {
         this.usuarioRepository = usuarioRepository;
         this.autenticacaoService = autenticacaoService;
         this.sessaoUsuario = sessaoUsuario;
         this.autorizacaoService = autorizacaoService;
+        this.logSegurancaService = logSegurancaService;
     }
 
     @Override
@@ -67,7 +80,14 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
         usuario.setRole(roleFinal);
         usuario.setAtivo(ativo);
 
-        return usuarioRepository.inserir(usuario);
+        Usuario criado = usuarioRepository.inserir(usuario);
+
+        // So identidade e perfil na trilha. A senha e o hash ficam de fora
+        // do log, sempre (CWE-532).
+        logSegurancaService.registrar(AcaoSeguranca.USUARIO_CRIADO, ResultadoSeguranca.SUCESSO,
+                "conta criada: login=" + criado.getLogin() + ", perfil=" + roleFinal
+                        + ", ativo=" + criado.isAtivo());
+        return criado;
     }
 
     @Override
@@ -103,12 +123,16 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
             }
         }
 
+        boolean estavaAtivo = usuario.isAtivo();
+
         usuario.setNome(nome.trim());
         usuario.setLogin(login.trim());
         usuario.setRole(roleFinal);
         usuario.setAtivo(ativo);
 
-        return usuarioRepository.atualizar(usuario);
+        Usuario atualizado = usuarioRepository.atualizar(usuario);
+        registrarMudancaDeStatus(atualizado.getLogin(), estavaAtivo, ativo);
+        return atualizado;
     }
 
     @Override
@@ -134,14 +158,16 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
             }
         }
 
+        boolean estavaAtivo = usuario.isAtivo();
         usuario.setAtivo(ativo);
         usuarioRepository.atualizar(usuario);
+        registrarMudancaDeStatus(usuario.getLogin(), estavaAtivo, ativo);
     }
 
     @Override
     public void redefinirSenha(int id, String novaSenha, String confirmacaoSenha) {
         autorizacaoService.exigirAdministrador(sessaoUsuario);
-        usuarioRepository.buscarPorId(id)
+        Usuario usuario = usuarioRepository.buscarPorId(id)
                 .orElseThrow(() -> new RegraUsuarioException("Usuário não encontrado"));
 
         if (novaSenha == null || novaSenha.length() < 8) {
@@ -153,6 +179,23 @@ public class GestaoUsuariosServiceImpl implements GestaoUsuariosService {
 
         String novoHash = autenticacaoService.gerarHash(novaSenha);
         usuarioRepository.atualizarSenha(id, novoHash);
+
+        // A trilha registra que a senha mudou e de quem — nunca a senha nem
+        // o hash gerado (CWE-532).
+        logSegurancaService.registrar(AcaoSeguranca.SENHA_REDEFINIDA, ResultadoSeguranca.SUCESSO,
+                "senha redefinida para o login=" + usuario.getLogin());
+    }
+
+    /**
+     * Grava a desativacao ou a reativacao da conta, e so isso: uma edicao que
+     * nao mexeu no status nao gera evento de seguranca.
+     */
+    private void registrarMudancaDeStatus(String loginAlvo, boolean estavaAtivo, boolean ficouAtivo) {
+        if (estavaAtivo == ficouAtivo) {
+            return;
+        }
+        AcaoSeguranca acao = ficouAtivo ? AcaoSeguranca.USUARIO_REATIVADO : AcaoSeguranca.USUARIO_DESATIVADO;
+        logSegurancaService.registrar(acao, ResultadoSeguranca.SUCESSO, "conta alvo: login=" + loginAlvo);
     }
 
     private void validarTexto(String valor, String mensagem) {

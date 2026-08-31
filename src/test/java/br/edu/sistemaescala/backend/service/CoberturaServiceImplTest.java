@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import br.edu.sistemaescala.backend.dao.BancoInicializador;
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.LancamentoHoras;
 import br.edu.sistemaescala.backend.repository.LancamentoHorasRepository;
@@ -56,6 +57,7 @@ class CoberturaServiceImplTest {
     private int alocacaoAusenteId;
 
     private CoberturaService servico;
+    private LogSegurancaFake logSeguranca;
 
     @BeforeAll
     static void prepararBanco() {
@@ -80,6 +82,7 @@ class CoberturaServiceImplTest {
             alocacaoAusenteId = inserirAlocacao(conexao, funcionarioAusenteId);
             inserirAlocacao(conexao, funcionarioTerceiroId);
         }
+        logSeguranca = new LogSegurancaFake();
         servico = novoServico(new LancamentoHorasRepositoryJdbc());
     }
 
@@ -89,9 +92,11 @@ class CoberturaServiceImplTest {
     }
 
     private CoberturaService novoServico(LancamentoHorasRepository lancamentoHorasRepository) {
+        // A trilha de auditoria vai em memória: estes testes já batem no H2
+        // com as fixtures deles, e não é papel deles sujar log_seguranca.
         return new CoberturaServiceImpl(new EscalaTurnoRepositoryJdbc(), new EscalaFuncionarioRepositoryJdbc(),
                 lancamentoHorasRepository, new MotivoCoberturaRepositoryJdbc(), new FuncionarioRepositoryJdbc(),
-                new RegraEscalaServiceImpl());
+                new RegraEscalaServiceImpl(), logSeguranca);
     }
 
     // -----------------------------------------------------------------
@@ -253,6 +258,17 @@ class CoberturaServiceImplTest {
 
         assertEquals(0, contarCoberturasDoTurno());
         assertEquals(0, contarLancamentosDaCobertura(cobertura.getId()));
+    }
+
+    @Test
+    void excluirCoberturaEntraNaTrilhaDeAuditoria() {
+        EscalaFuncionario cobertura = servico.registrar(alocacaoAusente(), substituto(), null, null, false);
+
+        servico.excluir(cobertura);
+
+        LogSegurancaFake.Evento evento = logSeguranca.ultimo();
+        assertEquals(AcaoSeguranca.COBERTURA_EXCLUIDA, evento.acao());
+        assertTrue(evento.detalhes().contains("cobertura id=" + cobertura.getId()), evento.detalhes());
     }
 
     // -----------------------------------------------------------------

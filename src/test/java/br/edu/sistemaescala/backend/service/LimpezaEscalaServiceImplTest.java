@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import br.edu.sistemaescala.backend.dao.FuncaoTransacional;
 import br.edu.sistemaescala.backend.dao.TransacaoUtil;
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
@@ -47,6 +48,7 @@ class LimpezaEscalaServiceImplTest {
 
     private EscalaTurnoRepository escalaTurnoRepository;
     private LimpezaEscalaService limpezaEscalaService;
+    private LogSegurancaFake logSeguranca;
 
     private MockedStatic<TransacaoUtil> transacaoEstatica;
     private final List<YearMonth> mesesRemovidos = new ArrayList<>();
@@ -54,7 +56,8 @@ class LimpezaEscalaServiceImplTest {
     @BeforeEach
     void prepararMocks() {
         escalaTurnoRepository = mock(EscalaTurnoRepository.class);
-        limpezaEscalaService = new LimpezaEscalaServiceImpl(escalaTurnoRepository);
+        logSeguranca = new LogSegurancaFake();
+        limpezaEscalaService = new LimpezaEscalaServiceImpl(escalaTurnoRepository, logSeguranca);
 
         when(escalaTurnoRepository.buscarPorPeriodo(any(), any())).thenReturn(List.of());
         doAnswer(invocacao -> {
@@ -89,6 +92,37 @@ class LimpezaEscalaServiceImplTest {
         assertEquals(List.of(AGOSTO), mesesRemovidos);
         assertTrue(resultado.mensagem().contains("2 turno"), resultado.mensagem());
         assertTrue(resultado.mensagem().contains("5 aloca"), resultado.mensagem());
+    }
+
+    @Test
+    void limparMesEntraNaTrilhaDeAuditoria() {
+        when(escalaTurnoRepository.buscarPorPeriodo(any(), any()))
+                .thenReturn(List.of(turno(1, LocalDateTime.of(2026, 8, 1, 8, 0), 2)));
+
+        limpezaEscalaService.limparMes(AGOSTO);
+
+        LogSegurancaFake.Evento evento = logSeguranca.ultimo();
+        assertEquals(AcaoSeguranca.ESCALA_MES_LIMPA, evento.acao());
+        assertTrue(evento.detalhes().contains("2026-08"), evento.detalhes());
+    }
+
+    @Test
+    void mesVazioNaoGeraEventoDeSegurancaPorqueNadaFoiApagado() {
+        limpezaEscalaService.limparMes(AGOSTO);
+
+        assertTrue(logSeguranca.eventos().isEmpty());
+    }
+
+    @Test
+    void falhaNaRemocaoNaoDeixaEventoDeAuditoriaDeExclusaoQueNaoAconteceu() {
+        when(escalaTurnoRepository.buscarPorPeriodo(any(), any()))
+                .thenReturn(List.of(turno(1, LocalDateTime.of(2026, 8, 1, 8, 0), 1)));
+        doThrow(new RepositoryException("banco fora do ar", null))
+                .when(escalaTurnoRepository).removerPorMes(any(YearMonth.class), any());
+
+        assertThrows(RepositoryException.class, () -> limpezaEscalaService.limparMes(AGOSTO));
+
+        assertTrue(logSeguranca.eventos().isEmpty());
     }
 
     @Test

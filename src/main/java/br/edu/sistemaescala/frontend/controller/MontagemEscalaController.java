@@ -25,6 +25,7 @@ import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
 import br.edu.sistemaescala.backend.repository.jdbc.EscalaFuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
 import br.edu.sistemaescala.backend.repository.jdbc.TipoTurnoRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.EscalaExcecaoService;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.GeradorRodizioService;
@@ -189,6 +190,19 @@ public class MontagemEscalaController {
                                     GeradorRodizioService geradorRodizioService,
                                     LimpezaEscalaService limpezaEscalaService,
                                     Consumer<LocalDate> aoSelecionarDia) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository, funcionarioService,
+                regraEscalaService, geradorRodizioService, limpezaEscalaService, null, aoSelecionarDia);
+    }
+
+    public MontagemEscalaController(EscalaTurnoRepository escalaTurnoRepository,
+                                    EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                    TipoTurnoRepository tipoTurnoRepository,
+                                    FuncionarioService funcionarioService,
+                                    RegraEscalaService regraEscalaService,
+                                    GeradorRodizioService geradorRodizioService,
+                                    LimpezaEscalaService limpezaEscalaService,
+                                    EscalaExcecaoService escalaExcecaoService,
+                                    Consumer<LocalDate> aoSelecionarDia) {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.geradorRodizioService = geradorRodizioService;
         this.limpezaEscalaService = limpezaEscalaService;
@@ -198,7 +212,7 @@ public class MontagemEscalaController {
         // turno, alocar ou remover agente.
         this.painelAtribuicao = new PainelAtribuicaoController(
                 escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
-                funcionarioService, regraEscalaService, this::recarregar);
+                funcionarioService, regraEscalaService, escalaExcecaoService, this::recarregar);
     }
 
     public Parent criarTela() {

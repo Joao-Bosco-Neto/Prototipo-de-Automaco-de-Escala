@@ -6,6 +6,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
@@ -29,6 +32,7 @@ class GestaoUsuariosServiceImplTest {
     private SessaoUsuario sessaoUsuario;
     private GestaoUsuariosService gestaoUsuariosService;
     private Usuario adminLogado;
+    private LogSegurancaFake logSeguranca;
 
     @BeforeEach
     void prepararMocks() {
@@ -44,8 +48,10 @@ class GestaoUsuariosServiceImplTest {
         adminLogado.setAtivo(true);
         sessaoUsuario.iniciar(adminLogado);
 
+        logSeguranca = new LogSegurancaFake();
         gestaoUsuariosService = new GestaoUsuariosServiceImpl(
-                usuarioRepository, autenticacaoService, sessaoUsuario);
+                usuarioRepository, autenticacaoService, sessaoUsuario,
+                new AutorizacaoService(), logSeguranca);
     }
 
     @Test
@@ -251,6 +257,75 @@ class GestaoUsuariosServiceImplTest {
                 () -> gestaoUsuariosService.redefinirSenha(2, "senhaSegura123", "outraSenha123"));
 
         verify(usuarioRepository, never()).atualizarSenha(anyInt(), any());
+    }
+
+    // -----------------------------------------------------------------
+    // Trilha de auditoria (issue #64)
+    // -----------------------------------------------------------------
+
+    @Test
+    void cadastroDeUsuarioEntraNaTrilhaSemSenhaNemHash() {
+        when(usuarioRepository.buscarPorLogin("gestor1")).thenReturn(Optional.empty());
+        when(autenticacaoService.gerarHash("senhaForte123")).thenReturn("hash-gerado");
+        when(usuarioRepository.inserir(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        gestaoUsuariosService.cadastrar("Gestor Um", "gestor1", "senhaForte123", "senhaForte123",
+                RoleUsuario.GESTOR, true);
+
+        LogSegurancaFake.Evento evento = logSeguranca.ultimo();
+        assertEquals(AcaoSeguranca.USUARIO_CRIADO, evento.acao());
+        assertEquals(ResultadoSeguranca.SUCESSO, evento.resultado());
+        // quem agiu fica a cargo da sessão, resolvida dentro do serviço de log
+        assertNull(evento.identificacao());
+        assertTrue(evento.detalhes().contains("gestor1"));
+
+        String trilha = logSeguranca.textoCompleto();
+        assertFalse(trilha.contains("senhaForte123"));
+        assertFalse(trilha.contains("hash-gerado"));
+    }
+
+    @Test
+    void desativacaoEReativacaoEntramNaTrilhaComAcoesDiferentes() {
+        Usuario segundoAdmin = new Usuario(2, "Admin 2", "admin2", "hash", RoleUsuario.ADMIN, true, null, null);
+        when(usuarioRepository.buscarPorId(2)).thenReturn(Optional.of(segundoAdmin));
+        when(usuarioRepository.listar()).thenReturn(List.of(adminLogado, segundoAdmin));
+        when(usuarioRepository.atualizar(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        gestaoUsuariosService.alterarStatus(2, false);
+        gestaoUsuariosService.alterarStatus(2, true);
+
+        assertEquals(1, logSeguranca.eventosDe(AcaoSeguranca.USUARIO_DESATIVADO).size());
+        assertEquals(1, logSeguranca.eventosDe(AcaoSeguranca.USUARIO_REATIVADO).size());
+    }
+
+    @Test
+    void edicaoQueNaoMexeNoStatusNaoGeraEventoDeSeguranca() {
+        Usuario existente = new Usuario(2, "Gestor Antigo", "gestor", "hash", RoleUsuario.GESTOR, true, null, null);
+        when(usuarioRepository.buscarPorId(2)).thenReturn(Optional.of(existente));
+        when(usuarioRepository.buscarPorLogin("gestor_novo")).thenReturn(Optional.empty());
+        when(usuarioRepository.atualizar(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        gestaoUsuariosService.atualizar(2, "Gestor Novo", "gestor_novo", RoleUsuario.GESTOR, true);
+
+        assertTrue(logSeguranca.eventos().isEmpty());
+    }
+
+    @Test
+    void redefinicaoDeSenhaEntraNaTrilhaSemASenhaNovaNemOHash() {
+        Usuario usuario = new Usuario(2, "Gestor", "gestor", "hashAntigo", RoleUsuario.GESTOR, true, null, null);
+        when(usuarioRepository.buscarPorId(2)).thenReturn(Optional.of(usuario));
+        when(autenticacaoService.gerarHash("novaSenhaSegura123")).thenReturn("novoHash");
+
+        gestaoUsuariosService.redefinirSenha(2, "novaSenhaSegura123", "novaSenhaSegura123");
+
+        LogSegurancaFake.Evento evento = logSeguranca.ultimo();
+        assertEquals(AcaoSeguranca.SENHA_REDEFINIDA, evento.acao());
+        assertTrue(evento.detalhes().contains("gestor"));
+
+        String trilha = logSeguranca.textoCompleto();
+        assertFalse(trilha.contains("novaSenhaSegura123"));
+        assertFalse(trilha.contains("novoHash"));
+        assertFalse(trilha.contains("hashAntigo"));
     }
 }
 
