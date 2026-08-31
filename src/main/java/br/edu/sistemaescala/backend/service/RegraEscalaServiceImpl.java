@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
@@ -66,7 +68,7 @@ public class RegraEscalaServiceImpl implements RegraEscalaService {
         // Toda a regra e a mensagem vivem aqui; a sobrecarga acima só resolve
         // de onde vem a lista de agentes.
         int minimoExigido = turno.getMinAgentes();
-        int alocados = agentesDoTurno.size();
+        int alocados = contarPostosOcupados(agentesDoTurno);
 
         if (alocados < minimoExigido) {
             String mensagem = String.format("Faltam %d agente(s): %d de %d alocados.",
@@ -76,6 +78,30 @@ public class RegraEscalaServiceImpl implements RegraEscalaService {
 
         String mensagem = String.format("Efetivo completo: %d de %d alocados.", alocados, minimoExigido);
         return new ResultadoEfetivo(true, alocados, minimoExigido, mensagem);
+    }
+
+    /**
+     * Postos de fato ocupados no turno, contando a substituição como 1-para-1.
+     *
+     * <p>Uma cobertura gera duas linhas em {@code escala_funcionario} no mesmo
+     * turno: a do titular ausente ({@code coberturaDe} nulo) e a do substituto
+     * ({@code coberturaDe} apontando para a linha do titular). As duas ocupam
+     * um único posto, então a linha do titular substituído não entra na
+     * contagem — senão um turno de mínimo 2 com uma cobertura apareceria como
+     * 3/2 em vez de 2/2.</p>
+     */
+    private int contarPostosOcupados(List<EscalaFuncionario> agentesDoTurno) {
+        Set<Integer> idsCobertos = agentesDoTurno.stream()
+                .map(EscalaFuncionario::getCoberturaDe)
+                .filter(Objects::nonNull)
+                .map(EscalaFuncionario::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return (int) agentesDoTurno.stream()
+                .filter(alocacao -> alocacao.getCoberturaDe() != null
+                        || !idsCobertos.contains(alocacao.getId()))
+                .count();
     }
 
     @Override
