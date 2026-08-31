@@ -595,5 +595,10 @@ public class GeradorRodizioServiceImpl implements GeradorRodizioService {
         public List<EscalaFuncionario> buscarCoberturasDoMes(YearMonth mes) {
             throw new UnsupportedOperationException("Retrato de planejamento não conhece coberturas");
         }
+
+        @Override
+        public List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes) {
+            throw new UnsupportedOperationException("Retrato de planejamento não conhece coberturas");
+        }
     }
 }

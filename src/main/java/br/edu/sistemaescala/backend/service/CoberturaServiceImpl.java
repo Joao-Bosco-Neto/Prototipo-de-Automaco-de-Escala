@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -131,23 +132,47 @@ public class CoberturaServiceImpl implements CoberturaService {
 
     @Override
     public List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario alocacaoAusente) {
+        return listarSubstitutos(alocacaoAusente, null);
+    }
+
+    @Override
+    public List<SubstitutoDisponivel> listarSubstitutos(EscalaFuncionario alocacaoAusente,
+                                                        EscalaFuncionario coberturaEmEdicao) {
         EscalaTurno turno = turnoDe(alocacaoAusente);
 
-        // Quem já está escalado neste turno não é candidato a substituto dele.
+        Integer idEmEdicao = coberturaEmEdicao != null ? coberturaEmEdicao.getId() : null;
+        Integer substitutoAtualId = coberturaEmEdicao != null && coberturaEmEdicao.getFuncionario() != null
+                ? coberturaEmEdicao.getFuncionario().getId()
+                : null;
+
+        // Quem já está escalado neste turno não é candidato a substituto dele —
+        // exceto a própria cobertura que está sendo editada, que é justamente a
+        // linha que a tela vai reescrever.
         Set<Integer> jaNoTurno = turno.getAgentes().stream()
+                .filter(alocacao -> idEmEdicao == null || !idEmEdicao.equals(alocacao.getId()))
                 .map(alocacao -> alocacao.getFuncionario().getId())
                 .collect(Collectors.toSet());
 
         return funcionarioRepository.listar(true, null).stream()
                 .filter(funcionario -> funcionario.getId() != null)
                 .filter(funcionario -> !jaNoTurno.contains(funcionario.getId()))
-                .map(funcionario -> avaliarSubstituto(funcionario, turno))
+                .map(funcionario -> funcionario.getId().equals(substitutoAtualId)
+                        // Manter quem já cobre não altera a escala: as regras
+                        // acusariam duplicidade com a própria alocação editada.
+                        ? new SubstitutoDisponivel(funcionario, true, "Cobertura atual")
+                        : avaliarSubstituto(funcionario, turno))
                 .sorted(Comparator
                         // Disponíveis primeiro, depois em ordem de nome.
                         .comparing(SubstitutoDisponivel::disponivel).reversed()
                         .thenComparing(substituto -> substituto.funcionario().getNome(),
                                 String.CASE_INSENSITIVE_ORDER))
                 .toList();
+    }
+
+    @Override
+    public List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes) {
+        Objects.requireNonNull(mes, "mes não pode ser nulo");
+        return escalaFuncionarioRepository.listarCoberturasParaListagem(mes);
     }
 
     /** Roda as mesmas regras da montagem da escala: duplicidade/sobreposição (#23) e descanso (#40). */

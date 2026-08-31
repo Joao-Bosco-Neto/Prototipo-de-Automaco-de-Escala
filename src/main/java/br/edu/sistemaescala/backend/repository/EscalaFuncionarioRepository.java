@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
+import br.edu.sistemaescala.backend.service.CoberturaListagemItem;
 
 /**
  * Repositorio de alocacoes de funcionarios em turnos (issue #11).
@@ -58,4 +59,16 @@ public interface EscalaFuncionarioRepository {
 
     /** Coberturas (cobertura_de preenchido) de turnos com inicio no mes informado. */
     List<EscalaFuncionario> buscarCoberturasDoMes(YearMonth mes);
+
+    /**
+     * Mesmas coberturas do mes, porem prontas para a tabela da tela de
+     * Coberturas: cada linha ja traz o nome do ausente, o nome de quem cobriu,
+     * a descricao do motivo e a duracao do turno.
+     *
+     * Existe separada de {@link #buscarCoberturasDoMes} porque resolve esses
+     * quatro dados com JOINs no mesmo SELECT — a alternativa seria uma consulta
+     * por linha exibida (N+1) para descobrir quem era o titular e qual era o
+     * motivo.
+     */
+    List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes);
 }

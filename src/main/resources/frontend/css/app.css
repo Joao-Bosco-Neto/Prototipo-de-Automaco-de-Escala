@@ -648,3 +648,23 @@
     -fx-opacity: 0.45;
     -fx-cursor: default;
 }
+
+/* Mesma variante compacta, em vermelho: acoes destrutivas dentro de celula de
+   tabela. Nao da para somar .button-perigo a .button-secundario-compacto — as
+   duas regras tem a mesma especificidade e a compacta, por vir depois, apagaria
+   o fundo e o texto do perigo, deixando o botao identico ao de editar. */
+.button-perigo-compacto {
+    -fx-background-color: transparent;
+    -fx-text-fill: -cor-perigo;
+    -fx-border-color: derive(-cor-perigo, 55%);
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 3px 10px;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+}
+.button-perigo-compacto:hover { -fx-background-color: -cor-perigo-fundo; }
+.button-perigo-compacto:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
