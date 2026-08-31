@@ -19,7 +19,9 @@ import br.edu.sistemaescala.backend.repository.EscalaFuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
 import br.edu.sistemaescala.backend.repository.TipoTurnoRepository;
+import br.edu.sistemaescala.backend.service.EscalaExcecaoService;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
+import br.edu.sistemaescala.backend.service.RegraEscalaExcecaoException;
 import br.edu.sistemaescala.backend.service.RegraEscalaService;
 import br.edu.sistemaescala.backend.service.ResultadoAlocacao;
 import br.edu.sistemaescala.backend.service.ResultadoDescanso;
@@ -42,11 +44,16 @@ import javafx.scene.layout.VBox;
  * (issue #42).
  *
  * O ponto central da issue e o feedback imediato: cada funcionario da lista de
- * disponiveis ja chega com o selo de indisponibilidade calculado por
+ * disponiveis ja chega com o selo calculado por
  * {@link RegraEscalaService#podeAlocar} (issue #23) e
- * {@link RegraEscalaService#verificarDescanso} (issue #40), com o botao de
- * adicionar desabilitado — o usuario nao clica para so entao descobrir que
- * nao pode.
+ * {@link RegraEscalaService#verificarDescanso} (issue #40) — o usuario nao
+ * clica para so entao descobrir que nao pode.
+ *
+ * As duas regras nao pesam igual, e o prototipo e explicito nisso:
+ * "Sobreposicao de horario e bloqueada; descanso minimo abaixo do exigido e
+ * registrado como excecao". Duplicidade e sobreposicao desabilitam o botao;
+ * descanso insuficiente troca o botao para "Alocar com excecao", que grava a
+ * alocacao e a excecao autorizada juntas (issue #64).
  *
  * A issue original falava em "data e equipe" no cabecalho; equipes de rodizio
  * foram substituidas por tipo_turno e nao existem mais no modelo, por isso o
@@ -72,6 +79,8 @@ public class PainelAtribuicaoController {
     private final TipoTurnoRepository tipoTurnoRepository;
     private final FuncionarioService funcionarioService;
     private final RegraEscalaService regraEscalaService;
+    /** Autoriza e registra a excecao ao descanso minimo; nulo quando ausente. */
+    private final EscalaExcecaoService escalaExcecaoService;
     /** Avisa o calendario que a escala mudou, para a grade refletir na hora. */
     private final Runnable aoAlterarEscala;
 
@@ -87,11 +96,23 @@ public class PainelAtribuicaoController {
                                       FuncionarioService funcionarioService,
                                       RegraEscalaService regraEscalaService,
                                       Runnable aoAlterarEscala) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, tipoTurnoRepository,
+                funcionarioService, regraEscalaService, null, aoAlterarEscala);
+    }
+
+    public PainelAtribuicaoController(EscalaTurnoRepository escalaTurnoRepository,
+                                      EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                      TipoTurnoRepository tipoTurnoRepository,
+                                      FuncionarioService funcionarioService,
+                                      RegraEscalaService regraEscalaService,
+                                      EscalaExcecaoService escalaExcecaoService,
+                                      Runnable aoAlterarEscala) {
         this.escalaTurnoRepository = escalaTurnoRepository;
         this.escalaFuncionarioRepository = escalaFuncionarioRepository;
         this.tipoTurnoRepository = tipoTurnoRepository;
         this.funcionarioService = funcionarioService;
         this.regraEscalaService = regraEscalaService;
+        this.escalaExcecaoService = escalaExcecaoService;
         this.aoAlterarEscala = aoAlterarEscala != null ? aoAlterarEscala : () -> { };
     }
 
@@ -307,7 +328,6 @@ public class PainelAtribuicaoController {
 
         Button adicionar = new Button("Adicionar");
         adicionar.getStyleClass().add("button-secundario-compacto");
-        adicionar.setOnAction(evento -> adicionarAgente(turno, funcionario));
 
         HBox linha = new HBox(8, nome, adicionar);
         linha.setAlignment(Pos.CENTER_LEFT);
@@ -315,33 +335,64 @@ public class PainelAtribuicaoController {
         VBox item = new VBox(3, linha);
         item.getStyleClass().add("painel-linha-agente");
 
-        // O impedimento e calculado ANTES de exibir: o botao ja nasce
-        // desabilitado e o motivo aparece no selo.
-        Label selo = avaliarImpedimento(turno, funcionario);
-        if (selo != null) {
+        // O veredito e calculado ANTES de exibir: o selo mostra o motivo e o
+        // botao ja nasce no estado certo.
+        Veredito veredito = avaliarRegras(turno, funcionario);
+        if (veredito.selo() != null) {
+            item.getChildren().add(veredito.selo());
+        }
+
+        if (veredito.bloqueia()) {
             adicionar.setDisable(true);
-            item.getChildren().add(selo);
+        } else if (veredito.excecaoDeDescanso() != null) {
+            if (escalaExcecaoService == null) {
+                // Sem o servico nao ha onde registrar a excecao, e alocar sem
+                // registrar seria pior do que nao alocar.
+                adicionar.setDisable(true);
+            } else {
+                adicionar.setText("Alocar com exceção");
+                adicionar.setOnAction(evento ->
+                        alocarComExcecao(turno, funcionario, veredito.excecaoDeDescanso()));
+            }
+        } else {
+            adicionar.setOnAction(evento -> adicionarAgente(turno, funcionario));
         }
         return item;
     }
 
     /**
-     * Roda as duas regras na ordem em que elas bloqueiam: duplicidade e
+     * Roda as duas regras na ordem em que elas pesam: duplicidade e
      * sobreposicao primeiro (#23), descanso depois (#40).
-     *
-     * @return selo com o motivo, ou {@code null} quando o funcionario esta livre
      */
-    private Label avaliarImpedimento(EscalaTurno turno, Funcionario funcionario) {
+    private Veredito avaliarRegras(EscalaTurno turno, Funcionario funcionario) {
         ResultadoAlocacao alocacao = regraEscalaService.podeAlocar(funcionario.getId(), turno);
         if (!alocacao.permitido()) {
-            return criarSeloImpedimento(resumirAlocacao(alocacao), alocacao.mensagem(), "selo-perigo");
+            // Bloqueio duro: nao existe excecao que ponha a mesma pessoa em
+            // dois turnos sobrepostos.
+            return new Veredito(
+                    criarSeloImpedimento(resumirAlocacao(alocacao), alocacao.mensagem(), "selo-perigo"),
+                    true, null);
         }
 
         ResultadoDescanso descanso = regraEscalaService.verificarDescanso(funcionario.getId(), turno);
         if (!descanso.respeitado()) {
-            return criarSeloImpedimento(resumirDescanso(descanso), descanso.mensagem(), "selo-atencao");
+            // Aqui o gestor decide: alocar mesmo assim gera a excecao registrada.
+            return new Veredito(
+                    criarSeloImpedimento(resumirDescanso(descanso), descanso.mensagem(), "selo-atencao"),
+                    false, descanso);
         }
-        return null;
+        return new Veredito(null, false, null);
+    }
+
+    /**
+     * O que as regras disseram sobre um candidato.
+     *
+     * @param selo               selo a exibir, ou {@code null} se esta tudo certo
+     * @param bloqueia           true quando alocar e proibido, sem excecao possivel
+     * @param excecaoDeDescanso  veredito do descanso quando alocar exige autorizar
+     *                           uma excecao; {@code null} nos demais casos
+     */
+    private record Veredito(Label selo, boolean bloqueia, ResultadoDescanso excecaoDeDescanso) {
     }
 
     private Label criarSeloImpedimento(String texto, String detalhe, String classeSelo) {
@@ -505,6 +556,25 @@ public class PainelAtribuicaoController {
         atualizarTelas();
     }
 
+    /**
+     * Aloca e registra a excecao ao descanso minimo na mesma transacao, pelo
+     * {@link EscalaExcecaoService}. A mensagem segue o protótipo: diz o que
+     * foi violado e avisa que a atribuicao ficou registrada como excecao.
+     */
+    private void alocarComExcecao(EscalaTurno turno, Funcionario funcionario, ResultadoDescanso descanso) {
+        try {
+            escalaExcecaoService.alocarComExcecao(turno, funcionario, descanso);
+        } catch (RegraEscalaExcecaoException excecao) {
+            exibirErro(excecao.getMessage());
+            return;
+        } catch (RepositoryException excecao) {
+            exibirErro("Não foi possível alocar " + funcionario.getNome() + " com exceção.");
+            return;
+        }
+        exibirAviso(descanso.mensagem() + " Atribuição registrada como exceção.");
+        atualizarTelas();
+    }
+
     private void removerAlocacao(EscalaFuncionario alocacao) {
         if (alocacao.getId() == null) {
             return;
@@ -583,6 +653,14 @@ public class PainelAtribuicaoController {
     private void exibirErro(String mensagem) {
         rotuloMensagem.setText(mensagem);
         rotuloMensagem.getStyleClass().setAll("selo", "selo-perigo");
+        rotuloMensagem.setVisible(true);
+        rotuloMensagem.setManaged(true);
+    }
+
+    /** Aviso amarelo: aconteceu, mas o gestor precisa saber o que aceitou. */
+    private void exibirAviso(String mensagem) {
+        rotuloMensagem.setText(mensagem);
+        rotuloMensagem.getStyleClass().setAll("selo", "selo-atencao");
         rotuloMensagem.setVisible(true);
         rotuloMensagem.setManaged(true);
     }

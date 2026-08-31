@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.when;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
+import br.edu.sistemaescala.backend.model.AcaoSeguranca;
+import br.edu.sistemaescala.backend.model.ResultadoSeguranca;
 import br.edu.sistemaescala.backend.model.RoleUsuario;
 import br.edu.sistemaescala.backend.model.Usuario;
 import br.edu.sistemaescala.backend.repository.UsuarioRepository;
@@ -37,12 +40,14 @@ class AutenticacaoServiceImplTest {
     private AutenticacaoService autenticacaoService;
     private Usuario usuarioAtivo;
     private List<Long> atrasos;
+    private LogSegurancaFake logSeguranca;
 
     @BeforeEach
     void prepararMocks() {
         usuarioRepository = mock(UsuarioRepository.class);
         atrasos = new ArrayList<>();
-        autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository, atrasos::add);
+        logSeguranca = new LogSegurancaFake();
+        autenticacaoService = new AutenticacaoServiceImpl(usuarioRepository, logSeguranca, atrasos::add);
 
         String hash = BCrypt.withDefaults().hashToString(12, SENHA_CORRETA.toCharArray());
         usuarioAtivo = new Usuario(USUARIO_ID, "Usuario Teste", LOGIN, hash,
@@ -115,6 +120,60 @@ class AutenticacaoServiceImplTest {
 
         assertTrue(resultado.isEmpty());
         verify(usuarioRepository, never()).registrarUltimoLogin(anyInt(), any(LocalDateTime.class));
+    }
+
+    @Test
+    void loginBemSucedidoEntraNaTrilhaDeAuditoria() {
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioAtivo));
+
+        autenticacaoService.autenticar(LOGIN, SENHA_CORRETA);
+
+        List<LogSegurancaFake.Evento> logins = logSeguranca.eventosDe(AcaoSeguranca.LOGIN);
+        assertEquals(1, logins.size());
+        assertEquals(ResultadoSeguranca.SUCESSO, logins.get(0).resultado());
+        assertEquals(LOGIN, logins.get(0).identificacao());
+    }
+
+    @Test
+    void loginFalhoRegistraAStringTentadaMesmoQuandoOUsuarioNaoExiste() {
+        String tentativa = "nao-existe";
+        when(usuarioRepository.buscarPorLogin(tentativa)).thenReturn(Optional.empty());
+
+        autenticacaoService.autenticar(tentativa, SENHA_CORRETA);
+
+        LogSegurancaFake.Evento evento = logSeguranca.ultimo();
+        assertEquals(AcaoSeguranca.LOGIN, evento.acao());
+        assertEquals(ResultadoSeguranca.FALHA, evento.resultado());
+        assertEquals(tentativa, evento.identificacao());
+    }
+
+    @Test
+    void senhaErradaEUsuarioInativoTambemEntramNaTrilhaComoFalha() {
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioAtivo));
+        autenticacaoService.autenticar(LOGIN, "senha-errada");
+
+        Usuario usuarioInativo = new Usuario(USUARIO_ID, "Usuario Teste", LOGIN, usuarioAtivo.getSenhaHash(),
+                RoleUsuario.GESTOR, false, null, null);
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioInativo));
+        autenticacaoService.autenticar(LOGIN, SENHA_CORRETA);
+
+        List<LogSegurancaFake.Evento> logins = logSeguranca.eventosDe(AcaoSeguranca.LOGIN);
+        assertEquals(2, logins.size());
+        assertTrue(logins.stream().allMatch(evento -> evento.resultado() == ResultadoSeguranca.FALHA));
+    }
+
+    @Test
+    void nemASenhaNemOHashChegamNaTrilhaDeAuditoria() {
+        when(usuarioRepository.buscarPorLogin(LOGIN)).thenReturn(Optional.of(usuarioAtivo));
+
+        autenticacaoService.autenticar(LOGIN, SENHA_CORRETA);
+        autenticacaoService.autenticar(LOGIN, "senha-errada");
+
+        String trilha = logSeguranca.textoCompleto();
+        assertFalse(trilha.contains(SENHA_CORRETA));
+        assertFalse(trilha.contains("senha-errada"));
+        assertFalse(trilha.contains(usuarioAtivo.getSenhaHash()));
+        assertFalse(trilha.contains("$2a$"));
     }
 
     @Test
