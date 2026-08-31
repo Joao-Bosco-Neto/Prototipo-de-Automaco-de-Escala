@@ -93,6 +93,46 @@ class RegraEscalaServiceImplTest {
     }
 
     @Test
+    void coberturaContaComoPostoUnicoEOEfetivoFicaCompleto() {
+        // Turno de minimo 2: 1 titular comum + 1 titular ausente coberto por
+        // 1 substituto = 3 linhas em escala_funcionario, mas so 2 postos.
+        EscalaTurno turnoDeDoisAgentes = turno(TURNO_ID, INICIO_TURNO, FIM_TURNO, 2);
+        EscalaFuncionario titularComum = alocacaoComId(1);
+        EscalaFuncionario titularAusente = alocacaoComId(2);
+        EscalaFuncionario substituto = alocacaoComId(3);
+        substituto.setCoberturaDe(titularAusente);
+
+        ResultadoEfetivo resultado = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes,
+                List.of(titularComum, titularAusente, substituto));
+
+        assertTrue(resultado.completo(), "Titular + substituto deveriam contar como 1 unico posto.");
+        assertEquals(2, resultado.alocados());
+        assertEquals(2, resultado.minimoExigido());
+    }
+
+    @Test
+    void substitutoSemTitularComumNaoCompletaOMinimo() {
+        // Unico posto real (titular ausente coberto): 1/2, ainda incompleto.
+        EscalaTurno turnoDeDoisAgentes = turno(TURNO_ID, INICIO_TURNO, FIM_TURNO, 2);
+        EscalaFuncionario titularAusente = alocacaoComId(2);
+        EscalaFuncionario substituto = alocacaoComId(3);
+        substituto.setCoberturaDe(titularAusente);
+
+        ResultadoEfetivo resultado = regraEscalaService.verificarEfetivo(turnoDeDoisAgentes,
+                List.of(titularAusente, substituto));
+
+        assertFalse(resultado.completo());
+        assertEquals(1, resultado.alocados());
+    }
+
+    private EscalaFuncionario alocacaoComId(int id) {
+        EscalaFuncionario alocacao = new EscalaFuncionario();
+        alocacao.setId(id);
+        alocacao.setFuncionario(funcionario());
+        return alocacao;
+    }
+
+    @Test
     void funcionarioJaAlocadoNoMesmoTurnoNaoPodeSerAlocadoDeNovo() {
         when(escalaFuncionarioRepository.listarPorTurno(TURNO_ID))
                 .thenReturn(List.of(alocacaoDeTurnoInteiro(turno)));

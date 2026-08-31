@@ -6,8 +6,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -267,27 +270,61 @@ public class PainelAtribuicaoController {
             return secao;
         }
 
+        // Casa cada substituto com o titular ausente pelo id da alocacao
+        // titular; a vaga substituida vira uma unica linha "Ausente -> Substituto".
+        Map<Integer, EscalaFuncionario> substitutoPorTitular = new LinkedHashMap<>();
         for (EscalaFuncionario alocacao : alocacoes) {
-            secao.getChildren().add(criarLinhaEscalado(alocacao));
+            EscalaFuncionario coberta = alocacao.getCoberturaDe();
+            if (coberta != null && coberta.getId() != null) {
+                substitutoPorTitular.put(coberta.getId(), alocacao);
+            }
+        }
+        Set<Integer> titularesPresentes = alocacoes.stream()
+                .map(EscalaFuncionario::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        for (EscalaFuncionario alocacao : alocacoes) {
+            EscalaFuncionario coberta = alocacao.getCoberturaDe();
+            if (coberta != null && coberta.getId() != null && titularesPresentes.contains(coberta.getId())) {
+                continue; // renderizado junto do titular
+            }
+            EscalaFuncionario substituto = coberta == null ? substitutoPorTitular.get(alocacao.getId()) : null;
+            secao.getChildren().add(criarLinhaEscalado(alocacao, substituto));
         }
         return secao;
     }
 
-    private HBox criarLinhaEscalado(EscalaFuncionario alocacao) {
-        Funcionario funcionario = alocacao.getFuncionario();
-        Label nome = new Label(funcionario != null ? funcionario.getNome() : "(sem nome)");
+    /**
+     * Uma linha por posto. Sem cobertura: nome do titular e botao "Remover" da
+     * alocacao. Com cobertura ativa: "Ausente → Substituto" e botao "Desfazer
+     * cobertura", que remove so a linha do substituto e devolve o posto ao
+     * titular original.
+     */
+    private HBox criarLinhaEscalado(EscalaFuncionario alocacao, EscalaFuncionario cobertura) {
+        boolean temCobertura = cobertura != null;
+        String texto = temCobertura
+                ? nomeDoFuncionario(alocacao) + " → " + nomeDoFuncionario(cobertura)
+                : nomeDoFuncionario(alocacao);
+        Label nome = new Label(texto);
         nome.setWrapText(true);
         HBox.setHgrow(nome, Priority.ALWAYS);
         nome.setMaxWidth(Double.MAX_VALUE);
 
-        Button remover = new Button("Remover");
+        Button remover = new Button(temCobertura ? "Desfazer cobertura" : "Remover");
         remover.getStyleClass().add("button-secundario-compacto");
-        remover.setOnAction(evento -> removerAlocacao(alocacao));
+        EscalaFuncionario alvo = temCobertura ? cobertura : alocacao;
+        remover.setOnAction(evento -> removerAlocacao(alvo));
 
         HBox linha = new HBox(8, nome, remover);
         linha.setAlignment(Pos.CENTER_LEFT);
         linha.getStyleClass().add("painel-linha-agente");
         return linha;
+    }
+
+    private String nomeDoFuncionario(EscalaFuncionario alocacao) {
+        Funcionario funcionario = alocacao.getFuncionario();
+        return funcionario != null && funcionario.getNome() != null ? funcionario.getNome() : "(sem nome)";
     }
 
     /**

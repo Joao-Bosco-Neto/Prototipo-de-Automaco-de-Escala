@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -728,12 +730,9 @@ public class MontagemEscalaController {
      * Um turno tem cobertura quando alguma de suas alocacoes aponta para a
      * alocacao que ela esta cobrindo ({@code coberturaDe} preenchido).
      *
-     * <p><b>Este estado nao pode ser conferido na tela hoje.</b> Coberturas
-     * sao do milestone M5 e ainda nao existem: nenhum ponto do sistema grava
-     * {@code cobertura_de}, entao a classe de fundo e o selo existem mas nunca
-     * aparecem. E a mesma situacao da celula vazia na #41 — o codigo esta
-     * pronto para quando o M5 chegar, e nada foi inventado no banco so para
-     * poder ver a cor.</p>
+     * <p>A tela de coberturas grava {@code cobertura_de}; quando o titular
+     * ausente e o substituto estao no mesmo turno, o selo "cobertura" e o
+     * fundo {@code .calendario-dia-cobertura} aparecem naquele dia.</p>
      */
     private boolean temCoberturaRegistrada(List<EscalaFuncionario> agentes) {
         return agentes.stream().anyMatch(alocacao -> alocacao.getCoberturaDe() != null);
@@ -828,12 +827,40 @@ public class MontagemEscalaController {
         if (alocacoes == null || alocacoes.isEmpty()) {
             return "Sem agentes";
         }
-        return alocacoes.stream()
-                .map(EscalaFuncionario::getFuncionario)
-                .filter(funcionario -> funcionario != null)
-                .map(Funcionario::getNome)
-                .map(this::nomeCurto)
-                .collect(Collectors.joining(", "));
+
+        // Casa cada substituto com o titular ausente que ele cobre pelo id da
+        // alocacao titular, que vem na mesma lista com coberturaDe nulo.
+        Map<Integer, EscalaFuncionario> substitutoPorTitular = new LinkedHashMap<>();
+        for (EscalaFuncionario alocacao : alocacoes) {
+            EscalaFuncionario coberta = alocacao.getCoberturaDe();
+            if (coberta != null && coberta.getId() != null) {
+                substitutoPorTitular.put(coberta.getId(), alocacao);
+            }
+        }
+        Set<Integer> titularesPresentes = alocacoes.stream()
+                .map(EscalaFuncionario::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<String> postos = new ArrayList<>();
+        for (EscalaFuncionario alocacao : alocacoes) {
+            EscalaFuncionario coberta = alocacao.getCoberturaDe();
+            if (coberta != null && coberta.getId() != null && titularesPresentes.contains(coberta.getId())) {
+                continue; // ja aparece no posto do titular, no formato "Ausente -> Substituto"
+            }
+            EscalaFuncionario substituto = coberta == null ? substitutoPorTitular.get(alocacao.getId()) : null;
+            if (substituto != null) {
+                postos.add(nomeCurtoDaAlocacao(alocacao) + " → " + nomeCurtoDaAlocacao(substituto));
+            } else {
+                postos.add(nomeCurtoDaAlocacao(alocacao));
+            }
+        }
+        return postos.isEmpty() ? "Sem agentes" : String.join(", ", postos);
+    }
+
+    private String nomeCurtoDaAlocacao(EscalaFuncionario alocacao) {
+        Funcionario funcionario = alocacao.getFuncionario();
+        return nomeCurto(funcionario != null ? funcionario.getNome() : null);
     }
 
     /**
