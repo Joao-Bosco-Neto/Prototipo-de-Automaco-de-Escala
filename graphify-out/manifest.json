@@ -1002,5 +1002,17 @@
     "seen": 1788222641.0685413,
     "ast_hash": "2577e010bd753dc15cce6d8bd6f7e8f6",
     "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/GeradorPdfService.java": {
+    "mtime": 1788290548.8990467,
+    "seen": 1788290813.2084563,
+    "ast_hash": "2f31151ea51b58a31a19172397b7de1a",
+    "semantic_hash": ""
+  },
+  "src/test/java/br/edu/sistemaescala/backend/service/GeradorPdfServiceTest.java": {
+    "mtime": 1788290567.8438957,
+    "seen": 1788290813.316935,
+    "ast_hash": "831225edb611430358ae42543c1bde38",
+    "semantic_hash": ""
   }
 }
