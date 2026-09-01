@@ -2,6 +2,7 @@ package br.edu.sistemaescala.backend.service;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,6 +45,29 @@ public class BancoHorasServiceImpl implements BancoHorasService {
         LocalDate inicio = mesReferencia != null ? mesReferencia.atDay(1) : INICIO_DOS_TEMPOS;
         LocalDate fim = mesReferencia != null ? mesReferencia.atEndOfMonth() : FIM_DOS_TEMPOS;
         return lancamentoHorasRepository.buscarExtrato(funcionarioId, inicio, fim);
+    }
+
+    @Override
+    public List<ExtratoLancamentoItem> buscarExtratoDetalhado(int funcionarioId, YearMonth mesReferencia) {
+        // Regra de Ouro: a soma cumulativa mora aqui, nunca no controller.
+        // O repositório já devolve os lançamentos em ordem cronológica
+        // (data_referencia ASC, id ASC), então basta um acumulador que anda
+        // junto com a iteração.
+        List<LancamentoHoras> lancamentos = buscarExtrato(funcionarioId, mesReferencia);
+
+        List<ExtratoLancamentoItem> extrato = new ArrayList<>(lancamentos.size());
+        long saldoAcumulado = 0L;
+        for (LancamentoHoras lancamento : lancamentos) {
+            saldoAcumulado += lancamento.getMinutos();
+            extrato.add(new ExtratoLancamentoItem(
+                    lancamento.getId() != null ? lancamento.getId() : 0,
+                    lancamento.getDataReferencia(),
+                    lancamento.getTipo(),
+                    lancamento.getDescricao(),
+                    lancamento.getMinutos(),
+                    saldoAcumulado));
+        }
+        return extrato;
     }
 
     @Override
