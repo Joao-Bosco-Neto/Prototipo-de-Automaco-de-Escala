@@ -23,6 +23,15 @@ public interface BancoHorasService {
     List<LancamentoHoras> buscarExtrato(int funcionarioId, YearMonth mesReferencia);
 
     /**
+     * Extrato individual detalhado do funcionário no mês informado, com o saldo
+     * acumulado progressivo já calculado linha a linha (issue #49). {@code null}
+     * traz o histórico completo. A lista vem em ordem cronológica
+     * ({@code data_referencia ASC, id ASC}); o {@code saldoAcumuladoMinutos} da
+     * última linha coincide com o saldo total apurado no recorte.
+     */
+    List<ExtratoLancamentoItem> buscarExtratoDetalhado(int funcionarioId, YearMonth mesReferencia);
+
+    /**
      * Lança um ajuste manual (tipo {@code ajuste_manual}) no banco de horas.
      *
      * @param funcionarioId funcionário alvo

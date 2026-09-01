@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Locale;
 
 import br.edu.sistemaescala.LogAplicacao;
-import br.edu.sistemaescala.backend.model.LancamentoHoras;
+import br.edu.sistemaescala.backend.model.TipoLancamento;
+import br.edu.sistemaescala.backend.service.ExtratoLancamentoItem;
 import br.edu.sistemaescala.backend.service.BancoHorasListagemItem;
 import br.edu.sistemaescala.backend.service.BancoHorasService;
 import br.edu.sistemaescala.backend.service.ExportacaoRelatorioService;
@@ -79,6 +80,7 @@ public class BancoHorasController {
     // Card lateral: um único card com o conteúdo trocado conforme o modo.
     private final VBox painelLateral = new VBox(12);
     private final Label tituloLateral = new Label("Extrato");
+    private final javafx.scene.control.Button botaoFecharLateral = new javafx.scene.control.Button("✕ Fechar");
     private final VBox corpoLateral = new VBox(10);
 
     // Formulário de ajuste manual
@@ -299,7 +301,17 @@ public class BancoHorasController {
         painelLateral.setMinWidth(320);
 
         tituloLateral.getStyleClass().add("titulo-2");
-        painelLateral.getChildren().addAll(tituloLateral, corpoLateral);
+
+        // Cabeçalho do card: título à esquerda, "✕ Fechar" à direita. O botão de
+        // fechar só aparece no modo Extrato/Ajuste — some no estado neutro.
+        botaoFecharLateral.getStyleClass().add("button-secundario-compacto");
+        botaoFecharLateral.setOnAction(e -> mostrarLateralVazio());
+        Region espacadorCabecalho = new Region();
+        HBox.setHgrow(espacadorCabecalho, Priority.ALWAYS);
+        HBox cabecalhoLateral = new HBox(10, tituloLateral, espacadorCabecalho, botaoFecharLateral);
+        cabecalhoLateral.setAlignment(Pos.CENTER_LEFT);
+
+        painelLateral.getChildren().addAll(cabecalhoLateral, corpoLateral);
 
         // Componentes fixos do formulário de ajuste (montados uma vez).
         comboTipoAjuste.setItems(FXCollections.observableArrayList(
@@ -323,6 +335,8 @@ public class BancoHorasController {
 
     private void mostrarLateralVazio() {
         tituloLateral.setText("Extrato");
+        botaoFecharLateral.setVisible(false);
+        botaoFecharLateral.setManaged(false);
         corpoLateral.getChildren().setAll(textoSecundario(
                 "Selecione \"Ver extrato\" ou \"Editar\" numa linha da tabela."));
     }
@@ -332,62 +346,126 @@ public class BancoHorasController {
             return;
         }
         YearMonth periodo = mesSelecionado();
+        revelarBotaoFechar();
         tituloLateral.setText("Extrato — " + item.nome()
                 + (periodo != null ? " (" + rotuloMes(periodo) + ")" : ""));
 
         VBox lista = new VBox(8);
+        List<ExtratoLancamentoItem> extrato;
         try {
-            List<LancamentoHoras> extrato = bancoHorasService.buscarExtrato(item.funcionarioId(), periodo);
-            if (extrato.isEmpty()) {
-                lista.getChildren().add(textoSecundario(periodo != null
-                        ? "Nenhum lançamento neste mês."
-                        : "Nenhum lançamento registrado."));
-            } else {
-                for (LancamentoHoras lancamento : extrato) {
-                    lista.getChildren().add(linhaExtrato(lancamento));
-                }
-            }
+            extrato = bancoHorasService.buscarExtratoDetalhado(item.funcionarioId(), periodo);
         } catch (RuntimeException e) {
-            lista.getChildren().add(textoSecundario("Não foi possível carregar o extrato."));
+            extrato = null;
         }
 
-        Label total = new Label((periodo != null ? "Saldo no mês: " : "Saldo consolidado: ")
-                + formatarSaldo(item.saldoMinutos()));
-        total.getStyleClass().add("texto-secundario");
+        if (extrato == null) {
+            lista.getChildren().add(textoSecundario("Não foi possível carregar o extrato."));
+        } else if (extrato.isEmpty()) {
+            lista.getChildren().add(estadoVazioExtrato(periodo));
+        } else {
+            for (ExtratoLancamentoItem linha : extrato) {
+                lista.getChildren().add(linhaExtrato(linha));
+            }
+        }
 
         ScrollPane rolagem = new ScrollPane(lista);
         rolagem.setFitToWidth(true);
-        rolagem.setPrefViewportHeight(360);
+        rolagem.setPrefViewportHeight(340);
         rolagem.getStyleClass().add("painel-atribuicao-rolagem");
+
+        int totalLancamentos = extrato != null ? extrato.size() : 0;
+        Label resumo = new Label(totalLancamentos == 0
+                ? (periodo != null ? "Sem lançamentos em " + rotuloMes(periodo) + "." : "Sem lançamentos.")
+                : totalLancamentos + (totalLancamentos == 1 ? " lançamento" : " lançamentos")
+                        + " · saldo final " + formatarSaldo(item.saldoMinutos()));
+        resumo.getStyleClass().add("texto-secundario");
+        resumo.setWrapText(true);
 
         javafx.scene.control.Button botaoAjuste = new javafx.scene.control.Button("Novo ajuste manual");
         botaoAjuste.getStyleClass().add("button-secundario");
         botaoAjuste.setOnAction(e -> mostrarEdicao(item));
 
-        corpoLateral.getChildren().setAll(total, rolagem, botaoAjuste);
+        corpoLateral.getChildren().setAll(rolagem, resumo, botaoAjuste);
     }
 
-    private VBox linhaExtrato(LancamentoHoras lancamento) {
-        String data = lancamento.getDataReferencia() != null ? lancamento.getDataReferencia().format(DATA) : "-";
-        Label cabecalho = new Label(data + "   " + formatarSaldo(lancamento.getMinutos()));
-        cabecalho.getStyleClass().add("painel-turno-titulo");
+    /** Estado vazio amigável do extrato, com indicação do período. */
+    private VBox estadoVazioExtrato(YearMonth periodo) {
+        Label principal = textoSecundario("Nenhum lançamento registrado para este período.");
+        Label ref = textoSecundario(periodo != null
+                ? "Mês de referência: " + rotuloMes(periodo) + "."
+                : "Exibindo todo o histórico.");
+        VBox caixa = new VBox(6, principal, ref);
+        caixa.setAlignment(Pos.CENTER_LEFT);
+        caixa.setPadding(new Insets(16, 4, 16, 4));
+        return caixa;
+    }
 
-        Label descricao = new Label(lancamento.getDescricao() != null && !lancamento.getDescricao().isBlank()
-                ? lancamento.getDescricao()
-                : descreverTipo(lancamento));
-        descricao.getStyleClass().add("texto-secundario");
-        descricao.setWrapText(true);
+    private VBox linhaExtrato(ExtratoLancamentoItem lancamento) {
+        String data = lancamento.dataReferencia() != null ? lancamento.dataReferencia().format(DATA) : "-";
+        Label rotuloData = new Label(data);
+        rotuloData.getStyleClass().add("painel-turno-titulo");
 
-        VBox linha = new VBox(2, cabecalho, descricao);
+        // O selo da variação fica fixo à direita e nunca encolhe; o rótulo à
+        // esquerda é que cede espaço. Sem isso, tipos longos ("Débito por
+        // ausência coberta") empurram o selo para fora e ele some — só os
+        // "Ajuste manual", curtos, apareciam com a variação visível.
+        Label seloVariacao = selo(lancamento.variacaoMinutos());
+        seloVariacao.setMinWidth(Region.USE_PREF_SIZE);
+
+        Region espacador = new Region();
+        HBox.setHgrow(espacador, Priority.ALWAYS);
+        HBox topo = new HBox(8, rotuloData, espacador, seloVariacao);
+        topo.setAlignment(Pos.CENTER_LEFT);
+
+        Label rotuloTipo = new Label(descreverTipo(lancamento.tipo()));
+        rotuloTipo.getStyleClass().add("texto-secundario");
+        rotuloTipo.setWrapText(true);
+
+        VBox linha = new VBox(4, topo, rotuloTipo);
         linha.getStyleClass().add("painel-linha-agente");
+
+        if (lancamento.descricao() != null && !lancamento.descricao().isBlank()) {
+            Label descricao = new Label(lancamento.descricao());
+            descricao.getStyleClass().add("texto-secundario");
+            descricao.setWrapText(true);
+            linha.getChildren().add(descricao);
+        }
+
+        Label rotuloSaldo = new Label("Saldo progressivo:");
+        rotuloSaldo.getStyleClass().add("texto-secundario");
+        Label seloSaldo = selo(lancamento.saldoAcumuladoMinutos());
+        seloSaldo.setMinWidth(Region.USE_PREF_SIZE);
+        HBox rodape = new HBox(8, rotuloSaldo, seloSaldo);
+        rodape.setAlignment(Pos.CENTER_LEFT);
+        linha.getChildren().add(rodape);
+
         return linha;
     }
 
-    private String descreverTipo(LancamentoHoras lancamento) {
-        if (lancamento.getTipo() == null) {
+    /** Selo de variação/saldo: {@code +8h} verde, {@code -12h} vermelho, {@code 0h} neutro. */
+    private Label selo(long minutos) {
+        Label selo = new Label(formatarSaldo(minutos));
+        selo.getStyleClass().add("selo");
+        if (minutos > 0) {
+            selo.getStyleClass().add("selo-sucesso");
+        } else if (minutos < 0) {
+            selo.getStyleClass().add("selo-perigo");
+        } else {
+            selo.getStyleClass().add("selo-neutro");
+        }
+        return selo;
+    }
+
+    private void revelarBotaoFechar() {
+        botaoFecharLateral.setVisible(true);
+        botaoFecharLateral.setManaged(true);
+    }
+
+    private String descreverTipo(TipoLancamento tipo) {
+        if (tipo == null) {
             return "Lançamento";
         }
-        return switch (lancamento.getTipo()) {
+        return switch (tipo) {
             case CREDITO_COBERTURA -> "Crédito por cobertura";
             case DEBITO_AUSENCIA -> "Débito por ausência coberta";
             case CREDITO_EXTRA -> "Crédito extra";
@@ -399,6 +477,7 @@ public class BancoHorasController {
         if (item == null) {
             return;
         }
+        revelarBotaoFechar();
         tituloLateral.setText("Ajuste manual — " + item.nome());
 
         campoHoras.clear();
