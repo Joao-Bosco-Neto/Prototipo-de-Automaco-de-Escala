@@ -65,11 +65,36 @@ public class GeradorPdfService {
      * @throws IOException se o arquivo nao puder ser escrito ou o PDF nao puder ser montado
      */
     public void exportarPdf(List<EscalaTurno> turnos, YearMonth mes, File destino) throws IOException {
+        exportarPdf(turnos, mes, destino, null, null, List.of());
+    }
+
+    /**
+     * Gera o PDF completo da escala mensal: cabecalho institucional, tabela de
+     * turnos, secao de coberturas e linhas de assinatura.
+     *
+     * @param turnos           turnos do periodo, ja hidratados com tipo de turno e agentes
+     * @param mes              mes de referencia da escala
+     * @param destino          arquivo escolhido pelo usuario no {@code FileChooser}
+     * @param nomeOrganizacao  nome da organizacao para o cabecalho institucional;
+     *                         {@code null} ou vazio omite o bloco inteiro
+     * @param subtitulo        subtitulo institucional; {@code null} ou vazio omite a linha
+     * @param coberturas       coberturas registradas no periodo; lista vazia omite a secao
+     * @throws IOException se o arquivo nao puder ser escrito ou o PDF nao puder ser montado
+     */
+    public void exportarPdf(
+            List<EscalaTurno> turnos,
+            YearMonth mes,
+            File destino,
+            String nomeOrganizacao,
+            String subtitulo,
+            List<CoberturaListagemItem> coberturas) throws IOException {
         Document documento = new Document(PageSize.A4,
                 MARGEM_ESQUERDA, MARGEM_DIREITA, MARGEM_TOPO, MARGEM_BASE);
         try (OutputStream saida = Files.newOutputStream(destino.toPath())) {
             PdfWriter.getInstance(documento, saida);
             documento.open();
+
+            adicionarCabecalhoInstitucional(documento, nomeOrganizacao, subtitulo);
 
             Paragraph titulo = new Paragraph(tituloEscala(mes),
                     FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15));
@@ -83,6 +108,9 @@ public class GeradorPdfService {
             documento.add(geradoEm);
 
             documento.add(montarTabela(turnos));
+
+            adicionarSecaoCoberturas(documento, coberturas);
+            adicionarLinhasDeAssinatura(documento);
 
             Paragraph rodape = new Paragraph(
                     "Documento gerado pelo Sistema de Escala.",
@@ -165,5 +193,116 @@ public class GeradorPdfService {
                 .map(agente -> agente.getFuncionario() != null ? agente.getFuncionario().getNome() : "")
                 .collect(Collectors.joining(", "));
         return new String[] { inicio.format(DATA_CURTA), dia, nomeTurno, equipe };
+    }
+
+    // -----------------------------------------------------------------
+    // Cabecalho institucional
+    // -----------------------------------------------------------------
+
+    /**
+     * Bloco institucional acima do titulo da escala. Omitido por inteiro quando
+     * {@code nomeOrganizacao} e nulo ou vazio.
+     */
+    private void adicionarCabecalhoInstitucional(Document documento, String nomeOrganizacao,
+            String subtitulo) throws DocumentException {
+        if (nomeOrganizacao == null || nomeOrganizacao.isBlank()) {
+            return;
+        }
+        Paragraph nome = new Paragraph(nomeOrganizacao.trim(),
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13));
+        nome.setAlignment(Element.ALIGN_CENTER);
+        documento.add(nome);
+
+        if (subtitulo != null && !subtitulo.isBlank()) {
+            Paragraph sub = new Paragraph(subtitulo.trim(),
+                    FontFactory.getFont(FontFactory.HELVETICA, 10));
+            sub.setAlignment(Element.ALIGN_CENTER);
+            documento.add(sub);
+        }
+
+        Paragraph espacador = new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 1));
+        espacador.setSpacingAfter(10f);
+        documento.add(espacador);
+    }
+
+    // -----------------------------------------------------------------
+    // Coberturas
+    // -----------------------------------------------------------------
+
+    /**
+     * Secao "Coberturas registradas no periodo" apos a tabela. Omitida quando a
+     * lista esta vazia.
+     */
+    private void adicionarSecaoCoberturas(Document documento, List<CoberturaListagemItem> coberturas)
+            throws DocumentException {
+        if (coberturas == null || coberturas.isEmpty()) {
+            return;
+        }
+
+        Paragraph titulo = new Paragraph("Coberturas registradas no período",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10));
+        titulo.setSpacingBefore(14f);
+        titulo.setSpacingAfter(6f);
+        documento.add(titulo);
+
+        Font fonteLinha = FontFactory.getFont(FontFactory.HELVETICA, 8);
+        for (CoberturaListagemItem cobertura : coberturas) {
+            documento.add(new Paragraph(linhaCobertura(cobertura), fonteLinha));
+        }
+    }
+
+    /** {@code dd/MM — Fulano substituiu Beltrano (Motivo: ...)} — motivo omitido se nulo. */
+    private String linhaCobertura(CoberturaListagemItem cobertura) {
+        StringBuilder linha = new StringBuilder();
+        if (cobertura.dataPlantao() != null) {
+            linha.append(cobertura.dataPlantao().format(DATA_CURTA)).append(" — ");
+        }
+        linha.append(cobertura.nomeSubstituto())
+                .append(" substituiu ")
+                .append(cobertura.nomeAusente());
+        if (cobertura.motivoDescricao() != null && !cobertura.motivoDescricao().isBlank()) {
+            linha.append(" (Motivo: ").append(cobertura.motivoDescricao()).append(")");
+        }
+        return linha.toString();
+    }
+
+    // -----------------------------------------------------------------
+    // Assinaturas
+    // -----------------------------------------------------------------
+
+    /** Duas colunas com traco horizontal e rotulo, sem bordas visiveis, ao final do documento. */
+    private void adicionarLinhasDeAssinatura(Document documento) throws DocumentException {
+        PdfPTable tabela = new PdfPTable(2);
+        tabela.setWidthPercentage(100);
+        tabela.setSpacingBefore(30f);
+
+        tabela.addCell(celulaAssinatura("Gestor de Escala"));
+        tabela.addCell(celulaAssinatura("Direção"));
+
+        documento.add(tabela);
+    }
+
+    private PdfPCell celulaAssinatura(String rotulo) {
+        PdfPCell traco = new PdfPCell(new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 9)));
+        traco.setBorderWidth(0f);
+        traco.setBorderWidthBottom(0.5f);
+        traco.setPaddingTop(24f);
+
+        PdfPCell legenda = new PdfPCell(new Paragraph(rotulo, FontFactory.getFont(FontFactory.HELVETICA, 9)));
+        legenda.setBorderWidth(0f);
+        legenda.setHorizontalAlignment(Element.ALIGN_CENTER);
+        legenda.setPaddingTop(3f);
+
+        // Celula externa sem borda, empilhando traco + legenda numa tabela aninhada.
+        PdfPTable interna = new PdfPTable(1);
+        interna.setWidthPercentage(80);
+        interna.addCell(traco);
+        interna.addCell(legenda);
+
+        PdfPCell externa = new PdfPCell(interna);
+        externa.setBorderWidth(0f);
+        externa.setHorizontalAlignment(Element.ALIGN_CENTER);
+        externa.setPaddingTop(6f);
+        return externa;
     }
 }
