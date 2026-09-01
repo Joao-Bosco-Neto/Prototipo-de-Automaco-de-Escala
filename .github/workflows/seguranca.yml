@@ -26,7 +26,7 @@ jobs:
       # A base do NVD tem centenas de milhares de registros. Sem cache,
       # cada execucao rebaixa tudo e esbarra no limite da API.
       - name: Cache da base do NVD
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ github.run_id }}
