@@ -402,17 +402,26 @@ public class BancoHorasController {
 
     private VBox linhaExtrato(ExtratoLancamentoItem lancamento) {
         String data = lancamento.dataReferencia() != null ? lancamento.dataReferencia().format(DATA) : "-";
-        Label rotuloData = new Label(data + "  ·  " + descreverTipo(lancamento.tipo()));
+        Label rotuloData = new Label(data);
         rotuloData.getStyleClass().add("painel-turno-titulo");
 
+        // O selo da variação fica fixo à direita e nunca encolhe; o rótulo à
+        // esquerda é que cede espaço. Sem isso, tipos longos ("Débito por
+        // ausência coberta") empurram o selo para fora e ele some — só os
+        // "Ajuste manual", curtos, apareciam com a variação visível.
         Label seloVariacao = selo(lancamento.variacaoMinutos());
+        seloVariacao.setMinWidth(Region.USE_PREF_SIZE);
 
         Region espacador = new Region();
         HBox.setHgrow(espacador, Priority.ALWAYS);
         HBox topo = new HBox(8, rotuloData, espacador, seloVariacao);
         topo.setAlignment(Pos.CENTER_LEFT);
 
-        VBox linha = new VBox(4, topo);
+        Label rotuloTipo = new Label(descreverTipo(lancamento.tipo()));
+        rotuloTipo.getStyleClass().add("texto-secundario");
+        rotuloTipo.setWrapText(true);
+
+        VBox linha = new VBox(4, topo, rotuloTipo);
         linha.getStyleClass().add("painel-linha-agente");
 
         if (lancamento.descricao() != null && !lancamento.descricao().isBlank()) {
@@ -424,7 +433,9 @@ public class BancoHorasController {
 
         Label rotuloSaldo = new Label("Saldo progressivo:");
         rotuloSaldo.getStyleClass().add("texto-secundario");
-        HBox rodape = new HBox(8, rotuloSaldo, selo(lancamento.saldoAcumuladoMinutos()));
+        Label seloSaldo = selo(lancamento.saldoAcumuladoMinutos());
+        seloSaldo.setMinWidth(Region.USE_PREF_SIZE);
+        HBox rodape = new HBox(8, rotuloSaldo, seloSaldo);
         rodape.setAlignment(Pos.CENTER_LEFT);
         linha.getChildren().add(rodape);
 
