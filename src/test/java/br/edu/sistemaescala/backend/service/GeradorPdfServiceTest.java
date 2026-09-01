@@ -20,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.Funcionario;
+import br.edu.sistemaescala.backend.model.OpcoesExportacaoPdf;
 import br.edu.sistemaescala.backend.model.TipoTurno;
 
 class GeradorPdfServiceTest {
@@ -153,6 +154,62 @@ class GeradorPdfServiceTest {
         servico.exportarPdf(turnosBase(), SETEMBRO_2026, destino);
 
         assertEquals("%PDF", cabecalho(destino));
+    }
+
+    @Test
+    void gerarEmMemoriaProduzUmPdfValido() throws IOException {
+        byte[] pdf = servico.gerarEmMemoria(
+                EscalaPdfDados.apenasTurnos(turnosBase()),
+                OpcoesExportacaoPdf.padrao(SETEMBRO_2026));
+
+        assertTrue(pdf.length > 0);
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.ISO_8859_1));
+    }
+
+    @Test
+    void secaoDeTelefonesAumentaODocumento() throws IOException {
+        EscalaPdfDados dados = EscalaPdfDados.apenasTurnos(turnosBase());
+
+        byte[] semTelefone = servico.gerarEmMemoria(dados,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, false, false));
+        byte[] comTelefone = servico.gerarEmMemoria(dados,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, true, false, false));
+
+        assertTrue(comTelefone.length > semTelefone.length,
+                "o PDF com a seção de contatos deveria ser maior");
+    }
+
+    @Test
+    void secaoDeSaldoSoApareceQuandoLigadaEComDados() throws IOException {
+        List<EscalaTurno> turnos = turnosBase();
+        List<BancoHorasListagemItem> saldos = List.of(
+                new BancoHorasListagemItem(1, "Ana", "M1", 5, 0, 0, 120),
+                new BancoHorasListagemItem(2, "Bruno", "M2", 4, 1, 0, -90));
+        EscalaPdfDados comSaldo = new EscalaPdfDados(turnos, null, null, List.of(), saldos);
+        EscalaPdfDados semSaldo = new EscalaPdfDados(turnos, null, null, List.of(), List.of());
+
+        byte[] ligadoComDados = servico.gerarEmMemoria(comSaldo,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, true, false));
+        byte[] ligadoSemDados = servico.gerarEmMemoria(semSaldo,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, true, false));
+        byte[] desligado = servico.gerarEmMemoria(comSaldo,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, false, false));
+
+        assertTrue(ligadoComDados.length > ligadoSemDados.length);
+        assertEquals(ligadoSemDados.length, desligado.length,
+                "sem dados de saldo, ligar a opção não deveria mudar o documento");
+    }
+
+    @Test
+    void assinaturasSaoOmitidasQuandoAOpcaoEstaDesligada() throws IOException {
+        EscalaPdfDados dados = EscalaPdfDados.apenasTurnos(turnosBase());
+
+        byte[] comAssinatura = servico.gerarEmMemoria(dados,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, false, true));
+        byte[] semAssinatura = servico.gerarEmMemoria(dados,
+                new OpcoesExportacaoPdf(SETEMBRO_2026, false, false, false, false));
+
+        assertTrue(comAssinatura.length > semAssinatura.length);
     }
 
     // -----------------------------------------------------------------

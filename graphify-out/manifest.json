@@ -410,9 +410,9 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/frontend/controller/ShellController.java": {
-    "mtime": 1788140489.3735685,
-    "seen": 1788140659.0338795,
-    "ast_hash": "7a97db89fd7c845549c579c9677d79c9",
+    "mtime": 1788296422.0402565,
+    "seen": 1788296682.5152814,
+    "ast_hash": "7a8a7877f606a723ae3de5683d115115",
     "semantic_hash": ""
   },
   "docs/CONTEXTO_PARA_IA.md": {
@@ -554,9 +554,9 @@
     "semantic_hash": ""
   },
   "pom.xml": {
-    "mtime": 1788119185.0519416,
-    "seen": 1788119307.27936,
-    "ast_hash": "eeb9364f27e69e761c8f3732abd817c5",
+    "mtime": 1788296130.748155,
+    "seen": 1788296682.4949183,
+    "ast_hash": "be05d279f60186fc308ea79833313d22",
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/CoberturaService.java": {
@@ -1004,15 +1004,45 @@
     "semantic_hash": ""
   },
   "src/main/java/br/edu/sistemaescala/backend/service/GeradorPdfService.java": {
-    "mtime": 1788290548.8990467,
-    "seen": 1788290813.2084563,
-    "ast_hash": "2f31151ea51b58a31a19172397b7de1a",
+    "mtime": 1788296243.3008277,
+    "seen": 1788296682.5063853,
+    "ast_hash": "382ade84c16d00a8534bd23b07ebcb63",
     "semantic_hash": ""
   },
   "src/test/java/br/edu/sistemaescala/backend/service/GeradorPdfServiceTest.java": {
-    "mtime": 1788290567.8438957,
-    "seen": 1788290813.316935,
-    "ast_hash": "831225edb611430358ae42543c1bde38",
+    "mtime": 1788296463.7461874,
+    "seen": 1788296682.5210788,
+    "ast_hash": "91169905a3acd56bd3181771fd8edc30",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/model/OpcoesExportacaoPdf.java": {
+    "mtime": 1788296144.977108,
+    "seen": 1788296682.4982429,
+    "ast_hash": "aca09c29c232b603e6742ea287ba98bc",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/backend/service/EscalaPdfDados.java": {
+    "mtime": 1788296155.9482226,
+    "seen": 1788296682.5055902,
+    "ast_hash": "68257dd538c8daa5ae19275610c9f41a",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/PdfPreviewRenderer.java": {
+    "mtime": 1788296261.9981077,
+    "seen": 1788296682.511713,
+    "ast_hash": "52a427495ed9deff1b923a2ac23bb44a",
+    "semantic_hash": ""
+  },
+  "src/main/java/br/edu/sistemaescala/frontend/controller/ExportacaoPdfController.java": {
+    "mtime": 1788296395.20189,
+    "seen": 1788296682.513389,
+    "ast_hash": "bca1dc34acee320124031bd245e86e03",
+    "semantic_hash": ""
+  },
+  "docs/decisao-openpdf-ao-inves-de-pdfbox.md": {
+    "mtime": 1788296668.4987192,
+    "seen": 1788296682.524425,
+    "ast_hash": "4e59cadb0381effead1cf70b088ff3bb",
     "semantic_hash": ""
   }
 }

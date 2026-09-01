@@ -3,6 +3,7 @@ package br.edu.sistemaescala.frontend.controller;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,7 @@ import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.EscalaExcecaoServiceImpl;
+import br.edu.sistemaescala.backend.service.GeradorPdfService;
 import br.edu.sistemaescala.backend.service.GeradorRodizioServiceImpl;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosService;
 import br.edu.sistemaescala.backend.service.GestaoUsuariosServiceImpl;
@@ -115,6 +117,7 @@ public class ShellController {
     private final List<Button> botoesNavegacao = new ArrayList<>();
     private Timeline temporizadorInatividade;
     private Label rotuloOrganizacao;
+    private Label rotuloUltimaExportacao;
 
     public ShellController(ConfiguracaoRepository configuracaoRepository,
                            TipoTurnoRepository tipoTurnoRepository) {
@@ -459,6 +462,11 @@ public class ShellController {
         if ("Banco de horas".equals(item)) {
             return new BancoHorasController(bancoHorasService).criarTela();
         }
+        if ("Exportar PDF".equals(item)) {
+            return new ExportacaoPdfController(escalaTurnoRepository, coberturaService,
+                    bancoHorasService, configuracaoRepository, new GeradorPdfService(),
+                    this::atualizarUltimaExportacao).criarTela();
+        }
         if ("Configurações".equals(item) || "Configurações da organização".equals(item)) {
             return new ConfiguracaoController(configuracaoService, config -> {
                 if (rotuloOrganizacao != null && config != null) {
@@ -483,14 +491,21 @@ public class ShellController {
     // -----------------------------------------------------------------
 
     private HBox criarBarraStatus() {
-        // Exportacao de PDF ainda nao existe: texto fixo ate a issue dela.
+        rotuloUltimaExportacao = rotuloStatus("Nenhuma exportação registrada");
         HBox barra = new HBox(18,
                 rotuloStatus(descreverTiposDeTurno()),
                 criarSeloBanco(),
-                rotuloStatus("Nenhuma exportação registrada"));
+                rotuloUltimaExportacao);
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.getStyleClass().add("barra-status");
         return barra;
+    }
+
+    /** Callback do {@link ExportacaoPdfController}: registra a exportacao na barra de status. */
+    private void atualizarUltimaExportacao(LocalDateTime instante) {
+        if (rotuloUltimaExportacao != null && instante != null) {
+            rotuloUltimaExportacao.setText(ExportacaoPdfController.rotuloUltimaExportacao(instante));
+        }
     }
 
     private Label rotuloStatus(String texto) {
