@@ -5,11 +5,15 @@ import java.time.YearMonth;
 import java.util.List;
 
 /**
- * Os quatro indicadores da tela "Visão geral" (issue #53), reunidos num
- * resultado só para a tela fazer uma chamada em vez de quatro.
+ * O conteúdo da tela "Visão geral", reunido num resultado só para a tela fazer
+ * uma chamada em vez de várias: os quatro indicadores da issue #53 mais a faixa
+ * da semana e os próximos plantões da issue #54.
  *
- * <p>Todos os campos saem de consultas agregadas — nenhuma listagem é trazida
- * para a memória só para ser medida.</p>
+ * <p>Os quatro indicadores saem de consultas agregadas — nenhuma listagem é
+ * trazida para a memória só para ser medida. A semana e os próximos plantões,
+ * ao contrário, precisam dos agentes de cada turno para mostrar nome e efetivo:
+ * os dois saem de uma única {@code buscarPorPeriodo} cobrindo o intervalo
+ * inteiro, e não de uma consulta por dia.</p>
  *
  * @param diaReferencia      dia usado como "hoje"
  * @param mesReferencia      mês de {@code diaReferencia}, recorte dos dois
@@ -22,6 +26,12 @@ import java.util.List;
  * @param coberturasNoMes    coberturas registradas em turnos que começam no mês
  * @param diasIncompletos    dias do mês com pelo menos um turno abaixo do
  *                           mínimo de agentes
+ * @param semanaCorrente     os sete dias da semana que contém
+ *                           {@code diaReferencia}, de domingo a sábado, sempre
+ *                           com sete itens mesmo que alguns não tenham turno
+ * @param proximosPlantoes   turnos a partir de {@code diaReferencia}, em ordem
+ *                           de início e limitados a um resumo — não é a agenda
+ *                           inteira, que vive na montagem da escala
  */
 public record IndicadoresDashboard(
         LocalDate diaReferencia,
@@ -29,10 +39,25 @@ public record IndicadoresDashboard(
         List<PlantaoDoDiaItem> plantoesDeHoje,
         ContagemFuncionarios funcionarios,
         int coberturasNoMes,
-        int diasIncompletos) {
+        int diasIncompletos,
+        List<DiaDaSemana> semanaCorrente,
+        List<TurnoResumido> proximosPlantoes) {
 
     /** Não há nenhum turno começando hoje — o card mostra o estado vazio. */
     public boolean semPlantaoHoje() {
         return plantoesDeHoje.isEmpty();
+    }
+
+    /**
+     * Nenhum dos sete dias tem turno — mês sem escala montada, e a faixa
+     * mostra o estado vazio em vez de sete colunas em branco sem explicação.
+     */
+    public boolean semanaSemEscala() {
+        return semanaCorrente.stream().allMatch(DiaDaSemana::semTurnos);
+    }
+
+    /** Não há plantão nenhum daqui para a frente dentro do horizonte consultado. */
+    public boolean semProximosPlantoes() {
+        return proximosPlantoes.isEmpty();
     }
 }

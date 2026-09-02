@@ -772,3 +772,89 @@
     -fx-text-fill: -cor-texto-secundario;
     -fx-wrap-text: true;
 }
+
+/* ---------------------------------------------------------------------
+   Faixa da semana e próximos plantões da Visão geral (Issue #54)
+
+   A faixa é um calendário de uma linha só, então reaproveita o cabeçalho
+   de dia da semana da grade de montagem (.calendario-cabecalho-dia) —
+   assim as duas telas não têm como divergir no "Domingo..Sábado". O que
+   é próprio daqui é a célula, mais compacta que a do calendário porque
+   mostra os nomes dos agentes em vez de só contá-los.
+
+   O selo Confirmado/Incompleto da tabela usa .selo-sucesso e
+   .selo-atencao, os mesmos verde e âmbar que o calendário pinta na
+   célula do dia. Nada de classe nova para isso.
+   --------------------------------------------------------------------- */
+
+/* Uma coluna da faixa. A borda direita separa os dias sem precisar de
+   espaçamento, que quebraria o alinhamento com o cabeçalho. */
+.semana-celula {
+    -fx-background-color: -cor-fundo-card;
+    -fx-border-color: transparent -cor-borda-clara transparent transparent;
+    -fx-padding: 10px 10px 12px 10px;
+}
+
+/* Hoje: faixa superior na cor institucional, fundo no cinza alternativo e o
+   número do dia em azul. Três marcas discretas em vez de um fundo colorido
+   forte, pela mesma razão registrada no dia selecionado do calendário (#41):
+   derive() sobre a primária clareia mas não dessatura, e mesmo a 92% cai num
+   azul médio — que aqui, com nome de turno, horário e nomes de agente por
+   cima, derrubaria o contraste do texto. Declarada depois de .semana-celula
+   de propósito: mesma especificidade, esta é a que vale. */
+.semana-celula-hoje {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-border-color: -cor-primaria -cor-borda-clara transparent transparent;
+    -fx-border-width: 3px 1px 0 0;
+}
+.semana-celula-hoje .semana-numero-dia {
+    -fx-text-fill: -cor-primaria;
+}
+
+/* Número do dia, no topo da coluna. */
+.semana-numero-dia {
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+
+/* Nome do tipo de turno dentro da coluna. */
+.semana-tipo-turno {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-primaria;
+}
+
+/* Horário do turno, logo abaixo do tipo. */
+.semana-horario {
+    -fx-font-size: 11px;
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* Um agente por linha. O nome vem curto na faixa; o tooltip traz o
+   completo, porque a coluna tem um sétimo da largura da tela. */
+.semana-agente {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -cor-texto;
+}
+
+/* Dia sem turno e turno sem agente: apagado, mas escrito. Uma coluna em
+   branco não diz se o dia está livre ou se a escala não foi montada. */
+.semana-sem-turno {
+    -fx-font-size: 11px;
+    -fx-text-fill: -cor-texto-terciario;
+}
+
+/* A tela inteira rola: com os quatro cards, a faixa da semana e a tabela
+   empilhados, o conteúdo passa da altura da janela, e sem rolagem os cards
+   de baixo espremem os de cima até cortar texto. O ScrollPane não pode
+   pintar o cinza do Modena por cima do fundo da área de conteúdo — mesmo
+   tratamento de .calendario-rolagem. */
+.dashboard-rolagem,
+.dashboard-rolagem > .viewport {
+    -fx-background-color: transparent;
+}
+.dashboard-rolagem {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
