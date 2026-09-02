@@ -16,6 +16,7 @@ import br.edu.sistemaescala.backend.dao.ConexaoBanco;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.repository.FuncionarioRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
+import br.edu.sistemaescala.backend.service.ContagemFuncionarios;
 
 public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
 
@@ -44,6 +45,16 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
     private static final String SQL_EXISTE_MATRICULA = "SELECT COUNT(*) FROM funcionario WHERE matricula = ?";
 
     private static final String SQL_EXISTE_MATRICULA_EXCETO_ID = SQL_EXISTE_MATRICULA + " AND id <> ?";
+
+    /**
+     * Ativos e inativos numa varredura so da tabela. COUNT(CASE ...) em vez de
+     * duas consultas: o card do dashboard mostra os dois numeros juntos.
+     */
+    private static final String SQL_CONTAR_POR_STATUS = """
+            SELECT COUNT(CASE WHEN ativo THEN 1 END)     AS ativos,
+                   COUNT(CASE WHEN NOT ativo THEN 1 END) AS inativos
+            FROM funcionario
+            """;
 
     private static final String SQL_CONTAR_PLANTOES_MES = """
             SELECT COUNT(*)
@@ -204,6 +215,20 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
         } catch (SQLException e) {
             throw new RepositoryException(
                     "Falha ao contar plantoes do mes do funcionario " + funcionarioId, e);
+        }
+    }
+
+    @Override
+    public ContagemFuncionarios contarPorStatus() {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_CONTAR_POR_STATUS);
+             ResultSet rs = stmt.executeQuery()) {
+
+            rs.next();
+            return new ContagemFuncionarios(rs.getInt("ativos"), rs.getInt("inativos"));
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao contar funcionarios por status", e);
         }
     }
 

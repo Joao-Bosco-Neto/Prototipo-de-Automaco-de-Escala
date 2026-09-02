@@ -32,6 +32,7 @@ import br.edu.sistemaescala.backend.service.CoberturaService;
 import br.edu.sistemaescala.backend.service.CoberturaServiceImpl;
 import br.edu.sistemaescala.backend.service.ConfiguracaoService;
 import br.edu.sistemaescala.backend.service.ConfiguracaoServiceImpl;
+import br.edu.sistemaescala.backend.service.DashboardServiceImpl;
 import br.edu.sistemaescala.backend.service.FuncionarioService;
 import br.edu.sistemaescala.backend.service.FuncionarioServiceImpl;
 import br.edu.sistemaescala.backend.service.EscalaExcecaoServiceImpl;
@@ -431,10 +432,14 @@ public class ShellController {
     }
 
     /**
-     * Placeholder da area central. Cada item da navegacao ganha sua tela real
-     * na issue especifica correspondente (funcionarios, escala, coberturas...).
+     * Area central. Cada item da navegacao ganha sua tela real na issue
+     * especifica correspondente; o placeholder do fim atende os que ainda nao
+     * chegaram.
      */
     private Parent criarConteudo(String item) {
+        if ("Visão geral".equals(item)) {
+            return new DashboardController(new DashboardServiceImpl()).criarTela();
+        }
         if ("Gestão de usuários".equals(item)) {
             autorizacaoService.exigirAdministrador(sessaoUsuario);
             return new GestaoUsuariosController(gestaoUsuariosService).criarTela();

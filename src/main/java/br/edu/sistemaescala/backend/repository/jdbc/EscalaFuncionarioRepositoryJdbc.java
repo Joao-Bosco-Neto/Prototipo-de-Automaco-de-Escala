@@ -67,6 +67,19 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
 
     private static final String SQL_REMOVER = "DELETE FROM escala_funcionario WHERE id = ?";
 
+    /**
+     * Mesmo recorte do SQL_BUSCAR_COBERTURAS_DO_MES, so que agregado: o
+     * dashboard quer o numero, nao as linhas. Sem JOIN com funcionario, que
+     * nada acrescenta a uma contagem.
+     */
+    private static final String SQL_CONTAR_COBERTURAS_DO_MES = """
+            SELECT COUNT(*)
+            FROM escala_funcionario ef
+            JOIN escala_turno et ON et.id = ef.escala_turno_id
+            WHERE ef.cobertura_de IS NOT NULL
+              AND et.inicio >= ? AND et.inicio < ?
+            """;
+
     private static final String SQL_BUSCAR_COBERTURAS_DO_MES = """
             SELECT ef.id AS ef_id, ef.escala_turno_id AS ef_escala_turno_id,
                    ef.funcionario_id AS ef_funcionario_id, ef.inicio AS ef_inicio, ef.fim AS ef_fim,
@@ -270,6 +283,23 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
 
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao buscar coberturas do mes " + mes, e);
+        }
+    }
+
+    @Override
+    public int contarCoberturasDoMes(YearMonth mes) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_CONTAR_COBERTURAS_DO_MES)) {
+
+            stmt.setObject(1, mes.atDay(1).atStartOfDay());
+            stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao contar coberturas do mes " + mes, e);
         }
     }
 

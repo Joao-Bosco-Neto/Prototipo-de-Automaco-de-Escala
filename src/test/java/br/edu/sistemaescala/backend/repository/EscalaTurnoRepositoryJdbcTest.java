@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import br.edu.sistemaescala.backend.model.EscalaFuncionario;
 import br.edu.sistemaescala.backend.model.EscalaTurno;
 import br.edu.sistemaescala.backend.model.TipoTurno;
 import br.edu.sistemaescala.backend.repository.jdbc.EscalaTurnoRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.PlantaoDoDiaItem;
 
 /**
  * Testes de integracao contra o H2 real. Fixtures sao criadas com SQL puro
@@ -160,6 +162,99 @@ class EscalaTurnoRepositoryJdbcTest {
         assertTrue(aindaExiste.isPresent(), "turno de outro mes nao pode ser afetado por 'Limpar mes'");
     }
 
+    /**
+     * Um dia de 12x36 volta dois itens, e a contagem de agentes segue a regra
+     * do efetivo: a alocacao do titular coberto nao soma junto com a de quem
+     * cobriu, senao um turno de minimo 2 apareceria como 3.
+     */
+    @Test
+    void resumirPlantoesDoDiaTrazUmItemPorTurnoContandoPostoOcupado() {
+        int tipoTurnoId = inserirTipoTurno("TESTE-ET-TIPO-DASH-DIA");
+        int titularFuncId = inserirFuncionario("TESTE-ET-DASH-TITULAR");
+        int substitutoFuncId = inserirFuncionario("TESTE-ET-DASH-SUBSTITUTO");
+
+        LocalDate dia = LocalDate.of(2033, 3, 10);
+        int diurnoId = inserirEscalaTurno(tipoTurnoId,
+                dia.atTime(7, 0), dia.atTime(19, 0), 2);
+        int noturnoId = inserirEscalaTurno(tipoTurnoId,
+                dia.atTime(19, 0), dia.plusDays(1).atTime(7, 0), 2);
+
+        int titularId = inserirEscalaFuncionario(diurnoId, titularFuncId, null);
+        int coberturaId = inserirEscalaFuncionario(diurnoId, substitutoFuncId, titularId);
+        int noturnoAgenteId = inserirEscalaFuncionario(noturnoId, titularFuncId, null);
+
+        ESCALA_FUNCIONARIO_IDS.add(titularId);
+        ESCALA_FUNCIONARIO_IDS.add(coberturaId);
+        ESCALA_FUNCIONARIO_IDS.add(noturnoAgenteId);
+        ESCALA_TURNO_IDS.add(diurnoId);
+        ESCALA_TURNO_IDS.add(noturnoId);
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(titularFuncId);
+        FUNCIONARIO_IDS.add(substitutoFuncId);
+
+        List<PlantaoDoDiaItem> plantoes = REPOSITORIO.resumirPlantoesDoDia(dia);
+
+        assertEquals(2, plantoes.size(), "o dia de 12x36 tem diurno e noturno");
+
+        PlantaoDoDiaItem diurno = plantoes.get(0);
+        assertEquals(diurnoId, diurno.escalaTurnoId(), "o resumo vem ordenado pelo inicio do turno");
+        assertEquals("TESTE-ET-TIPO-DASH-DIA", diurno.tipoTurno());
+        assertEquals(dia.atTime(7, 0), diurno.inicio());
+        assertEquals(dia.atTime(19, 0), diurno.fim());
+        assertEquals(1, diurno.agentes(),
+                "titular coberto e substituto ocupam um posto so");
+        assertEquals(2, diurno.minimoExigido());
+        assertFalse(diurno.completo(), "1 de 2 agentes e efetivo incompleto");
+
+        PlantaoDoDiaItem noturno = plantoes.get(1);
+        assertEquals(noturnoId, noturno.escalaTurnoId());
+        assertEquals(dia.plusDays(1).atTime(7, 0), noturno.fim(), "o noturno termina no dia seguinte");
+        assertEquals(1, noturno.agentes());
+    }
+
+    @Test
+    void resumirPlantoesDoDiaVoltaVazioQuandoNaoHaTurnoNoDia() {
+        assertTrue(REPOSITORIO.resumirPlantoesDoDia(LocalDate.of(2033, 7, 4)).isEmpty(),
+                "dia sem turno nao pode inventar plantao — e o estado vazio do card");
+    }
+
+    /**
+     * Conta dias, nao turnos: os dois turnos incompletos do mesmo dia valem
+     * um dia so, como o calendario que pinta a celula de ambar uma vez so.
+     */
+    @Test
+    void contarDiasComEfetivoIncompletoContaDiasDistintosDoMes() {
+        YearMonth mes = YearMonth.of(2033, 4);
+        int tipoTurnoId = inserirTipoTurno("TESTE-ET-TIPO-DASH-MES");
+        int funcionarioId = inserirFuncionario("TESTE-ET-DASH-MES-AGENTE");
+
+        // Dia 5: dois turnos, os dois sem ninguem alocado (min 2) -> 1 dia incompleto.
+        int diaCincoDiurnoId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(5).atTime(7, 0), mes.atDay(5).atTime(19, 0), 2);
+        int diaCincoNoturnoId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(5).atTime(19, 0), mes.atDay(6).atTime(7, 0), 2);
+        // Dia 9: um turno de minimo 1 com um agente -> completo, nao conta.
+        int diaNoveId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(9).atTime(7, 0), mes.atDay(9).atTime(19, 0), 1);
+        int alocacaoDiaNoveId = inserirEscalaFuncionario(diaNoveId, funcionarioId, null);
+        // Fora do mes: nao pode contaminar o recorte.
+        int foraDoMesId = inserirEscalaTurno(tipoTurnoId,
+                mes.plusMonths(1).atDay(3).atTime(7, 0), mes.plusMonths(1).atDay(3).atTime(19, 0), 2);
+
+        ESCALA_FUNCIONARIO_IDS.add(alocacaoDiaNoveId);
+        ESCALA_TURNO_IDS.add(diaCincoDiurnoId);
+        ESCALA_TURNO_IDS.add(diaCincoNoturnoId);
+        ESCALA_TURNO_IDS.add(diaNoveId);
+        ESCALA_TURNO_IDS.add(foraDoMesId);
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(funcionarioId);
+
+        assertEquals(1, REPOSITORIO.contarDiasComEfetivoIncompleto(mes),
+                "os dois turnos incompletos do dia 5 contam como um dia so");
+        assertEquals(1, REPOSITORIO.contarDiasComEfetivoIncompleto(mes.plusMonths(1)),
+                "o turno vazio do mes seguinte conta no mes dele, nao neste");
+    }
+
     private boolean escalaFuncionarioExiste(int id) {
         try (Connection conexao = ConexaoBanco.getConnection();
              PreparedStatement stmt = conexao.prepareStatement("SELECT 1 FROM escala_funcionario WHERE id = ?")) {
@@ -194,10 +289,14 @@ class EscalaTurnoRepositoryJdbcTest {
     }
 
     private int inserirEscalaTurno(int tipoTurnoId, LocalDateTime inicio, LocalDateTime fim) {
+        return inserirEscalaTurno(tipoTurnoId, inicio, fim, 1);
+    }
+
+    private int inserirEscalaTurno(int tipoTurnoId, LocalDateTime inicio, LocalDateTime fim, int minAgentes) {
         try (Connection conexao = ConexaoBanco.getConnection()) {
             return inserirRetornandoId(conexao,
                     "INSERT INTO escala_turno (tipo_turno_id, inicio, fim, min_agentes) VALUES (?, ?, ?, ?)",
-                    tipoTurnoId, java.sql.Timestamp.valueOf(inicio), java.sql.Timestamp.valueOf(fim), 1);
+                    tipoTurnoId, java.sql.Timestamp.valueOf(inicio), java.sql.Timestamp.valueOf(fim), minAgentes);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

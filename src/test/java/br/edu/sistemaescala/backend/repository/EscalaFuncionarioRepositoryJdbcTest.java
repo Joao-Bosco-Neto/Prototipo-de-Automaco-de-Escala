@@ -240,6 +240,52 @@ class EscalaFuncionarioRepositoryJdbcTest {
         assertEquals(24 * 60, item.minutosDoTurno());
     }
 
+    /**
+     * A contagem do dashboard tem que enxergar exatamente o mesmo recorte da
+     * listagem: so alocacoes de cobertura, e so em turnos que comecam no mes.
+     */
+    @Test
+    void contarCoberturasDoMesContaSoAsCoberturasDeTurnosQueComecamNoMes() {
+        YearMonth mes = YearMonth.of(2033, 5);
+        int tipoTurnoId = inserirTipoTurno("TESTE-EF-TIPO-DASH");
+        int titularFuncId = inserirFuncionario("TESTE-EF-DASH-TITULAR");
+        int substitutoFuncId = inserirFuncionario("TESTE-EF-DASH-SUBSTITUTO");
+
+        int turnoNoMesId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(8).atTime(8, 0), mes.atDay(9).atTime(8, 0));
+        int turnoNoMesSemCoberturaId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(12).atTime(8, 0), mes.atDay(13).atTime(8, 0));
+        int turnoDoMesSeguinteId = inserirEscalaTurno(tipoTurnoId,
+                mes.plusMonths(1).atDay(8).atTime(8, 0), mes.plusMonths(1).atDay(9).atTime(8, 0));
+
+        int titularId = inserirEscalaFuncionario(turnoNoMesId, titularFuncId, null);
+        int coberturaId = inserirEscalaFuncionario(turnoNoMesId, substitutoFuncId, titularId);
+        int semCoberturaId = inserirEscalaFuncionario(turnoNoMesSemCoberturaId, titularFuncId, null);
+        int titularSeguinteId = inserirEscalaFuncionario(turnoDoMesSeguinteId, titularFuncId, null);
+        int coberturaSeguinteId = inserirEscalaFuncionario(turnoDoMesSeguinteId, substitutoFuncId, titularSeguinteId);
+
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(titularFuncId);
+        FUNCIONARIO_IDS.add(substitutoFuncId);
+        ESCALA_TURNO_IDS.add(turnoNoMesId);
+        ESCALA_TURNO_IDS.add(turnoNoMesSemCoberturaId);
+        ESCALA_TURNO_IDS.add(turnoDoMesSeguinteId);
+        ESCALA_FUNCIONARIO_IDS.add(titularId);
+        ESCALA_FUNCIONARIO_IDS.add(coberturaId);
+        ESCALA_FUNCIONARIO_IDS.add(semCoberturaId);
+        ESCALA_FUNCIONARIO_IDS.add(titularSeguinteId);
+        ESCALA_FUNCIONARIO_IDS.add(coberturaSeguinteId);
+
+        assertEquals(1, REPOSITORIO.contarCoberturasDoMes(mes),
+                "so a cobertura do turno que comeca no mes entra na conta");
+        assertEquals(1, REPOSITORIO.contarCoberturasDoMes(mes.plusMonths(1)),
+                "a cobertura do mes seguinte conta no mes dela");
+        assertEquals(0, REPOSITORIO.contarCoberturasDoMes(mes.minusMonths(1)),
+                "mes sem cobertura nenhuma volta zero, nao erro");
+        assertEquals(REPOSITORIO.buscarCoberturasDoMes(mes).size(), REPOSITORIO.contarCoberturasDoMes(mes),
+                "a contagem agregada tem que bater com a listagem do mesmo recorte");
+    }
+
     private int inserirTipoTurno(String nome) {
         try (Connection conexao = ConexaoBanco.getConnection()) {
             return inserirRetornandoId(conexao,
