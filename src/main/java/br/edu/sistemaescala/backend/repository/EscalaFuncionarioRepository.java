@@ -71,4 +71,16 @@ public interface EscalaFuncionarioRepository {
      * motivo.
      */
     List<CoberturaListagemItem> listarCoberturasParaListagem(YearMonth mes);
+
+    /**
+     * Quantas coberturas ({@code cobertura_de} preenchido) existem em turnos
+     * que comecam no mes informado — o card "Coberturas no mes" do dashboard
+     * (issue #53).
+     *
+     * O recorte e o mesmo de {@link #buscarCoberturasDoMes}: o mes vem do
+     * {@code inicio} do turno, nao da data em que a cobertura foi registrada.
+     * A contagem sai de um COUNT no banco, sem trazer as linhas para a
+     * memoria.
+     */
+    int contarCoberturasDoMes(YearMonth mes);
 }

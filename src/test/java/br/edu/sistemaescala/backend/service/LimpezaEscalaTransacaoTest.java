@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -130,6 +131,16 @@ class LimpezaEscalaTransacaoTest {
             @Override
             public void removerPorMes(YearMonth mes) {
                 REPOSITORIO.removerPorMes(mes);
+            }
+
+            @Override
+            public List<PlantaoDoDiaItem> resumirPlantoesDoDia(LocalDate dia) {
+                return REPOSITORIO.resumirPlantoesDoDia(dia);
+            }
+
+            @Override
+            public int contarDiasComEfetivoIncompleto(YearMonth mes) {
+                return REPOSITORIO.contarDiasComEfetivoIncompleto(mes);
             }
         };
 

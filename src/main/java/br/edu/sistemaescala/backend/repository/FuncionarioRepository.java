@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import br.edu.sistemaescala.backend.model.Funcionario;
+import br.edu.sistemaescala.backend.service.ContagemFuncionarios;
 
 /**
  * Repositorio de funcionarios (pessoas escaladas; issue #10).
@@ -45,4 +46,14 @@ public interface FuncionarioRepository {
 
     /** Quantidade de plantoes (escala_funcionario) do funcionario no mes — coluna "Plantoes/mes" da tela. */
     int contarPlantoesNoMes(int funcionarioId, YearMonth mes);
+
+    /**
+     * Conta, num COUNT so, quantos funcionarios estao ativos e quantos estao
+     * inativos — o card "Funcionarios ativos" do dashboard (issue #53).
+     *
+     * <p>Existe em vez de {@code listar(true, null).size()} porque o criterio
+     * da issue e contar no banco, sem trazer a lista inteira para a memoria so
+     * para medir o tamanho dela.</p>
+     */
+    ContagemFuncionarios contarPorStatus();
 }

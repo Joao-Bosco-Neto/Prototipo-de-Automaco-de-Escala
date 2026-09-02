@@ -6,9 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,7 @@ import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.model.TipoTurno;
 import br.edu.sistemaescala.backend.repository.EscalaTurnoRepository;
 import br.edu.sistemaescala.backend.repository.RepositoryException;
+import br.edu.sistemaescala.backend.service.PlantaoDoDiaItem;
 
 /**
  * Implementacao JDBC de {@link EscalaTurnoRepository}.
@@ -80,6 +83,46 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
 
     private static final String SQL_REMOVER_POR_MES = """
             DELETE FROM escala_turno WHERE inicio >= ? AND inicio < ?
+            """;
+
+    /**
+     * Postos de fato ocupados num turno, na mesma regra do efetivo do
+     * calendario: a alocacao do titular que alguem cobriu nao entra, senao um
+     * turno de minimo 2 com uma cobertura apareceria como 3/2.
+     *
+     * Fragmento porque as duas consultas agregadas do dashboard precisam
+     * exatamente da mesma contagem — deixar as duas copias divergirem faria o
+     * card "Dias incompletos" discordar do "Plantao de hoje".
+     */
+    private static final String SQL_POSTOS_OCUPADOS = """
+            (SELECT COUNT(*)
+               FROM escala_funcionario ef
+              WHERE ef.escala_turno_id = et.id
+                AND NOT EXISTS (SELECT 1 FROM escala_funcionario cob
+                                 WHERE cob.cobertura_de = ef.id))
+            """;
+
+    /** Um turno por linha, com o nome do tipo e a contagem de agentes ja agregada. */
+    private static final String SQL_RESUMIR_PLANTOES_DO_DIA = """
+            SELECT et.id AS et_id, tt.nome AS tt_nome,
+                   et.inicio AS et_inicio, et.fim AS et_fim,
+                   et.min_agentes AS et_min_agentes,
+            """ + SQL_POSTOS_OCUPADOS + """
+                   AS agentes
+            FROM escala_turno et
+            JOIN tipo_turno tt ON tt.id = et.tipo_turno_id
+            WHERE et.inicio >= ? AND et.inicio < ?
+            ORDER BY et.inicio, et.id
+            """;
+
+    /** Dias distintos do mes com pelo menos um turno abaixo do minimo. */
+    private static final String SQL_CONTAR_DIAS_INCOMPLETOS = """
+            SELECT COUNT(DISTINCT CAST(et.inicio AS DATE))
+            FROM escala_turno et
+            WHERE et.inicio >= ? AND et.inicio < ?
+              AND
+            """ + SQL_POSTOS_OCUPADOS + """
+                  < et.min_agentes
             """;
 
     @Override
@@ -187,6 +230,51 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
 
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao remover turnos do mes " + mes, e);
+        }
+    }
+
+    @Override
+    public List<PlantaoDoDiaItem> resumirPlantoesDoDia(LocalDate dia) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_RESUMIR_PLANTOES_DO_DIA)) {
+
+            stmt.setObject(1, dia.atStartOfDay());
+            stmt.setObject(2, dia.plusDays(1).atStartOfDay());
+
+            List<PlantaoDoDiaItem> plantoes = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    plantoes.add(new PlantaoDoDiaItem(
+                            rs.getInt("et_id"),
+                            rs.getString("tt_nome"),
+                            rs.getObject("et_inicio", LocalDateTime.class),
+                            rs.getObject("et_fim", LocalDateTime.class),
+                            rs.getInt("agentes"),
+                            rs.getInt("et_min_agentes")));
+                }
+            }
+            return plantoes;
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao resumir os plantoes do dia " + dia, e);
+        }
+    }
+
+    @Override
+    public int contarDiasComEfetivoIncompleto(YearMonth mes) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_CONTAR_DIAS_INCOMPLETOS)) {
+
+            stmt.setObject(1, mes.atDay(1).atStartOfDay());
+            stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Falha ao contar dias com efetivo incompleto no mes " + mes, e);
         }
     }
 

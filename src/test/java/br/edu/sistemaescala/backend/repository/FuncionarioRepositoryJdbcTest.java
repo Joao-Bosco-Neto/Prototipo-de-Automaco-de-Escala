@@ -22,6 +22,7 @@ import br.edu.sistemaescala.backend.dao.BancoInicializador;
 import br.edu.sistemaescala.backend.dao.ConexaoBanco;
 import br.edu.sistemaescala.backend.model.Funcionario;
 import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
+import br.edu.sistemaescala.backend.service.ContagemFuncionarios;
 
 /**
  * Testes de integracao contra o H2 real (mesmo banco usado pela aplicacao).
@@ -145,6 +146,38 @@ class FuncionarioRepositoryJdbcTest {
         assertFalse(REPOSITORIO.existeMatricula("TESTE-FUNC-300", funcionario.getId()),
                 "a checagem deve ignorar o proprio registro quando ele esta sendo editado");
         assertFalse(REPOSITORIO.existeMatricula("TESTE-FUNC-NAO-EXISTE", null));
+    }
+
+    /**
+     * Assercao por diferenca, nao por valor absoluto: o teste roda contra o
+     * banco real, que ja tem funcionarios de outros testes e do uso normal.
+     * O que importa e que desativar um registro tire um dos ativos e some um
+     * aos inativos, sem mexer no total.
+     */
+    @Test
+    void contarPorStatusSeparaAtivosDeInativosNaMesmaConsulta() {
+        ContagemFuncionarios antes = REPOSITORIO.contarPorStatus();
+
+        Funcionario ativo = novoFuncionario("Marcos Dias", "TESTE-FUNC-400");
+        REPOSITORIO.inserir(ativo);
+        FUNCIONARIO_IDS.add(ativo.getId());
+
+        Funcionario paraDesativar = novoFuncionario("Carla Nunes", "TESTE-FUNC-401");
+        REPOSITORIO.inserir(paraDesativar);
+        FUNCIONARIO_IDS.add(paraDesativar.getId());
+
+        ContagemFuncionarios comDoisAtivos = REPOSITORIO.contarPorStatus();
+        assertEquals(antes.ativos() + 2, comDoisAtivos.ativos());
+        assertEquals(antes.inativos(), comDoisAtivos.inativos());
+        assertEquals(antes.total() + 2, comDoisAtivos.total());
+
+        REPOSITORIO.desativar(paraDesativar.getId());
+
+        ContagemFuncionarios depois = REPOSITORIO.contarPorStatus();
+        assertEquals(antes.ativos() + 1, depois.ativos(), "o desativado sai dos ativos");
+        assertEquals(antes.inativos() + 1, depois.inativos(), "e entra nos inativos");
+        assertEquals(comDoisAtivos.total(), depois.total(),
+                "desativar preserva o registro: o total cadastrado nao muda");
     }
 
     private Funcionario novoFuncionario(String nome, String matricula) {

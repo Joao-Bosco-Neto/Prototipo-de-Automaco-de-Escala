@@ -668,3 +668,107 @@
     -fx-opacity: 0.45;
     -fx-cursor: default;
 }
+
+/* ---------------------------------------------------------------------
+   Cards de indicadores da Visão geral (Issue #53)
+
+   Quatro cards lado a lado, cada um com o mesmo desenho: rótulo pequeno
+   no topo, número grande no meio e detalhe secundário embaixo. O que
+   muda entre eles é só a cor da faixa lateral e a do número, tirada das
+   variáveis de status do :root — nenhum hex novo entra aqui.
+
+   A faixa é a borda esquerda do próprio .card, engrossada. Estas regras
+   vêm depois de .card de propósito: mesma especificidade, então a última
+   declarada é a que vale para border-width e border-color.
+
+   Cor não é o único sinal, pela mesma razão da issue #45: o rótulo diz
+   o que o número é e o detalhe diz o que ele significa. Quem não
+   distingue as faixas continua lendo o card inteiro.
+   --------------------------------------------------------------------- */
+.card-indicador {
+    -fx-border-width: 1px 1px 1px 4px;
+    -fx-padding: 16px 18px;
+    -fx-min-width: 200px;
+}
+
+/* As três variantes só trocam a cor da faixa (a quarta borda do card). */
+.card-indicador-primaria {
+    -fx-border-color: -cor-borda-clara -cor-borda-clara -cor-borda-clara -cor-primaria;
+}
+.card-indicador-sucesso {
+    -fx-border-color: -cor-borda-clara -cor-borda-clara -cor-borda-clara -cor-sucesso;
+}
+.card-indicador-atencao {
+    -fx-border-color: -cor-borda-clara -cor-borda-clara -cor-borda-clara -cor-atencao;
+}
+.card-indicador-neutro {
+    -fx-border-color: -cor-borda-clara -cor-borda-clara -cor-borda-clara -cor-neutro;
+}
+
+/* Rótulo do card ("Funcionários ativos"), acima do número. */
+.indicador-rotulo {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* O número em si. A cor acompanha a faixa do card. */
+.indicador-valor {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+.indicador-valor-primaria { -fx-text-fill: -cor-primaria; }
+.indicador-valor-sucesso  { -fx-text-fill: -cor-sucesso; }
+.indicador-valor-atencao  { -fx-text-fill: -cor-atencao; }
+.indicador-valor-neutro   { -fx-text-fill: -cor-neutro; }
+
+/* Linha de apoio embaixo do número ("3 inativos", "no mês corrente"). */
+.indicador-detalhe {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* Um turno do dia dentro do card "Plantão de hoje" — em 12x36 são dois.
+   Mesmo desenho do bloco de turno do painel de atribuição (#42), só que
+   mais compacto, para caber com os outros três cards na mesma faixa. */
+.indicador-turno {
+    -fx-background-color: -cor-fundo-alternativo;
+    -fx-background-radius: 4px;
+    -fx-border-color: -cor-borda-clara;
+    -fx-border-radius: 4px;
+    -fx-padding: 7px 9px;
+}
+.indicador-turno-tipo {
+    -fx-font-size: 12.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-primaria;
+}
+.indicador-turno-horario {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -cor-texto-secundario;
+}
+
+/* Indicador de carregamento ao lado do título, enquanto as quatro consultas
+   rodam fora da thread da interface. Pequeno de propósito: as consultas são
+   agregadas e rápidas; um indicador grande piscaria mais do que informaria.
+   Herda a cor institucional em vez do verde padrão do Modena, que não existe
+   na paleta deste projeto. */
+.indicador-carregando {
+    -fx-progress-color: -cor-primaria;
+    -fx-min-width: 18px;
+    -fx-pref-width: 18px;
+    -fx-max-width: 18px;
+    -fx-min-height: 18px;
+    -fx-pref-height: 18px;
+    -fx-max-height: 18px;
+}
+
+/* Estado explícito de "não há plantão hoje" (critério de aceite da #53).
+   Texto, não card vazio: um card em branco não diz se o dia está livre ou
+   se a consulta falhou. */
+.indicador-vazio {
+    -fx-font-size: 12px;
+    -fx-text-fill: -cor-texto-secundario;
+    -fx-wrap-text: true;
+}
