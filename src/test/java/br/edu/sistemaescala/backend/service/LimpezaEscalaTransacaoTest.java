@@ -142,6 +142,11 @@ class LimpezaEscalaTransacaoTest {
             public int contarDiasComEfetivoIncompleto(YearMonth mes) {
                 return REPOSITORIO.contarDiasComEfetivoIncompleto(mes);
             }
+
+            @Override
+            public int contarTurnosNoMes(YearMonth mes) {
+                return REPOSITORIO.contarTurnosNoMes(mes);
+            }
         };
 
         LimpezaEscalaService servico =

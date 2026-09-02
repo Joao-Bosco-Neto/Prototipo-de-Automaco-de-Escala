@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import br.edu.sistemaescala.LogAplicacao;
+import br.edu.sistemaescala.backend.service.AlertaDashboard;
 import br.edu.sistemaescala.backend.service.ContagemFuncionarios;
 import br.edu.sistemaescala.backend.service.DashboardService;
 import br.edu.sistemaescala.backend.service.DashboardServiceImpl;
@@ -20,6 +21,7 @@ import br.edu.sistemaescala.backend.service.DiaDaSemana;
 import br.edu.sistemaescala.backend.service.IndicadoresDashboard;
 import br.edu.sistemaescala.backend.service.PlantaoDoDiaItem;
 import br.edu.sistemaescala.backend.service.PostoDoTurno;
+import br.edu.sistemaescala.backend.service.SeveridadeAlerta;
 import br.edu.sistemaescala.backend.service.TurnoResumido;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -53,7 +55,9 @@ import javafx.scene.layout.VBox;
  *   <li>a faixa da semana corrente, de domingo a sábado, com o dia de hoje
  *       destacado (issue #54);</li>
  *   <li>a tabela dos próximos plantões a partir de hoje, cada linha com o selo
- *       Confirmado ou Incompleto (issue #54).</li>
+ *       Confirmado ou Incompleto (issue #54);</li>
+ *   <li>o painel de pendências e alertas, cada linha com o selo da sua
+ *       severidade (issue #55).</li>
  * </ol>
  *
  * <p>Sem regra de negócio aqui: o {@link DashboardService} devolve tudo pronto
@@ -105,6 +109,9 @@ public class DashboardController {
     private final Label semanaVazia = new Label();
     private final TableView<TurnoResumido> tabelaProximos = new TableView<>();
     private final ObservableList<TurnoResumido> proximos = FXCollections.observableArrayList();
+    private final Label contadorAlertas = new Label();
+    private final VBox listaAlertas = new VBox();
+    private final Label semAlertas = new Label();
     private final ProgressIndicator indicador = new ProgressIndicator();
     private final Label rotuloSubtitulo = new Label();
     private final Label mensagemErro = new Label();
@@ -147,7 +154,7 @@ public class DashboardController {
         esconderErro();
 
         raiz.getChildren().addAll(criarCabecalho(), mensagemErro, faixaCards,
-                criarCardSemana(), criarCardProximosPlantoes());
+                criarCardSemana(), criarCardProximosPlantoes(), criarCardAlertas());
 
         carregar();
 
@@ -561,6 +568,112 @@ public class DashboardController {
     }
 
     // -----------------------------------------------------------------
+    // Pendencias e alertas (issue #55)
+    // -----------------------------------------------------------------
+
+    /**
+     * Card das pendências, no rodapé da tela: cabeçalho com a contagem e, abaixo,
+     * uma linha por alerta que {@link #desenharAlertas} preenche a cada carga.
+     */
+    private VBox criarCardAlertas() {
+        Label titulo = new Label("Pendências e alertas");
+        titulo.getStyleClass().add("titulo-2");
+
+        Label subtitulo = new Label("Itens que exigem ação antes de publicar a escala do mês.");
+        subtitulo.getStyleClass().add("texto-secundario");
+        subtitulo.setWrapText(true);
+
+        contadorAlertas.getStyleClass().add("texto-secundario");
+
+        semAlertas.getStyleClass().add("indicador-vazio");
+        semAlertas.setWrapText(true);
+        semAlertas.setText("Nenhuma pendência: o efetivo do mês está completo, "
+                + "não há funcionário desativado escalado e o próximo mês já foi iniciado.");
+        semAlertas.setVisible(false);
+        semAlertas.setManaged(false);
+
+        VBox card = new VBox(12, titulo, subtitulo, contadorAlertas, semAlertas, listaAlertas);
+        card.getStyleClass().add("card");
+        return card;
+    }
+
+    private void desenharAlertas(IndicadoresDashboard indicadores) {
+        List<AlertaDashboard> alertas = indicadores.alertas();
+
+        boolean vazio = indicadores.semPendencias();
+        semAlertas.setVisible(vazio);
+        semAlertas.setManaged(vazio);
+        contadorAlertas.setText(alertas.size() == 1
+                ? "1 pendência registrada"
+                : alertas.size() + " pendências registradas");
+
+        listaAlertas.getChildren().clear();
+        for (AlertaDashboard alerta : alertas) {
+            listaAlertas.getChildren().add(criarLinhaDeAlerta(alerta));
+        }
+    }
+
+    /**
+     * Uma pendência: selo da severidade, título e o que fazer a respeito.
+     *
+     * <p>A cor é a única coisa que a severidade decide aqui, e ela nunca vem
+     * sozinha — o selo é escrito ("Crítico", "Atenção", "Informativo") e o
+     * título já diz o tamanho do problema. É a mesma regra da issue #45: quem
+     * não distingue as cores continua lendo a linha inteira.</p>
+     */
+    private VBox criarLinhaDeAlerta(AlertaDashboard alerta) {
+        Label selo = new Label(rotuloDaSeveridade(alerta.severidade()));
+        selo.getStyleClass().addAll("selo", classeDoSelo(alerta.severidade()));
+        selo.setMinWidth(Region.USE_PREF_SIZE);
+
+        Label titulo = new Label(alerta.titulo());
+        titulo.getStyleClass().add("alerta-titulo");
+        titulo.setWrapText(true);
+        HBox.setHgrow(titulo, Priority.ALWAYS);
+
+        HBox cabecalho = new HBox(8, selo, titulo);
+        cabecalho.setAlignment(Pos.CENTER_LEFT);
+
+        Label descricao = new Label(alerta.descricao());
+        descricao.getStyleClass().add("alerta-descricao");
+        descricao.setWrapText(true);
+
+        VBox linha = new VBox(3, cabecalho, descricao);
+        linha.getStyleClass().addAll("alerta-linha", "alerta-linha-" + classeDaSeveridade(alerta.severidade()));
+        linha.setMaxWidth(Double.MAX_VALUE);
+        return linha;
+    }
+
+    /**
+     * Severidade para classe de selo. O mapa vive aqui, e não na enumeração:
+     * {@code SeveridadeAlerta} é do backend e não conhece CSS.
+     */
+    private String classeDoSelo(SeveridadeAlerta severidade) {
+        return switch (severidade) {
+            case CRITICO -> "selo-perigo";
+            case ATENCAO -> "selo-atencao";
+            case INFORMATIVO -> "selo-neutro";
+        };
+    }
+
+    /** Sufixo da classe da faixa lateral da linha, na mesma família de cor do selo. */
+    private String classeDaSeveridade(SeveridadeAlerta severidade) {
+        return switch (severidade) {
+            case CRITICO -> "critico";
+            case ATENCAO -> "atencao";
+            case INFORMATIVO -> "informativo";
+        };
+    }
+
+    private String rotuloDaSeveridade(SeveridadeAlerta severidade) {
+        return switch (severidade) {
+            case CRITICO -> "Crítico";
+            case ATENCAO -> "Atenção";
+            case INFORMATIVO -> "Informativo";
+        };
+    }
+
+    // -----------------------------------------------------------------
     // Pecas comuns dos cards
     // -----------------------------------------------------------------
 
@@ -616,6 +729,7 @@ public class DashboardController {
             desenharCards(indicadores);
             desenharSemana(indicadores);
             proximos.setAll(indicadores.proximosPlantoes());
+            desenharAlertas(indicadores);
         });
         tarefa.setOnFailed(evento -> {
             if (tarefa != tarefaAtual) {

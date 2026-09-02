@@ -255,6 +255,36 @@ class EscalaTurnoRepositoryJdbcTest {
                 "o turno vazio do mes seguinte conta no mes dele, nao neste");
     }
 
+    /**
+     * O alerta de "proximo mes nao iniciado" depende so de existir turno ou
+     * nao, entao o recorte por mes precisa ser exato nas duas pontas.
+     */
+    @Test
+    void contarTurnosNoMesRespondeSeOMesJaTemEscalaMontada() {
+        YearMonth mes = YearMonth.of(2033, 8);
+        int tipoTurnoId = inserirTipoTurno("TESTE-ET-TIPO-CONTAGEM-MES");
+
+        assertEquals(0, REPOSITORIO.contarTurnosNoMes(mes), "mes sem turno nenhum volta zero");
+
+        int primeiroDiaId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(1).atTime(0, 0), mes.atDay(1).atTime(12, 0), 1);
+        int ultimoDiaId = inserirEscalaTurno(tipoTurnoId,
+                mes.atEndOfMonth().atTime(23, 0), mes.plusMonths(1).atDay(1).atTime(11, 0), 1);
+        int mesSeguinteId = inserirEscalaTurno(tipoTurnoId,
+                mes.plusMonths(1).atDay(1).atTime(0, 0),
+                mes.plusMonths(1).atDay(1).atTime(12, 0), 1);
+
+        ESCALA_TURNO_IDS.add(primeiroDiaId);
+        ESCALA_TURNO_IDS.add(ultimoDiaId);
+        ESCALA_TURNO_IDS.add(mesSeguinteId);
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+
+        assertEquals(2, REPOSITORIO.contarTurnosNoMes(mes),
+                "o turno da meia-noite do dia 1 entra e o da meia-noite do mes seguinte nao");
+        assertEquals(1, REPOSITORIO.contarTurnosNoMes(mes.plusMonths(1)),
+                "o turno que comeca no mes seguinte conta la");
+    }
+
     private boolean escalaFuncionarioExiste(int id) {
         try (Connection conexao = ConexaoBanco.getConnection();
              PreparedStatement stmt = conexao.prepareStatement("SELECT 1 FROM escala_funcionario WHERE id = ?")) {

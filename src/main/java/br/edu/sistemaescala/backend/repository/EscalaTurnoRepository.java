@@ -80,4 +80,14 @@ public interface EscalaTurnoRepository {
      * contar em memoria.</p>
      */
     int contarDiasComEfetivoIncompleto(YearMonth mes);
+
+    /**
+     * Quantos turnos comecam no mes informado — o que responde "a escala deste
+     * mes ja foi montada?" para o painel de pendencias (issue #55).
+     *
+     * <p>COUNT no banco em vez de {@code buscarPorPeriodo(...).size()}: a
+     * pergunta e se existe algum turno, nao quais sao, e carregar o mes inteiro
+     * com agentes hidratados para descobrir isso seria desperdicio.</p>
+     */
+    int contarTurnosNoMes(YearMonth mes);
 }

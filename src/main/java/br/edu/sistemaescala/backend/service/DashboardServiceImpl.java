@@ -32,6 +32,10 @@ import br.edu.sistemaescala.backend.repository.jdbc.FuncionarioRepositoryJdbc;
  * com o tipo e os agentes hidratados no mesmo JOIN, então não há consulta por
  * dia nem por turno.</p>
  *
+ * <p>As pendências da issue #55 não são calculadas aqui: elas têm regra
+ * própria e vivem no {@link AlertaService}, que este serviço apenas chama e
+ * repassa. O dashboard continua sendo uma chamada só para a tela.</p>
+ *
  * <p>Fala direto com os repositórios em vez de reaproveitar os serviços de
  * cobertura e de escala de propósito: os métodos que eles expõem devolvem
  * listagens completas, e contar o tamanho delas é exatamente o que a issue #53
@@ -60,6 +64,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final EscalaFuncionarioRepository escalaFuncionarioRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final RegraEscalaService regraEscalaService;
+    private final AlertaService alertaService;
 
     /** Construtor de conveniência com os repositórios JDBC padrão. */
     public DashboardServiceImpl() {
@@ -78,10 +83,22 @@ public class DashboardServiceImpl implements DashboardService {
                                 EscalaFuncionarioRepository escalaFuncionarioRepository,
                                 FuncionarioRepository funcionarioRepository,
                                 RegraEscalaService regraEscalaService) {
+        this(escalaTurnoRepository, escalaFuncionarioRepository, funcionarioRepository,
+                regraEscalaService,
+                new AlertaServiceImpl(escalaTurnoRepository, escalaFuncionarioRepository,
+                        funcionarioRepository));
+    }
+
+    public DashboardServiceImpl(EscalaTurnoRepository escalaTurnoRepository,
+                                EscalaFuncionarioRepository escalaFuncionarioRepository,
+                                FuncionarioRepository funcionarioRepository,
+                                RegraEscalaService regraEscalaService,
+                                AlertaService alertaService) {
         this.escalaTurnoRepository = Objects.requireNonNull(escalaTurnoRepository);
         this.escalaFuncionarioRepository = Objects.requireNonNull(escalaFuncionarioRepository);
         this.funcionarioRepository = Objects.requireNonNull(funcionarioRepository);
         this.regraEscalaService = Objects.requireNonNull(regraEscalaService);
+        this.alertaService = Objects.requireNonNull(alertaService);
     }
 
     @Override
@@ -100,7 +117,8 @@ public class DashboardServiceImpl implements DashboardService {
         return new IndicadoresDashboard(diaReferencia, mes, plantoesDeHoje, funcionarios,
                 coberturas, diasIncompletos,
                 montarSemana(domingo, diaReferencia, turnosDaJanela),
-                selecionarProximos(diaReferencia, turnosDaJanela));
+                selecionarProximos(diaReferencia, turnosDaJanela),
+                alertaService.levantar(diaReferencia));
     }
 
     // -----------------------------------------------------------------

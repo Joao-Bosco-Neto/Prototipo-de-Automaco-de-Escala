@@ -115,6 +115,13 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
             ORDER BY et.inicio, et.id
             """;
 
+    /** Turnos que comecam no mes — so o numero, para saber se o mes tem escala. */
+    private static final String SQL_CONTAR_TURNOS_NO_MES = """
+            SELECT COUNT(*)
+            FROM escala_turno et
+            WHERE et.inicio >= ? AND et.inicio < ?
+            """;
+
     /** Dias distintos do mes com pelo menos um turno abaixo do minimo. */
     private static final String SQL_CONTAR_DIAS_INCOMPLETOS = """
             SELECT COUNT(DISTINCT CAST(et.inicio AS DATE))
@@ -275,6 +282,23 @@ public class EscalaTurnoRepositoryJdbc implements EscalaTurnoRepository {
         } catch (SQLException e) {
             throw new RepositoryException(
                     "Falha ao contar dias com efetivo incompleto no mes " + mes, e);
+        }
+    }
+
+    @Override
+    public int contarTurnosNoMes(YearMonth mes) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_CONTAR_TURNOS_NO_MES)) {
+
+            stmt.setObject(1, mes.atDay(1).atStartOfDay());
+            stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Falha ao contar turnos do mes " + mes, e);
         }
     }
 

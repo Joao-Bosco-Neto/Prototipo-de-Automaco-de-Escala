@@ -83,4 +83,13 @@ public interface EscalaFuncionarioRepository {
      * memoria.
      */
     int contarCoberturasDoMes(YearMonth mes);
+
+    /**
+     * Das coberturas do mes, quantas ficaram sem o par credito/debito no banco
+     * de horas ({@code lancou_banco_horas = FALSE}) — a pendencia da issue #55.
+     *
+     * <p>Mesmo recorte de {@link #contarCoberturasDoMes}: o mes vem do
+     * {@code inicio} do turno. Tambem um COUNT, sem trazer as linhas.</p>
+     */
+    int contarCoberturasSemLancamentoNoMes(YearMonth mes);
 }
