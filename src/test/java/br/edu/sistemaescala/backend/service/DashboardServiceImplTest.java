@@ -299,6 +299,41 @@ class DashboardServiceImplTest {
     }
 
     // -----------------------------------------------------------------
+    // Pendencias (issue #55)
+    // -----------------------------------------------------------------
+
+    /**
+     * O dashboard não decide o que é pendência: ele chama o {@link AlertaService}
+     * com o mesmo dia de referência e repassa a lista como veio.
+     */
+    @Test
+    void alertasVemDoAlertaServiceComODiaDeReferenciaEChegamIntactos() {
+        AlertaDashboard alerta = new AlertaDashboard(TipoAlerta.EFETIVO_INCOMPLETO,
+                SeveridadeAlerta.ATENCAO, "3 dias com efetivo incompleto", "Complete o efetivo.");
+        List<LocalDate> diasPedidos = new ArrayList<>();
+
+        IndicadoresDashboard indicadores = servico(vazio(), new EscalaFuncionarioFake(0),
+                new FuncionarioFake(new ContagemFuncionarios(0, 0)),
+                dia -> {
+                    diasPedidos.add(dia);
+                    return List.of(alerta);
+                }).carregar(QUARTA);
+
+        assertEquals(List.of(QUARTA), diasPedidos, "o levantamento usa o mesmo 'hoje' do resto");
+        assertEquals(List.of(alerta), indicadores.alertas());
+        assertFalse(indicadores.semPendencias());
+    }
+
+    @Test
+    void semAlertaNenhumOEstadoVazioEhSinalizadoParaATela() {
+        IndicadoresDashboard indicadores = servico(vazio()).carregar(QUARTA);
+
+        assertTrue(indicadores.alertas().isEmpty());
+        assertTrue(indicadores.semPendencias(),
+                "o painel precisa saber que não há pendência para mostrar a mensagem");
+    }
+
+    // -----------------------------------------------------------------
     // Apoio
     // -----------------------------------------------------------------
 
@@ -324,11 +359,22 @@ class DashboardServiceImplTest {
      * A regra recebe o mesmo dublê de alocações usado pelo serviço: como ele
      * estoura em {@code listarPorTurno}, qualquer volta ao banco por turno
      * quebra o teste em vez de passar despercebida.
+     *
+     * <p>O {@link AlertaService} entra como dublê pela mesma razão: as
+     * pendências têm regra própria, testada no {@code AlertaServiceImplTest}.
+     * Aqui só interessa que o dashboard repasse o que ele devolveu — e os
+     * fakes de repositório estouram nas consultas de pendência, então um
+     * cálculo de alerta que vazasse para cá quebraria o teste.</p>
      */
     private DashboardService servico(EscalaTurnoFake turnos, EscalaFuncionarioFake alocacoes,
                                      FuncionarioFake funcionarios) {
+        return servico(turnos, alocacoes, funcionarios, dia -> List.of());
+    }
+
+    private DashboardService servico(EscalaTurnoFake turnos, EscalaFuncionarioFake alocacoes,
+                                     FuncionarioFake funcionarios, AlertaService alertas) {
         return new DashboardServiceImpl(turnos, alocacoes, funcionarios,
-                new RegraEscalaServiceImpl(alocacoes));
+                new RegraEscalaServiceImpl(alocacoes), alertas);
     }
 
     private EscalaTurno turno(int id, String tipo, LocalDateTime inicio, LocalDateTime fim,
@@ -406,6 +452,11 @@ class DashboardServiceImplTest {
         }
 
         @Override
+        public int contarTurnosNoMes(YearMonth mes) {
+            throw new UnsupportedOperationException("quem verifica pendência é o AlertaService");
+        }
+
+        @Override
         public Optional<EscalaTurno> buscarPorId(int id) {
             throw new UnsupportedOperationException();
         }
@@ -444,6 +495,11 @@ class DashboardServiceImplTest {
         public int contarCoberturasDoMes(YearMonth mes) {
             mesConsultado = mes;
             return coberturas;
+        }
+
+        @Override
+        public int contarCoberturasSemLancamentoNoMes(YearMonth mes) {
+            throw new UnsupportedOperationException("quem verifica pendência é o AlertaService");
         }
 
         @Override
@@ -505,6 +561,11 @@ class DashboardServiceImplTest {
         @Override
         public ContagemFuncionarios contarPorStatus() {
             return contagem;
+        }
+
+        @Override
+        public List<Funcionario> listarInativosEscaladosApos(LocalDateTime instante) {
+            throw new UnsupportedOperationException("quem verifica pendência é o AlertaService");
         }
 
         @Override

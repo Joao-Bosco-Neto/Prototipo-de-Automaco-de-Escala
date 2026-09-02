@@ -1,5 +1,6 @@
 package br.edu.sistemaescala.backend.repository;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -56,4 +57,16 @@ public interface FuncionarioRepository {
      * para medir o tamanho dela.</p>
      */
     ContagemFuncionarios contarPorStatus();
+
+    /**
+     * Funcionarios desativados que continuam escalados em algum turno que
+     * comeca em {@code instante} ou depois — a pendencia da issue #55.
+     *
+     * <p>Devolve os funcionarios, e nao uma contagem, porque o alerta cita os
+     * nomes: sem eles o gestor saberia que ha um problema, mas nao em quem.
+     * A lista e naturalmente curta (so inativos ainda escalados) e sai
+     * distinta, um registro por pessoa, mesmo que ela tenha varios plantoes
+     * pela frente.</p>
+     */
+    List<Funcionario> listarInativosEscaladosApos(LocalDateTime instante);
 }

@@ -858,3 +858,53 @@
     -fx-padding: 0;
     -fx-background-insets: 0;
 }
+
+/* ---------------------------------------------------------------------
+   Painel de pendências e alertas da Visão geral (Issue #55)
+
+   Uma linha por pendência, com faixa lateral na cor da severidade —
+   mesmo desenho do protótipo. A faixa repete o que o selo já diz por
+   escrito, então a cor é reforço e não o único sinal: quem não a
+   distingue lê "Crítico"/"Atenção"/"Informativo" no selo e o tamanho do
+   problema no título.
+
+   O fundo das linhas fica no branco do card. Tingir de vermelho ou
+   âmbar claro competiria com o selo, que é justamente onde a cor tem
+   que chamar atenção — e derive() sobre as cores de status clareia sem
+   dessaturar, a mesma armadilha registrada na faixa da semana (#54).
+   --------------------------------------------------------------------- */
+.alerta-linha {
+    -fx-background-color: -cor-fundo-card;
+    -fx-border-color: transparent transparent -cor-borda-clara transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 14px;
+}
+
+/* A faixa lateral é a borda esquerda, engrossada. Estas três regras vêm
+   depois de .alerta-linha de propósito: mesma especificidade, então a
+   última declarada é a que vale para border-color e border-width. */
+.alerta-linha-critico {
+    -fx-border-color: transparent transparent -cor-borda-clara -cor-perigo;
+    -fx-border-width: 0 0 1px 3px;
+}
+.alerta-linha-atencao {
+    -fx-border-color: transparent transparent -cor-borda-clara -cor-atencao;
+    -fx-border-width: 0 0 1px 3px;
+}
+.alerta-linha-informativo {
+    -fx-border-color: transparent transparent -cor-borda-clara -cor-primaria;
+    -fx-border-width: 0 0 1px 3px;
+}
+
+/* A pendência em uma linha: "3 dias de Setembro com efetivo incompleto". */
+.alerta-titulo {
+    -fx-font-size: 12.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -cor-texto;
+}
+
+/* O que fazer a respeito, abaixo do título. */
+.alerta-descricao {
+    -fx-font-size: 12px;
+    -fx-text-fill: -cor-texto-secundario;
+}

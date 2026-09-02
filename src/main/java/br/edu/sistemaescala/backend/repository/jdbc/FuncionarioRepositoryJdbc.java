@@ -56,6 +56,22 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
             FROM funcionario
             """;
 
+    /**
+     * Inativos que ainda tem plantao pela frente. DISTINCT porque a mesma
+     * pessoa pode estar em varios turnos futuros e o alerta cita cada nome
+     * uma vez so.
+     */
+    private static final String SQL_INATIVOS_ESCALADOS_APOS = """
+            SELECT DISTINCT f.id, f.nome, f.matricula, f.telefone, f.observacoes,
+                            f.ativo, f.criado_em
+            FROM funcionario f
+            JOIN escala_funcionario ef ON ef.funcionario_id = f.id
+            JOIN escala_turno et ON et.id = ef.escala_turno_id
+            WHERE f.ativo = FALSE
+              AND et.inicio >= ?
+            ORDER BY f.nome, f.id
+            """;
+
     private static final String SQL_CONTAR_PLANTOES_MES = """
             SELECT COUNT(*)
             FROM escala_funcionario ef
@@ -229,6 +245,26 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
 
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao contar funcionarios por status", e);
+        }
+    }
+
+    @Override
+    public List<Funcionario> listarInativosEscaladosApos(LocalDateTime instante) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_INATIVOS_ESCALADOS_APOS)) {
+
+            stmt.setObject(1, instante);
+            List<Funcionario> inativos = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    inativos.add(mapear(rs));
+                }
+            }
+            return inativos;
+
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Falha ao listar inativos ainda escalados a partir de " + instante, e);
         }
     }
 

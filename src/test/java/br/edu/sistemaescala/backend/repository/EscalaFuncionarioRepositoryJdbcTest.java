@@ -286,6 +286,46 @@ class EscalaFuncionarioRepositoryJdbcTest {
                 "a contagem agregada tem que bater com a listagem do mesmo recorte");
     }
 
+    /**
+     * Recorta duas vezes: so coberturas, e so as que nao geraram o par
+     * credito/debito. Uma cobertura lancada nao pode virar pendencia.
+     */
+    @Test
+    void contarCoberturasSemLancamentoIgnoraAsQueJaLancaramNoBancoDeHoras() {
+        // 2034 e nao 2033: o teste de contarCoberturasDoMes acima ja usa
+        // 2033-05 e o mes seguinte dele, e as coberturas dos dois se somariam.
+        YearMonth mes = YearMonth.of(2034, 6);
+        int tipoTurnoId = inserirTipoTurno("TESTE-EF-TIPO-PENDENCIA");
+        int titularFuncId = inserirFuncionario("TESTE-EF-PEND-TITULAR");
+        int substitutoFuncId = inserirFuncionario("TESTE-EF-PEND-SUBSTITUTO");
+
+        int turnoSemLancamentoId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(4).atTime(8, 0), mes.atDay(5).atTime(8, 0));
+        int turnoComLancamentoId = inserirEscalaTurno(tipoTurnoId,
+                mes.atDay(9).atTime(8, 0), mes.atDay(10).atTime(8, 0));
+
+        int titularA = inserirEscalaFuncionario(turnoSemLancamentoId, titularFuncId, null);
+        int semLancamentoId = inserirCobertura(turnoSemLancamentoId, substitutoFuncId, titularA, null, false);
+        int titularB = inserirEscalaFuncionario(turnoComLancamentoId, titularFuncId, null);
+        int comLancamentoId = inserirCobertura(turnoComLancamentoId, substitutoFuncId, titularB, null, true);
+
+        TIPO_TURNO_IDS.add(tipoTurnoId);
+        FUNCIONARIO_IDS.add(titularFuncId);
+        FUNCIONARIO_IDS.add(substitutoFuncId);
+        ESCALA_TURNO_IDS.add(turnoSemLancamentoId);
+        ESCALA_TURNO_IDS.add(turnoComLancamentoId);
+        ESCALA_FUNCIONARIO_IDS.add(titularA);
+        ESCALA_FUNCIONARIO_IDS.add(semLancamentoId);
+        ESCALA_FUNCIONARIO_IDS.add(titularB);
+        ESCALA_FUNCIONARIO_IDS.add(comLancamentoId);
+
+        assertEquals(2, REPOSITORIO.contarCoberturasDoMes(mes), "as duas coberturas estao no mes");
+        assertEquals(1, REPOSITORIO.contarCoberturasSemLancamentoNoMes(mes),
+                "so a que ficou com lancou_banco_horas = false e pendencia");
+        assertEquals(0, REPOSITORIO.contarCoberturasSemLancamentoNoMes(mes.plusMonths(1)),
+                "mes sem cobertura nenhuma volta zero, nao erro");
+    }
+
     private int inserirTipoTurno(String nome) {
         try (Connection conexao = ConexaoBanco.getConnection()) {
             return inserirRetornandoId(conexao,

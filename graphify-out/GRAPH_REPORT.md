@@ -1,16 +1,16 @@
 # Graph Report - Prototipo-de-Automaco-de-Escala  (2026-09-02)
 
 ## Corpus Check
-- 180 files · ~124,631 words
+- 186 files · ~128,783 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3201 nodes · 6888 edges · 220 communities (126 shown, 94 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 754 edges (avg confidence: 0.8)
+- 3286 nodes · 7096 edges · 239 communities (143 shown, 96 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 763 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `16394cb3`
+- Built from commit: `d76b5dce`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -186,20 +186,26 @@
 - [[_COMMUNITY_LimpezaEscalaTransacaoTest|LimpezaEscalaTransacaoTest]]
 - [[_COMMUNITY_DebugCoberturaApp.java|DebugCoberturaApp.java]]
 - [[_COMMUNITY_SimpleStringProperty|SimpleStringProperty]]
+- [[_COMMUNITY_Community 171|Community 171]]
 - [[_COMMUNITY_FiltroStatus|FiltroStatus]]
 - [[_COMMUNITY_FiltroStatusTurno|FiltroStatusTurno]]
 - [[_COMMUNITY_Community 174|Community 174]]
+- [[_COMMUNITY_Community 175|Community 175]]
 - [[_COMMUNITY_Community 176|Community 176]]
 - [[_COMMUNITY_Community 177|Community 177]]
 - [[_COMMUNITY_Community 178|Community 178]]
 - [[_COMMUNITY_Community 179|Community 179]]
 - [[_COMMUNITY_Community 180|Community 180]]
 - [[_COMMUNITY_Community 181|Community 181]]
+- [[_COMMUNITY_Community 182|Community 182]]
+- [[_COMMUNITY_Community 183|Community 183]]
 - [[_COMMUNITY_Community 184|Community 184]]
 - [[_COMMUNITY_Community 185|Community 185]]
 - [[_COMMUNITY_Community 186|Community 186]]
 - [[_COMMUNITY_Community 187|Community 187]]
+- [[_COMMUNITY_Community 188|Community 188]]
 - [[_COMMUNITY_Community 189|Community 189]]
+- [[_COMMUNITY_Community 190|Community 190]]
 - [[_COMMUNITY_Community 191|Community 191]]
 - [[_COMMUNITY_Community 192|Community 192]]
 - [[_COMMUNITY_Community 193|Community 193]]
@@ -218,6 +224,7 @@
 - [[_COMMUNITY_Community 206|Community 206]]
 - [[_COMMUNITY_Community 207|Community 207]]
 - [[_COMMUNITY_Community 208|Community 208]]
+- [[_COMMUNITY_Community 209|Community 209]]
 - [[_COMMUNITY_Community 210|Community 210]]
 - [[_COMMUNITY_Community 211|Community 211]]
 - [[_COMMUNITY_Community 212|Community 212]]
@@ -225,16 +232,25 @@
 - [[_COMMUNITY_Community 214|Community 214]]
 - [[_COMMUNITY_Community 215|Community 215]]
 - [[_COMMUNITY_Community 216|Community 216]]
+- [[_COMMUNITY_Community 227|Community 227]]
+- [[_COMMUNITY_Community 228|Community 228]]
+- [[_COMMUNITY_Community 229|Community 229]]
+- [[_COMMUNITY_Community 230|Community 230]]
+- [[_COMMUNITY_Community 231|Community 231]]
+- [[_COMMUNITY_Community 232|Community 232]]
+- [[_COMMUNITY_Community 233|Community 233]]
+- [[_COMMUNITY_Community 234|Community 234]]
+- [[_COMMUNITY_Community 235|Community 235]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Backlog de Issues — Sistema de Automação de Escala` - 191 edges
-2. `Stream` - 64 edges
+2. `Stream` - 67 edges
 3. `MontagemEscalaController` - 43 edges
 4. `CoberturaController` - 40 edges
-5. `PainelAtribuicaoController` - 38 edges
-6. `RegraEscalaServiceImplTest` - 34 edges
-7. `BancoHorasController` - 32 edges
-8. `DashboardController` - 32 edges
+5. `DashboardController` - 38 edges
+6. `PainelAtribuicaoController` - 38 edges
+7. `RegraEscalaServiceImplTest` - 34 edges
+8. `BancoHorasController` - 32 edges
 9. `CoberturaServiceImplTest` - 32 edges
 10. `GeradorRodizioServiceImplTest` - 29 edges
 
@@ -253,11 +269,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (220 total, 94 thin omitted)
+## Communities (239 total, 96 thin omitted)
 
 ### Community 0 - "org.junit.jupiter.api.Test"
-Cohesion: 0.06
-Nodes (39): FuncaoTransacional, TransacaoUtil, DashboardService, FuncaoTransacional, DashboardServiceImpl, GeradorRodizioServiceImplTest, Connection, T (+31 more)
+Cohesion: 0.07
+Nodes (33): DashboardService, DayOfWeek, DashboardServiceImpl, GeradorRodizioServiceImplTest, AlertaService, DiaDaSemana, EscalaFuncionario, EscalaFuncionarioRepository (+25 more)
 
 ### Community 1 - "LancamentoHoras"
 Cohesion: 0.06
@@ -265,7 +281,7 @@ Nodes (31): BancoHorasService, LancamentoHorasRepositoryJdbc, LancamentoHorasRep
 
 ### Community 2 - "java.time.YearMonth"
 Cohesion: 0.19
-Nodes (11): FuncionarioRepositoryJdbc, Boolean, ContagemFuncionarios, Funcionario, Integer, List, Optional, Override (+3 more)
+Nodes (12): FuncionarioRepositoryJdbc, Boolean, ContagemFuncionarios, Funcionario, Integer, List, LocalDateTime, Optional (+4 more)
 
 ### Community 3 - "Banco de Dados (README)"
 Cohesion: 1.00
@@ -277,7 +293,7 @@ Nodes (3): Prototipo de Referencia Rule, Prototipo Visual das Telas (HTML standa
 
 ### Community 5 - ".mapearAgente"
 Cohesion: 0.06
-Nodes (35): EscalaFuncionarioFake, EscalaFuncionarioRepository, EscalaTurnoFake, EscalaTurnoRepository, FuncionarioFake, FuncionarioRepository, DashboardServiceImplTest, EscalaFuncionarioFake (+27 more)
+Nodes (31): EscalaFuncionarioFake, EscalaTurnoFake, FuncionarioFake, DashboardServiceImplTest, EscalaFuncionarioFake, EscalaTurnoFake, FuncionarioFake, semanaSemEscala() (+23 more)
 
 ### Community 6 - ".getLogin"
 Cohesion: 0.21
@@ -303,6 +319,10 @@ Nodes (12): GestaoUsuariosServiceImpl, AutenticacaoService, AutorizacaoService, 
 Cohesion: 0.14
 Nodes (13): Serviço Postgres do Docker Compose Legado, Schema PostgreSQL Legado, Documento Original de Requisitos da Delegacia, Legado README Overview, Issue #3 — Implementar Schema do Banco de Dados, Issue #7 — Conexão H2 e Inicialização Automática do Banco, Issue #71 — Repositórios de TipoTurno, MotivoCobertura e Configuracao, BancoInicializador.executarScript() (+5 more)
 
+### Community 12 - "LogSegurancaFake"
+Cohesion: 0.11
+Nodes (9): Evento, GestaoUsuariosServiceImplTest, LogSegurancaFake, Test, AcaoSeguranca, List, Override, ResultadoSeguranca (+1 more)
+
 ### Community 13 - "Backlog de Issues — Sistema de Automação de Escala"
 Cohesion: 0.02
 Nodes (120): Backlog de Issues — Sistema de Automação de Escala, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, 🔧 Contrato Técnico, ✅ Critérios de Aceite (+112 more)
@@ -324,8 +344,8 @@ Cohesion: 0.14
 Nodes (13): Arquitetura, Banco de dados, Comandos, Como responder, Conceitos centrais, Contexto do Projeto — cole isto antes de pedir ajuda a uma IA, Estado atual, Fluxo de trabalho (+5 more)
 
 ### Community 18 - "FuncionarioController"
-Cohesion: 0.05
-Nodes (34): Button, FiltroStatus(), FuncionarioController, getValorAtivo(), toString(), LoginController, PrimeiroAcessoController, LinhaExemplo (+26 more)
+Cohesion: 0.12
+Nodes (15): FiltroStatus(), FuncionarioController, getValorAtivo(), toString(), Boolean, Funcionario, FuncionarioListagemItem, FuncionarioService (+7 more)
 
 ### Community 19 - "sincronizar_issues.py"
 Cohesion: 0.36
@@ -368,8 +388,8 @@ Cohesion: 0.40
 Nodes (5): configuracao table, Diagrama MER (Entity-Relationship Diagram), funcionario table, tipo_turno table, usuario table
 
 ### Community 111 - "GestaoUsuariosController"
-Cohesion: 0.10
-Nodes (18): DashboardController, semTurnos(), coberto(), ContagemFuncionarios, DashboardService, DiaDaSemana, IndicadoresDashboard, Label (+10 more)
+Cohesion: 0.08
+Nodes (23): DashboardController, semTurnos(), coberto(), dia(), temCobertura(), SeveridadeAlerta, LocalDate, AlertaDashboard (+15 more)
 
 ### Community 112 - "AutenticacaoService"
 Cohesion: 0.17
@@ -384,12 +404,12 @@ Cohesion: 0.14
 Nodes (7): EscalaExcecao, Integer, LocalDate, LocalDateTime, Object, Override, String
 
 ### Community 115 - "ExportacaoPdfController"
-Cohesion: 0.09
-Nodes (18): ExportacaoPdfController, FileChooser, PdfPreviewRenderer, GeradorPdfService, Image, BancoHorasService, CoberturaService, ConfiguracaoRepository (+10 more)
+Cohesion: 0.19
+Nodes (3): ExportacaoPdfController, String, VBox
 
 ### Community 116 - "RegraEscalaServiceImplTest"
-Cohesion: 0.05
-Nodes (44): EscalaFuncionarioRepositoryJdbc, EscalaFuncionario, PreparoCobertura, CoberturaServiceImpl, EscalaTurno, Funcionario, Integer, LocalDateTime (+36 more)
+Cohesion: 0.13
+Nodes (19): CoberturaServiceImpl, CoberturaListagemItem, EscalaFuncionario, EscalaFuncionarioRepository, EscalaTurno, EscalaTurnoRepository, FuncionarioRepository, LancamentoHoras (+11 more)
 
 ### Community 117 - "BancoHorasListagemItem"
 Cohesion: 0.14
@@ -404,8 +424,8 @@ Cohesion: 0.20
 Nodes (9): EscalaTurnoRepositoryJdbcTest, AfterAll, BeforeAll, Connection, Integer, LocalDateTime, Object, String (+1 more)
 
 ### Community 120 - "MontagemEscalaController.java"
-Cohesion: 0.17
-Nodes (10): FuncionarioRepositoryJdbcTest, total(), AfterAll, BeforeAll, Connection, Funcionario, Object, String (+2 more)
+Cohesion: 0.06
+Nodes (28): FuncaoTransacional, TransacaoUtil, FuncaoTransacional, LimpezaEscalaService, LimpezaEscalaServiceImpl, LimpezaEscalaServiceImplTest, vazio(), Connection (+20 more)
 
 ### Community 121 - "MotivoCobertura"
 Cohesion: 0.08
@@ -417,14 +437,14 @@ Nodes (9): EscalaFuncionarioRepositoryJdbcTest, AfterAll, BeforeAll, Connection,
 
 ### Community 123 - "MontagemEscalaController"
 Cohesion: 0.06
-Nodes (33): Alert, AlertType, MontagemEscalaController, DayOfWeek, DialogPane, FlowPane, DialogUtil, Consumer (+25 more)
+Nodes (32): Alert, AlertType, MontagemEscalaController, DialogPane, FlowPane, DialogUtil, Consumer, EscalaExcecaoService (+24 more)
 
 ### Community 124 - "Override"
 Cohesion: 0.05
-Nodes (36): FuncionarioService, EscalaTurnoRepositoryJdbc, Funcionario, FuncionarioServiceImpl, Integer, LocalDateTime, Object, Override (+28 more)
+Nodes (31): FuncionarioService, Funcionario, FuncionarioRepositoryJdbcTest, total(), FuncionarioServiceImpl, Integer, LocalDateTime, Object (+23 more)
 
 ### Community 125 - "CoberturaController"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (15): CoberturaController, CoberturaListagemItem, CoberturaService, EscalaFuncionario, EscalaTurno, HBox, Integer, Label (+7 more)
 
 ### Community 126 - "java.sql.Connection"
@@ -433,11 +453,11 @@ Nodes (9): LimpezaEscalaTransacaoTest, AfterEach, BeforeAll, BeforeEach, Connect
 
 ### Community 127 - "AcaoSeguranca"
 Cohesion: 0.05
-Nodes (34): LogSegurancaRepositoryJdbc, LogSegurancaRepository, LogSeguranca, LogSegurancaRepositoryJdbcTest, LogSegurancaServiceImpl, LogSegurancaServiceImplTest, RepositorioEmMemoria, AcaoSeguranca (+26 more)
+Nodes (35): LogSegurancaRepositoryJdbc, LogSegurancaRepository, LogSegurancaService, LogSeguranca, LogSegurancaRepositoryJdbcTest, LogSegurancaServiceImpl, LogSegurancaServiceImplTest, RepositorioEmMemoria (+27 more)
 
 ### Community 128 - "EscalaTurno"
-Cohesion: 0.07
-Nodes (21): LimpezaEscalaService, EscalaTurno, LimpezaEscalaServiceImpl, EscalaFuncionario, Integer, List, LocalDateTime, Object (+13 more)
+Cohesion: 0.11
+Nodes (8): EscalaTurno, EscalaFuncionario, Integer, List, LocalDateTime, Object, Override, String
 
 ### Community 129 - "FuncionarioRepository"
 Cohesion: 0.24
@@ -456,20 +476,20 @@ Cohesion: 0.11
 Nodes (15): BancoHorasController, Number, BancoHorasListagemItem, BancoHorasService, ExtratoLancamentoItem, File, HBox, Label (+7 more)
 
 ### Community 133 - "FuncionarioServiceImplTest"
-Cohesion: 0.10
-Nodes (12): Evento, LogSegurancaService, AutenticacaoServiceImplTest, LogSegurancaFake, BeforeEach, Test, AcaoSeguranca, List (+4 more)
+Cohesion: 0.18
+Nodes (3): AutenticacaoServiceImplTest, BeforeEach, Test
 
 ### Community 134 - "PainelAtribuicaoController"
-Cohesion: 0.09
-Nodes (27): PainelAtribuicaoController, BigDecimal, Duration, EscalaExcecaoService, EscalaFuncionario, EscalaFuncionarioRepository, EscalaTurno, EscalaTurnoRepository (+19 more)
+Cohesion: 0.21
+Nodes (7): EscalaTurno, Funcionario, HBox, Integer, Label, VBox, Veredito
 
 ### Community 135 - "org.junit.jupiter.api.BeforeEach"
 Cohesion: 0.21
 Nodes (8): EscalaExcecaoRepositoryJdbcTest, AfterEach, BeforeAll, BeforeEach, Connection, EscalaExcecao, String, Test
 
 ### Community 136 - "EscalaFuncionario"
-Cohesion: 0.07
-Nodes (43): GeradorRodizioService, PlanoDoMes, atualizar(), buscarCoberturasDoMes(), comecaNaJanela(), contarCoberturasDoMes(), ehDoFuncionario(), GeradorRodizioServiceImpl (+35 more)
+Cohesion: 0.10
+Nodes (36): GeradorRodizioService, PlanoDoMes, atualizar(), buscarCoberturasDoMes(), comecaNaJanela(), contarCoberturasDoMes(), contarCoberturasSemLancamentoNoMes(), ehDoFuncionario() (+28 more)
 
 ### Community 137 - "TipoTurno"
 Cohesion: 0.13
@@ -496,16 +516,16 @@ Cohesion: 0.23
 Nodes (4): ConfiguracaoServiceImplTest, String, BeforeEach, Test
 
 ### Community 143 - "LancamentoHorasRepository"
-Cohesion: 0.20
+Cohesion: 0.21
 Nodes (10): TipoTurnoRepositoryJdbc, Boolean, List, Optional, Override, PreparedStatement, ResultSet, String (+2 more)
 
 ### Community 144 - "ExportacaoPdfController.java"
-Cohesion: 0.23
-Nodes (3): TipoTurnoServiceImplTest, BeforeEach, Test
+Cohesion: 0.08
+Nodes (24): EscalaTurnoRepository, EscalaTurnoRepositoryJdbc, AlertaServiceImplTest, Connection, EscalaFuncionario, EscalaTurno, Integer, List (+16 more)
 
 ### Community 145 - "javafx.scene.layout.VBox"
-Cohesion: 0.18
-Nodes (7): GestaoUsuariosController, GestaoUsuariosService, HBox, Parent, RoleUsuario, String, VBox
+Cohesion: 0.23
+Nodes (4): GestaoUsuariosController, HBox, String, VBox
 
 ### Community 146 - "Decisão: Por que usamos OpenPDF ao invés de Apache PDFBox (Issue #50)"
 Cohesion: 0.12
@@ -516,12 +536,12 @@ Cohesion: 0.16
 Nodes (14): EscalaExcecaoService, EscalaExcecaoServiceImpl, EscalaExcecao, EscalaExcecaoRepository, EscalaFuncionario, EscalaFuncionarioRepository, EscalaTurno, Funcionario (+6 more)
 
 ### Community 148 - "LancamentoHorasRepositoryJdbcTest"
-Cohesion: 0.16
-Nodes (9): FuncionarioRepository, Boolean, ContagemFuncionarios, Funcionario, Integer, List, Optional, String (+1 more)
+Cohesion: 0.15
+Nodes (10): FuncionarioRepository, Boolean, ContagemFuncionarios, Funcionario, Integer, List, LocalDateTime, Optional (+2 more)
 
 ### Community 149 - "FuncionarioListagemItem"
-Cohesion: 0.09
-Nodes (9): FuncionarioListagemItem, FuncionarioServiceImplTest, Funcionario, Integer, Object, Override, String, BeforeEach (+1 more)
+Cohesion: 0.06
+Nodes (13): FuncionarioRepository, FuncionarioListagemItem, FuncionarioServiceImplTest, TipoTurnoServiceImplTest, Funcionario, Integer, Object, Override (+5 more)
 
 ### Community 150 - "BancoHorasService"
 Cohesion: 0.19
@@ -540,8 +560,8 @@ Cohesion: 0.48
 Nodes (6): deValor(), TipoLancamento(), toString(), valor(), Override, String
 
 ### Community 154 - "SenhaInvalidaException"
-Cohesion: 0.21
-Nodes (13): BloqueioInatividadeService, ConfiguracaoRepository, ConfiguracaoService, EscalaFuncionarioRepository, EscalaTurnoRepository, FuncionarioService, GestaoUsuariosService, LocalDateTime (+5 more)
+Cohesion: 0.19
+Nodes (14): CoberturaService, BloqueioInatividadeService, ConfiguracaoRepository, ConfiguracaoService, EscalaFuncionarioRepository, EscalaTurnoRepository, FuncionarioService, GestaoUsuariosService (+6 more)
 
 ### Community 158 - "br.edu.sistemaescala:sistema-escala"
 Cohesion: 0.18
@@ -552,11 +572,11 @@ Cohesion: 0.20
 Nodes (10): EscalaExcecaoRepository, RepositorioEmMemoria, AfterEach, BeforeEach, Connection, EscalaExcecao, EscalaTurno, Funcionario (+2 more)
 
 ### Community 164 - "BloqueioController"
-Cohesion: 0.27
+Cohesion: 0.25
 Nodes (7): EscalaFuncionarioRepository, CoberturaListagemItem, Connection, EscalaFuncionario, List, LocalDateTime, YearMonth
 
 ### Community 165 - "BancoHorasRepositoryJdbcTest"
-Cohesion: 0.23
+Cohesion: 0.22
 Nodes (9): EscalaTurnoRepository, Connection, EscalaTurno, List, LocalDate, LocalDateTime, Optional, PlantaoDoDiaItem (+1 more)
 
 ### Community 166 - "Override"
@@ -572,12 +592,16 @@ Cohesion: 0.21
 Nodes (6): Configuracao, BigDecimal, Integer, LocalDateTime, Object, Override
 
 ### Community 169 - "DebugCoberturaApp.java"
-Cohesion: 0.06
-Nodes (43): Application, CoberturaService, DebugCoberturaApp, editar(), excluir(), listarCoberturasParaListagem(), listarEscaladosNaData(), listarMotivos() (+35 more)
+Cohesion: 0.17
+Nodes (20): DebugCoberturaApp, editar(), excluir(), listarCoberturasParaListagem(), listarEscaladosNaData(), listarMotivos(), listarSubstitutos(), registrar() (+12 more)
 
 ### Community 170 - "SimpleStringProperty"
-Cohesion: 0.30
-Nodes (3): AutorizacaoServiceTest, Test, BeforeEach
+Cohesion: 0.18
+Nodes (8): AutorizacaoService, AutorizacaoServiceTest, RoleUsuario, SessaoUsuario, String, Usuario, Test, BeforeEach
+
+### Community 171 - "Community 171"
+Cohesion: 0.17
+Nodes (13): EscalaFuncionarioRepository, EscalaFuncionarioRepositoryJdbc, CoberturaListagemItem, Connection, EscalaFuncionario, Funcionario, Integer, List (+5 more)
 
 ### Community 172 - "FiltroStatus"
 Cohesion: 0.23
@@ -590,6 +614,10 @@ Nodes (8): ConfiguracaoRepository, ConfiguracaoRepositoryJdbc, Configuracao, Obj
 ### Community 174 - "Community 174"
 Cohesion: 0.22
 Nodes (10): ConfiguracaoService, ConfiguracaoServiceImpl, AutorizacaoService, BigDecimal, Configuracao, ConfiguracaoRepository, Optional, Override (+2 more)
+
+### Community 175 - "Community 175"
+Cohesion: 0.13
+Nodes (8): EscalaFuncionario, EscalaTurno, Funcionario, Integer, LocalDateTime, Object, Override, String
 
 ### Community 176 - "Community 176"
 Cohesion: 0.23
@@ -615,6 +643,14 @@ Nodes (6): GestaoUsuariosService, List, Optional, RoleUsuario, String, Usuario
 Cohesion: 0.26
 Nodes (6): BloqueioController, BloqueioInatividadeService, Runnable, SessaoUsuario, String, StackPane
 
+### Community 182 - "Community 182"
+Cohesion: 0.21
+Nodes (12): AlertaService, AlertaServiceImpl, AlertaDashboard, EscalaFuncionarioRepository, EscalaTurnoRepository, Funcionario, FuncionarioRepository, List (+4 more)
+
+### Community 183 - "Community 183"
+Cohesion: 0.19
+Nodes (8): Application, LinhaExemplo, VitrineComponentesApp, SimpleStringProperty, Override, Stage, String, VBox
+
 ### Community 184 - "Community 184"
 Cohesion: 0.26
 Nodes (7): PrimeiroAcessoService, PrimeiroAcessoServiceImpl, AutenticacaoService, ConfiguracaoRepository, Override, String, UsuarioRepository
@@ -630,6 +666,10 @@ Nodes (5): TipoTurnoRepository, Boolean, List, Optional, TipoTurno
 ### Community 187 - "Community 187"
 Cohesion: 0.29
 Nodes (7): BancoHorasService, BancoHorasListagemItem, ExtratoLancamentoItem, LancamentoHoras, List, String, YearMonth
+
+### Community 188 - "Community 188"
+Cohesion: 0.25
+Nodes (12): GestaoUsuariosService, Main, AutenticacaoService, ConfiguracaoRepository, FuncionarioRepository, Override, Parent, SessaoUsuario (+4 more)
 
 ### Community 189 - "Community 189"
 Cohesion: 0.27
@@ -648,12 +688,12 @@ Cohesion: 0.33
 Nodes (5): SessaoUsuario, SessaoUsuarioTest, Optional, Usuario, Test
 
 ### Community 195 - "Community 195"
-Cohesion: 0.38
-Nodes (5): AutorizacaoService, RoleUsuario, SessaoUsuario, String, Usuario
+Cohesion: 0.18
+Nodes (13): FileChooser, GeradorPdfService, BancoHorasService, CoberturaService, ConfiguracaoRepository, Consumer, EscalaPdfDados, EscalaTurnoRepository (+5 more)
 
 ### Community 196 - "Community 196"
-Cohesion: 0.36
-Nodes (3): PrimeiroAcessoServiceImplTest, BeforeEach, Test
+Cohesion: 0.31
+Nodes (4): PrimeiroAcessoServiceImplTest, BeforeEach, Test, UsuarioRepository
 
 ### Community 197 - "Community 197"
 Cohesion: 0.43
@@ -703,6 +743,10 @@ Nodes (3): ConfiguracaoRepository, Configuracao, Optional
 Cohesion: 0.47
 Nodes (4): LogSegurancaService, AcaoSeguranca, ResultadoSeguranca, String
 
+### Community 209 - "Community 209"
+Cohesion: 0.19
+Nodes (12): BigDecimal, EscalaExcecaoService, EscalaFuncionarioRepository, EscalaTurnoRepository, FuncionarioService, ListCell, Region, RegraEscalaService (+4 more)
+
 ### Community 210 - "Community 210"
 Cohesion: 0.50
 Nodes (3): DashboardService, IndicadoresDashboard, LocalDate
@@ -719,25 +763,53 @@ Nodes (3): buscar_corpo(), gravar_corpo(), main()
 Cohesion: 0.83
 Nodes (3): buscar_corpo(), gravar_corpo(), main()
 
+### Community 227 - "Community 227"
+Cohesion: 0.30
+Nodes (5): PreparoCobertura, Connection, Funcionario, Integer, String
+
+### Community 228 - "Community 228"
+Cohesion: 0.20
+Nodes (8): Button, PrimeiroAcessoController, PasswordField, GestaoUsuariosService, Parent, RoleUsuario, Parent, PrimeiroAcessoService
+
+### Community 229 - "Community 229"
+Cohesion: 0.30
+Nodes (7): LoginController, AutenticacaoService, Consumer, Parent, String, Usuario, VBox
+
+### Community 230 - "Community 230"
+Cohesion: 0.23
+Nodes (4): TratadorErroGlobal, Throwable, String, Thread
+
+### Community 231 - "Community 231"
+Cohesion: 0.27
+Nodes (5): Logger, LogAplicacao, Path, String, Throwable
+
+### Community 232 - "Community 232"
+Cohesion: 0.20
+Nodes (5): TipoTurno, Duration, ResultadoAlocacao, ResultadoDescanso, String
+
+### Community 233 - "Community 233"
+Cohesion: 0.47
+Nodes (4): AlertaService, AlertaDashboard, List, LocalDate
+
 ## Knowledge Gaps
-- **451 isolated node(s):** `PreToolUse`, `allow`, `String`, `Throwable`, `Throwable` (+446 more)
+- **456 isolated node(s):** `PreToolUse`, `allow`, `String`, `Throwable`, `Throwable` (+451 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **94 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **96 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Stream` connect `org.junit.jupiter.api.Test` to `SessaoUsuario`, `GeradorPdfService`, `BancoHorasController`, `FuncionarioServiceImplTest`, `PainelAtribuicaoController`, `Configuracao`, `org.junit.jupiter.api.BeforeEach`, `.mapearAgente`, `EscalaFuncionario`, `TipoTurnoServiceImplTest`, `GestaoUsuariosServiceImplTest`, `.verificarDescanso`, `CoberturaServiceImplTest`, `PrimeiroAcessoServiceImplTest`, `SimpleStringProperty`, `Community 179`, `GestaoUsuariosController`, `RegraEscalaServiceImplTest`, `GeradorRodizioServiceImplTest`, `MontagemEscalaController.java`, `MotivoCobertura`, `.getId`, `MontagemEscalaController`, `Override`, `CoberturaController`, `AcaoSeguranca`?**
-  _High betweenness centrality (0.184) - this node is a cross-community bridge._
-- **Why does `Button` connect `FuncionarioController` to `ShellController.java`, `PainelAtribuicaoController`, `Configuracao`, `DebugCoberturaApp.java`, `TipoTurnoController`, `GestaoUsuariosController`, `javafx.scene.layout.VBox`, `ExportacaoPdfController`, `Community 181`, `SenhaInvalidaException`, `MontagemEscalaController`, `CoberturaController`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **Are the 58 inferred relationships involving `Stream` (e.g. with `.buscarNaLista()` and `.buscarAlocacaoDoAusente()`) actually correct?**
-  _`Stream` has 58 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Stream` connect `org.junit.jupiter.api.Test` to `SessaoUsuario`, `GeradorPdfService`, `BancoHorasController`, `FuncionarioServiceImplTest`, `PainelAtribuicaoController`, `Configuracao`, `org.junit.jupiter.api.BeforeEach`, `.mapearAgente`, `EscalaFuncionario`, `TipoTurnoServiceImplTest`, `GestaoUsuariosServiceImplTest`, `LogSegurancaFake`, `.verificarDescanso`, `ExportacaoPdfController.java`, `CoberturaServiceImplTest`, `PrimeiroAcessoServiceImplTest`, `SimpleStringProperty`, `Community 179`, `Community 182`, `Community 234`, `GestaoUsuariosController`, `RegraEscalaServiceImplTest`, `GeradorRodizioServiceImplTest`, `MotivoCobertura`, `.getId`, `MontagemEscalaController`, `Override`, `CoberturaController`, `AcaoSeguranca`?**
+  _High betweenness centrality (0.182) - this node is a cross-community bridge._
+- **Why does `Button` connect `Community 228` to `ShellController.java`, `Community 195`, `Community 229`, `Configuracao`, `TipoTurnoController`, `GestaoUsuariosController`, `Community 209`, `FuncionarioController`, `Community 181`, `Community 183`, `SenhaInvalidaException`, `MontagemEscalaController`, `Community 188`, `CoberturaController`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **Are the 61 inferred relationships involving `Stream` (e.g. with `.buscarNaLista()` and `.buscarAlocacaoDoAusente()`) actually correct?**
+  _`Stream` has 61 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `allow`, `Casa GitHub -> backlog pelo rodape; cai para o titulo se faltar rodape.` to the rest of the system?**
-  _460 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _465 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `org.junit.jupiter.api.Test` be split into smaller, more focused modules?**
-  _Cohesion score 0.05747126436781609 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07330618289522399 - nodes in this community are weakly interconnected._
 - **Should `LancamentoHoras` be split into smaller, more focused modules?**
   _Cohesion score 0.058653846153846154 - nodes in this community are weakly interconnected._
 - **Should `.mapearAgente` be split into smaller, more focused modules?**
-  _Cohesion score 0.060527825588066554 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06406112253893623 - nodes in this community are weakly interconnected._

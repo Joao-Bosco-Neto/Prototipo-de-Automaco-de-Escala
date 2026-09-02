@@ -91,9 +91,13 @@ public class ShellController {
             "Exportar PDF",
             "Banco de horas");
 
-    /** Menus do topo, na ordem do prototipo visual. Sem submenus ainda. */
-    private static final List<String> MENUS_SUPERIORES = List.of(
-            "Arquivo", "Cadastros", "Escala", "Relatórios", "Ajuda");
+    /**
+     * Menus do topo. So "Cadastros" — "Arquivo", "Escala", "Relatorios" e
+     * "Ajuda" sairam na issue #55: abriam vazios e nao faziam nada, e um menu
+     * que nao leva a lugar nenhum custa mais ao usuario do que a ausencia dele.
+     * Quando algum deles ganhar itens de verdade, volta para ca.
+     */
+    private static final List<String> MENUS_SUPERIORES = List.of("Cadastros");
 
     private static final String CLASSE_ITEM_ATIVO = "nav-item-ativo";
 

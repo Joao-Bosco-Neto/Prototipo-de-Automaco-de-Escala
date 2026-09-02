@@ -80,6 +80,16 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
               AND et.inicio >= ? AND et.inicio < ?
             """;
 
+    /** Recorte do SQL_CONTAR_COBERTURAS_DO_MES, so que restrito as que nao lancaram. */
+    private static final String SQL_CONTAR_COBERTURAS_SEM_LANCAMENTO = """
+            SELECT COUNT(*)
+            FROM escala_funcionario ef
+            JOIN escala_turno et ON et.id = ef.escala_turno_id
+            WHERE ef.cobertura_de IS NOT NULL
+              AND ef.lancou_banco_horas = FALSE
+              AND et.inicio >= ? AND et.inicio < ?
+            """;
+
     private static final String SQL_BUSCAR_COBERTURAS_DO_MES = """
             SELECT ef.id AS ef_id, ef.escala_turno_id AS ef_escala_turno_id,
                    ef.funcionario_id AS ef_funcionario_id, ef.inicio AS ef_inicio, ef.fim AS ef_fim,
@@ -300,6 +310,24 @@ public class EscalaFuncionarioRepositoryJdbc implements EscalaFuncionarioReposit
 
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao contar coberturas do mes " + mes, e);
+        }
+    }
+
+    @Override
+    public int contarCoberturasSemLancamentoNoMes(YearMonth mes) {
+        try (Connection conexao = ConexaoBanco.getConnection();
+             PreparedStatement stmt = conexao.prepareStatement(SQL_CONTAR_COBERTURAS_SEM_LANCAMENTO)) {
+
+            stmt.setObject(1, mes.atDay(1).atStartOfDay());
+            stmt.setObject(2, mes.plusMonths(1).atDay(1).atStartOfDay());
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Falha ao contar coberturas sem lancamento no mes " + mes, e);
         }
     }
 

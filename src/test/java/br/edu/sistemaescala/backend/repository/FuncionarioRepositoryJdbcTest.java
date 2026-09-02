@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -178,6 +179,46 @@ class FuncionarioRepositoryJdbcTest {
         assertEquals(antes.inativos() + 1, depois.inativos(), "e entra nos inativos");
         assertEquals(comDoisAtivos.total(), depois.total(),
                 "desativar preserva o registro: o total cadastrado nao muda");
+    }
+
+    /**
+     * O alerta so quer quem esta desativado E ainda tem plantao pela frente:
+     * inativo sem plantao futuro e ativo com plantao futuro ficam de fora, e
+     * quem tem varios turnos aparece uma vez so.
+     */
+    @Test
+    void listarInativosEscaladosAposTrazSoOsDesativadosComPlantaoFuturoSemRepetir() {
+        Funcionario inativoComPlantao = novoFuncionario("Sandra Regina Melo", "TESTE-FUNC-500");
+        REPOSITORIO.inserir(inativoComPlantao);
+        FUNCIONARIO_IDS.add(inativoComPlantao.getId());
+
+        Funcionario inativoSemPlantaoFuturo = novoFuncionario("Otavio Prado", "TESTE-FUNC-501");
+        REPOSITORIO.inserir(inativoSemPlantaoFuturo);
+        FUNCIONARIO_IDS.add(inativoSemPlantaoFuturo.getId());
+
+        Funcionario ativoComPlantao = novoFuncionario("Helena Braga", "TESTE-FUNC-502");
+        REPOSITORIO.inserir(ativoComPlantao);
+        FUNCIONARIO_IDS.add(ativoComPlantao.getId());
+
+        LocalDateTime corte = LocalDateTime.of(2033, 9, 1, 0, 0);
+        // Dois plantoes futuros para o mesmo inativo: o DISTINCT tem que unir.
+        registrarPlantao(inativoComPlantao.getId(), YearMonth.of(2033, 9));
+        registrarPlantao(inativoComPlantao.getId(), YearMonth.of(2033, 10));
+        registrarPlantao(inativoSemPlantaoFuturo.getId(), YearMonth.of(2033, 7));
+        registrarPlantao(ativoComPlantao.getId(), YearMonth.of(2033, 9));
+
+        REPOSITORIO.desativar(inativoComPlantao.getId());
+        REPOSITORIO.desativar(inativoSemPlantaoFuturo.getId());
+
+        List<Funcionario> encontrados = REPOSITORIO.listarInativosEscaladosApos(corte);
+        List<String> matriculas = encontrados.stream().map(Funcionario::getMatricula).toList();
+
+        assertTrue(matriculas.contains("TESTE-FUNC-500"), "inativo com plantao futuro tem que entrar");
+        assertFalse(matriculas.contains("TESTE-FUNC-501"),
+                "inativo cujo ultimo plantao ja passou nao e pendencia");
+        assertFalse(matriculas.contains("TESTE-FUNC-502"), "quem esta ativo nao entra");
+        assertEquals(1, matriculas.stream().filter("TESTE-FUNC-500"::equals).count(),
+                "dois plantoes futuros da mesma pessoa geram uma linha so (DISTINCT)");
     }
 
     private Funcionario novoFuncionario(String nome, String matricula) {

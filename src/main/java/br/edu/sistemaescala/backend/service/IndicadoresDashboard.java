@@ -6,8 +6,8 @@ import java.util.List;
 
 /**
  * O conteúdo da tela "Visão geral", reunido num resultado só para a tela fazer
- * uma chamada em vez de várias: os quatro indicadores da issue #53 mais a faixa
- * da semana e os próximos plantões da issue #54.
+ * uma chamada em vez de várias: os quatro indicadores da issue #53, a faixa da
+ * semana e os próximos plantões da issue #54 e as pendências da issue #55.
  *
  * <p>Os quatro indicadores saem de consultas agregadas — nenhuma listagem é
  * trazida para a memória só para ser medida. A semana e os próximos plantões,
@@ -32,6 +32,10 @@ import java.util.List;
  * @param proximosPlantoes   turnos a partir de {@code diaReferencia}, em ordem
  *                           de início e limitados a um resumo — não é a agenda
  *                           inteira, que vive na montagem da escala
+ * @param alertas            pendências levantadas do estado do banco, da mais
+ *                           grave para a menos grave; vazia quando não há
+ *                           nenhuma, e é essa lista vazia que a tela traduz na
+ *                           mensagem de "nada pendente"
  */
 public record IndicadoresDashboard(
         LocalDate diaReferencia,
@@ -41,7 +45,8 @@ public record IndicadoresDashboard(
         int coberturasNoMes,
         int diasIncompletos,
         List<DiaDaSemana> semanaCorrente,
-        List<TurnoResumido> proximosPlantoes) {
+        List<TurnoResumido> proximosPlantoes,
+        List<AlertaDashboard> alertas) {
 
     /** Não há nenhum turno começando hoje — o card mostra o estado vazio. */
     public boolean semPlantaoHoje() {
@@ -59,5 +64,10 @@ public record IndicadoresDashboard(
     /** Não há plantão nenhum daqui para a frente dentro do horizonte consultado. */
     public boolean semProximosPlantoes() {
         return proximosPlantoes.isEmpty();
+    }
+
+    /** Nenhuma verificação encontrou problema — o painel mostra o estado vazio. */
+    public boolean semPendencias() {
+        return alertas.isEmpty();
     }
 }
