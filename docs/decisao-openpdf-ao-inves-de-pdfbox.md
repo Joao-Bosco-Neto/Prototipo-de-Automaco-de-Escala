@@ -146,6 +146,26 @@ seu teste `ExportacaoRelatorioServiceTest`.
 
 ---
 
+## Adendo (01/09/2026) — PDFBox volta, só para *renderizar*
+
+A tela de exportação (Issue #43/#52) precisa de uma **pré-visualização ao vivo**
+do PDF. O OpenPDF só escreve PDF; não tem parser nem engine de rasterização, e
+nenhuma versão dele expõe algo equivalente ao `PDFRenderer`. Rasterizar PDF →
+imagem em Java exige uma engine de renderização.
+
+**Decisão:** adicionar `org.apache.pdfbox:pdfbox:3.0.3` ao `pom.xml`, usado
+**exclusivamente** para ler o PDF que o OpenPDF gerou e rasterizar a primeira
+página (`br.edu.sistemaescala.frontend.PdfPreviewRenderer`). A geração de PDF
+continua 100% no OpenPDF — a decisão acima permanece válida para tudo o que
+*grava* PDF.
+
+Por que não quebra o empacotamento offline: a linha 3.x base do PDFBox não traz
+binário nativo. As dependências transitivas (`fontbox`, `pdfbox-io`,
+`commons-logging`) são Java puro. O módulo opcional que arrasta brotli/JAI não
+entra.
+
+---
+
 ## Referências
 
 - `pom.xml` L50-67 — declaração do OpenPDF com justificativa de licença

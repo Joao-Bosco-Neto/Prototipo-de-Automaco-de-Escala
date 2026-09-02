@@ -16,6 +16,7 @@
         <h2.version>2.4.240</h2.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <openpdf.version>2.4.0</openpdf.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
     </properties>
 
     <dependencies>
@@ -64,6 +65,24 @@
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf-core-modern</artifactId>
             <version>${openpdf.version}</version>
+        </dependency>
+
+        <!-- Apache PDFBox: usado APENAS para rasterizar (PDFRenderer) o PDF que o
+             OpenPDF gera, alimentando a pre-visualizacao da tela de exportacao
+             (issue #43/#52). O OpenPDF so escreve PDF, nao le nem renderiza.
+
+             Nao substitui o OpenPDF na geracao — a decisao de
+             docs/decisao-openpdf-ao-inves-de-pdfbox.md continua valendo para
+             tudo o que grava PDF. Aqui o papel e o oposto: ler o PDF pronto.
+
+             A linha 3.x base nao traz binario nativo (as deps transitivas —
+             fontbox, pdfbox-io, commons-logging — sao Java puro), entao o
+             empacotamento offline continua intacto. O modulo opcional que
+             arrasta brotli/JAI nao entra: so pdfbox e o que ele exige. -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
         </dependency>
 
         <!-- Testes -->
