@@ -436,6 +436,120 @@ class RegraEscalaServiceImplTest {
                 "A mensagem deveria dizer que falta 1 minuto: " + umMinutoAntes.mensagem());
     }
 
+    // ------------------------------------------------------------------
+    // Descanso na virada de mes e de ano (issue #56)
+    //
+    // A janela de busca de plantoes vizinhos e um intervalo absoluto
+    // (inicio do turno - descanso - margem ate fim do turno + descanso).
+    // Os testes abaixo so tem valor porque o mock respeita essa janela,
+    // como o repositorio faz no SQL (et.inicio >= inicio AND < fim): se a
+    // janela fosse recortada por mes, o vizinho do outro mes sumiria da
+    // consulta e o descanso passaria batido.
+    // ------------------------------------------------------------------
+
+    @Test
+    void plantaoTerminandoEm31DeDezembroBloqueiaTurnoDe1DeJaneiroDentroDoDescanso() {
+        // Virada de ANO: plantao 31/12/2027 20h-01/01/2028 02h e o turno novo
+        // comeca 01/01/2028 as 08h -> so 6h das 24h exigidas.
+        alocacaoVizinhaDentroDaJanelaDeBusca(
+                LocalDateTime.of(2027, 12, 31, 20, 0),
+                LocalDateTime.of(2028, 1, 1, 2, 0));
+
+        ResultadoDescanso resultado = regraEscalaService.verificarDescanso(FUNCIONARIO_ID,
+                turnoComDescanso(TURNO_ID,
+                        LocalDateTime.of(2028, 1, 1, 8, 0),
+                        LocalDateTime.of(2028, 1, 1, 14, 0), "24"));
+
+        assertFalse(resultado.respeitado(),
+                "O plantão de 31/12 deveria bloquear o turno de 01/01: a virada de ano não zera o descanso.");
+        assertEquals(Duration.ofHours(6), resultado.descansoEncontrado());
+        assertTrue(resultado.mensagem().contains("31/12/2027"),
+                "A mensagem deveria apontar o plantão do ano anterior: " + resultado.mensagem());
+    }
+
+    @Test
+    void plantaoNoFimDeUmMesBloqueiaTurnoNoInicioDoSeguinteDentroDoDescanso() {
+        // Virada de mes comum: plantao 30/09 20h-01/10 02h e turno 01/10 as 08h
+        // -> 6h de folga para um regime de 24h.
+        alocacaoVizinhaDentroDaJanelaDeBusca(
+                LocalDateTime.of(2026, 9, 30, 20, 0),
+                LocalDateTime.of(2026, 10, 1, 2, 0));
+
+        ResultadoDescanso resultado = regraEscalaService.verificarDescanso(FUNCIONARIO_ID,
+                turnoComDescanso(TURNO_ID,
+                        LocalDateTime.of(2026, 10, 1, 8, 0),
+                        LocalDateTime.of(2026, 10, 1, 14, 0), "24"));
+
+        assertFalse(resultado.respeitado(),
+                "O plantão do fim de setembro deveria bloquear o turno de 01/10.");
+        assertEquals(Duration.ofHours(6), resultado.descansoEncontrado());
+        assertTrue(resultado.mensagem().contains("Faltam 18h"),
+                "A mensagem deveria dizer quantas horas faltam: " + resultado.mensagem());
+    }
+
+    @Test
+    void plantaoNoFimDeUmMesComFolgaSuficienteLiberaTurnoNoInicioDoSeguinte() {
+        // Mesma virada de mes, agora com 30h entre o fim do plantao (30/09 02h)
+        // e o inicio do turno (01/10 08h): permitido, mas o vizinho continua
+        // tendo de ser encontrado -- e isso que o descanso medido comprova.
+        alocacaoVizinhaDentroDaJanelaDeBusca(
+                LocalDateTime.of(2026, 9, 29, 20, 0),
+                LocalDateTime.of(2026, 9, 30, 2, 0));
+
+        ResultadoDescanso resultado = regraEscalaService.verificarDescanso(FUNCIONARIO_ID,
+                turnoComDescanso(TURNO_ID,
+                        LocalDateTime.of(2026, 10, 1, 8, 0),
+                        LocalDateTime.of(2026, 10, 1, 14, 0), "24"));
+
+        assertTrue(resultado.respeitado());
+        assertEquals(Duration.ofHours(30), resultado.descansoEncontrado(),
+                "O plantão do mês anterior deveria entrar na janela de busca e ter o descanso medido.");
+    }
+
+    @Test
+    void plantaoPosteriorEm1DeMarcoBloqueiaTurnoDe29DeFevereiroEmAnoBissexto() {
+        // Sentido inverso e fronteira mais traicoeira: o turno analisado esta em
+        // 29/02/2028 (ano bissexto) e o plantao ja existente comeca 01/03 as 02h
+        // -> 12h depois do fim do turno (14h), abaixo das 24h exigidas.
+        alocacaoVizinhaDentroDaJanelaDeBusca(
+                LocalDateTime.of(2028, 3, 1, 2, 0),
+                LocalDateTime.of(2028, 3, 1, 8, 0));
+
+        ResultadoDescanso resultado = regraEscalaService.verificarDescanso(FUNCIONARIO_ID,
+                turnoComDescanso(TURNO_ID,
+                        LocalDateTime.of(2028, 2, 29, 8, 0),
+                        LocalDateTime.of(2028, 2, 29, 14, 0), "24"));
+
+        assertFalse(resultado.respeitado(),
+                "O plantão de 01/03 deveria bloquear o turno de 29/02: a janela vai além do fim do mês.");
+        assertEquals(Duration.ofHours(12), resultado.descansoEncontrado());
+        assertTrue(resultado.mensagem().contains("01/03/2028"),
+                "A mensagem deveria apontar o plantão do mês seguinte: " + resultado.mensagem());
+    }
+
+    /**
+     * Registra um plantão vizinho que só aparece na consulta se a janela pedida
+     * pelo serviço realmente o alcançar.
+     *
+     * <p>Reproduz o recorte do repositório ({@code et.inicio >= inicio AND
+     * et.inicio < fim}) em vez de devolver a alocação para qualquer janela, que
+     * é o que o {@link #alocacaoVizinhaDeTurnoInteiro} faz. Sem isso, um cálculo
+     * de janela errado — recortada por mês, por exemplo — passaria despercebido
+     * nos testes de virada de período.</p>
+     */
+    private void alocacaoVizinhaDentroDaJanelaDeBusca(LocalDateTime inicio, LocalDateTime fim) {
+        EscalaTurno turnoDoVizinho = turno(OUTRO_TURNO_ID, inicio, fim, 2);
+        EscalaFuncionario vizinho = alocacaoDeTurnoInteiro(turnoDoVizinho);
+
+        when(escalaFuncionarioRepository.listarPorFuncionario(eq(FUNCIONARIO_ID), any(), any()))
+                .thenAnswer(consulta -> {
+                    LocalDateTime janelaInicio = consulta.getArgument(1);
+                    LocalDateTime janelaFim = consulta.getArgument(2);
+                    boolean dentroDaJanela = !inicio.isBefore(janelaInicio) && inicio.isBefore(janelaFim);
+                    return dentroDaJanela ? List.of(vizinho) : List.<EscalaFuncionario>of();
+                });
+    }
+
     private EscalaTurno turno(int id, LocalDateTime inicio, LocalDateTime fim, int minAgentes) {
         EscalaTurno escalaTurno = new EscalaTurno();
         escalaTurno.setId(id);
