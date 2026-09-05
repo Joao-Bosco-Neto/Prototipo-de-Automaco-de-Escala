@@ -481,7 +481,11 @@ public class CoberturaController {
         });
 
         comboSubstituto.setMaxWidth(Double.MAX_VALUE);
-        comboSubstituto.setButtonCell(criarCelulaSubstituto());
+        // A caixa fechada usa uma célula de texto simples: uma célula com HBox
+        // (nome + selo) como botão fica em branco depois da seleção — bug
+        // conhecido do JavaFX quando a mesma composição gráfica do popup é
+        // reaproveitada como buttonCell. O selo colorido fica só no menu.
+        comboSubstituto.setButtonCell(criarCelulaSubstitutoBotao());
         comboSubstituto.setCellFactory(lista -> criarCelulaSubstituto());
 
         comboMotivo.setMaxWidth(Double.MAX_VALUE);
@@ -513,6 +517,23 @@ public class CoberturaController {
 
         botaoSalvar.getStyleClass().add("button-primario");
         botaoCancelar.getStyleClass().add("button-secundario");
+    }
+
+    /** Célula do botão do combo de substitutos (caixa fechada): nome e, se houver restrição, o motivo. */
+    private ListCell<SubstitutoDisponivel> criarCelulaSubstitutoBotao() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(SubstitutoDisponivel item, boolean vazio) {
+                super.updateItem(item, vazio);
+                if (vazio || item == null) {
+                    setText(null);
+                    return;
+                }
+                setText(item.disponivel()
+                        ? item.funcionario().getNome()
+                        : item.funcionario().getNome() + " — " + item.restricao());
+            }
+        };
     }
 
     /** Célula do combo de substitutos: nome à esquerda, selo de disponibilidade à direita. */
