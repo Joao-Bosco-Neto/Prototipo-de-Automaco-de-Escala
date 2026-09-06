@@ -83,7 +83,22 @@ mvn clean package -Pinstalador-msi -DskipTests
 ```
 
 O instalador é gerado em:
-`target/dist/Sistema de Escala-1.0.0.msi`.
+`target/dist/Sistema de Escala-1.0.0.msi` (acompanhado do arquivo de checksum `Sistema de Escala-1.0.0.msi.sha256`).
+
+### 3. Verificação de Integridade do Instalador (SHA-256 / OWASP A08)
+
+Em conformidade com o **OWASP A08 (Software and Data Integrity Failures)**, para garantir que o pacote `.msi` ou executável não foi corrompido ou adulterado durante a transferência entre os desenvolvedores e a delegacia:
+
+1. Abra o **PowerShell** no diretório onde o arquivo `.msi` foi baixado e execute:
+   ```powershell
+   Get-FileHash -Algorithm SHA256 ".\Sistema de Escala-1.0.0.msi"
+   ```
+   *(No Prompt de Comando clássico / CMD, use: `CertUtil -hashfile "Sistema de Escala-1.0.0.msi" SHA256`)*
+
+2. Compare o hash retornado com o valor publicado no arquivo `Sistema de Escala-1.0.0.msi.sha256` ou nas notas de release da entrega.
+3. Se os hashes forem idênticos, a integridade do pacote está confirmada e a instalação pode ser realizada com segurança.
+
+Para detalhes sobre a decisão de mitigação por SHA-256 em vez de certificado Authenticode comercial e sobre a ausência de serialização Java (CWE-502), consulte [documentacao/seguranca/MODELAGEM_AMEACAS.md](documentacao/seguranca/MODELAGEM_AMEACAS.md).
 
 ### Diretório de Dados e Permissões
 
