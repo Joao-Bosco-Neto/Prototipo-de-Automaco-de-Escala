@@ -150,10 +150,228 @@
                     <mainClass>br.edu.sistemaescala.Main</mainClass>
                 </configuration>
             </plugin>
+            <!-- Empacotamento do JAR principal com manifesto indicando o launcher -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>br.edu.sistemaescala.AppLauncher</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <profiles>
+        <!--
+          Perfil de empacotamento com jpackage para Windows (Issue #58 / Backlog #49).
+          Cria o pacote executável standalone (app-image) com JRE embutida (runtime enxuta).
+          Não depende de ferramentas externas como WiX Toolset.
+        -->
+        <profile>
+            <id>empacotar-windows</id>
+            <build>
+                <plugins>
+                    <!-- 1. Copia todas as dependências JAR para target/libs -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.8.1</version>
+                        <executions>
+                            <execution>
+                                <id>copiar-dependencias</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                                    <includeScope>runtime</includeScope>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 2. Copia o próprio JAR da aplicação para target/libs -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>copiar-jar-aplicacao</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}.jar</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 3. Executa o jpackage nativo do JDK 21 para gerar app-image -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>executar-jpackage-appimage</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument>
+                                        <argument>app-image</argument>
+                                        <argument>--name</argument>
+                                        <argument>Sistema de Escala</argument>
+                                        <argument>--app-version</argument>
+                                        <argument>1.0.0</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>SENAC - GOTE</argument>
+                                        <argument>--description</argument>
+                                        <argument>Sistema de Gestão e Automação de Escalas de Plantão</argument>
+                                        <argument>--copyright</argument>
+                                        <argument>Copyright (c) 2026 GOTE / SENAC</argument>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}/libs</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>br.edu.sistemaescala.AppLauncher</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/src/main/resources/frontend/assets/app.ico</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}/dist</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          Perfil para gerar o Instalador MSI (.msi) para Windows.
+          Requer WiX Toolset v3 instalado no sistema.
+        -->
+        <profile>
+            <id>instalador-msi</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.8.1</version>
+                        <executions>
+                            <execution>
+                                <id>copiar-dependencias-msi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                                    <includeScope>runtime</includeScope>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>copiar-jar-msi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}.jar</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>executar-jpackage-msi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument>
+                                        <argument>msi</argument>
+                                        <argument>--name</argument>
+                                        <argument>Sistema de Escala</argument>
+                                        <argument>--app-version</argument>
+                                        <argument>1.0.0</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>SENAC - GOTE</argument>
+                                        <argument>--description</argument>
+                                        <argument>Sistema de Gestão e Automação de Escalas de Plantão</argument>
+                                        <argument>--copyright</argument>
+                                        <argument>Copyright (c) 2026 GOTE / SENAC</argument>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}/libs</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>br.edu.sistemaescala.AppLauncher</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/src/main/resources/frontend/assets/app.ico</argument>
+                                        <argument>--win-dir-chooser</argument>
+                                        <argument>--win-menu</argument>
+                                        <argument>--win-shortcut</argument>
+                                        <argument>--win-menu-group</argument>
+                                        <argument>Sistema de Escala</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}/dist</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!--
           Perfil de seguranca: nao roda no build normal.
           O Dependency-Check baixa a base do NVD e demora varios minutos,
