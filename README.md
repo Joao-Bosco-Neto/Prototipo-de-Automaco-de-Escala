@@ -50,7 +50,7 @@ Consulte [documentacao/seguranca/PROTECAO_BANCO.md](documentacao/seguranca/PROTE
 e [documentacao/seguranca/MODELAGEM_AMEACAS.md](documentacao/seguranca/MODELAGEM_AMEACAS.md)
 para a decisao de criptografia, as permissoes do arquivo e o risco residual.
 
-## Como rodar
+## Como rodar em desenvolvimento
 
 ```bash
 mvn clean javafx:run
@@ -59,12 +59,38 @@ mvn clean javafx:run
 Na primeira execucao, o aplicativo cria as tabelas automaticamente. O seed de producao
 nao inclui dados de exemplo nem credenciais; fixtures ficam apenas nos recursos de teste.
 
-## Proximos passos
+## Empacotamento e Distribuição (Windows)
 
-- Implementar entidades em `backend/model`
-- Implementar DAOs em `backend/dao`
-- Implementar validacao de conflito de horarios em `backend/service`
-- Criar telas FXML em `frontend/fxml` seguindo a direcao visual (desktop nativo, 1366x768)
+A aplicação é distribuída como um pacote nativo autocontido com **JRE 21 embutida** via `jpackage`. O cliente final **não precisa ter Java instalado**.
+
+### 1. Pacote Executável Standalone (Pasta Portátil)
+
+Gera a pasta da aplicação contendo o `Sistema de Escala.exe` e uma runtime customizada embutida:
+
+```bash
+mvn clean package -Pempacotar-windows -DskipTests
+```
+
+O executável portátil é gerado em:
+`target/dist/Sistema de Escala/` (com `Sistema de Escala.exe` e a pasta `runtime/`).
+
+### 2. Instalador Windows (.msi)
+
+Gera o assistente de instalação `.msi` para Windows com atalhos no Menu Iniciar e na Área de Trabalho (requer [WiX Toolset v3.11+](https://wixtoolset.org/) no PATH):
+
+```bash
+mvn clean package -Pinstalador-msi -DskipTests
+```
+
+O instalador é gerado em:
+`target/dist/Sistema de Escala-1.0.0.msi`.
+
+### Diretório de Dados e Permissões
+
+Mesmo instalado em diretórios protegidos do sistema (como `C:\Program Files\Sistema de Escala`), todo o estado mutável do sistema permanece no perfil privado do usuário:
+- **Banco de dados (AES)**: `%USERPROFILE%\.sistema-escala\sistema_escala.mv.db`
+- **Chave de criptografia**: `%USERPROFILE%\.sistema-escala\banco.key`
+- **Logs da aplicação**: `%USERPROFILE%\.sistema-escala\logs\aplicacao.log`
 
 ## Protótipo das telas
 
@@ -83,4 +109,4 @@ automáticos para `TextField`, `PasswordField` e `TableView`.
 Para ver todos os componentes de uma vez, rode:
 
     mvn exec:java -Dexec.mainClass="br.edu.sistemaescala.frontend.VitrineComponentesApp"
-# teste3
+
