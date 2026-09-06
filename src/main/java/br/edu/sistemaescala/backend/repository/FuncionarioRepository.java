@@ -26,6 +26,19 @@ public interface FuncionarioRepository {
      */
     List<Funcionario> listar(Boolean ativo, String textoBusca);
 
+    /**
+     * Lista funcionarios combinando filtro de status, busca por texto livre e ordenação segura
+     * validada contra lista fechada de colunas permitidas (OWASP A05).
+     *
+     * @param ativo            true = so ativos, false = so inativos, null = todos
+     * @param textoBusca       trecho do nome ou da matricula (case-insensitive); null ou vazio = sem filtro
+     * @param colunaOrdenacao  coluna permitida: "nome", "matricula", "telefone", "ativo", "criado_em", "id"
+     * @param ascendente       true = ASC, false = DESC
+     */
+    default List<Funcionario> listar(Boolean ativo, String textoBusca, String colunaOrdenacao, boolean ascendente) {
+        return listar(ativo, textoBusca);
+    }
+
     Optional<Funcionario> buscarPorId(int id);
 
     /** Insere um funcionario e retorna a mesma instancia com o id gerado preenchido. */
