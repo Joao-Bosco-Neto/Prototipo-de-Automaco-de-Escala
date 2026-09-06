@@ -144,6 +144,20 @@ class UsuarioConfiguracaoRepositoryJdbcTest {
     }
 
     @Test
+    void rejeitaInsercaoDeUsuarioComLoginDuplicado() {
+        String loginDuplicado = "teste-login-unico";
+        Usuario primeiro = new Usuario(null, "Primeiro", loginDuplicado, "hash1", RoleUsuario.GESTOR, true, null, null);
+        Usuario segundo = new Usuario(null, "Segundo", loginDuplicado, "hash2", RoleUsuario.GESTOR, true, null, null);
+
+        USUARIOS.inserir(primeiro);
+        try {
+            org.junit.jupiter.api.Assertions.assertThrows(RepositoryException.class, () -> USUARIOS.inserir(segundo));
+        } finally {
+            removerUsuario(primeiro.getId());
+        }
+    }
+
+    @Test
     void leEAtualizaConfiguracaoUnica() {
         Configuracao atualizada = new Configuracao(
                 configuracaoOriginal.getId(), "Organizacao de teste", "Subtitulo de teste",
