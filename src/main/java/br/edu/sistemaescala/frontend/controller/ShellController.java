@@ -1,6 +1,8 @@
 package br.edu.sistemaescala.frontend.controller;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
@@ -552,12 +554,12 @@ public class ShellController {
         return selo;
     }
 
-    /** Consulta trivial so para confirmar que o banco responde. */
+    /** Consulta trivial so para confirmar que o banco responde (PreparedStatement). */
     private boolean bancoDisponivel() {
         try (Connection conexao = ConexaoBanco.getConnection();
-             Statement stmt = conexao.createStatement()) {
-            stmt.executeQuery("SELECT 1").close();
-            return true;
+             PreparedStatement stmt = conexao.prepareStatement("SELECT 1");
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next();
         } catch (SQLException excecao) {
             return false;
         }

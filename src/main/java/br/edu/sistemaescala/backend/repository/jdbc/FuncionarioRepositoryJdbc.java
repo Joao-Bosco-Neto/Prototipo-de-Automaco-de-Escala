@@ -81,8 +81,23 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
               AND et.inicio <  ?
             """;
 
+    private static final java.util.Map<String, String> COLUNAS_ORDENACAO_PERMITIDAS = java.util.Map.of(
+            "id", "id",
+            "nome", "nome",
+            "matricula", "matricula",
+            "telefone", "telefone",
+            "observacoes", "observacoes",
+            "ativo", "ativo",
+            "criado_em", "criado_em"
+    );
+
     @Override
     public List<Funcionario> listar(Boolean ativo, String textoBusca) {
+        return listar(ativo, textoBusca, "nome", true);
+    }
+
+    @Override
+    public List<Funcionario> listar(Boolean ativo, String textoBusca, String colunaOrdenacao, boolean ascendente) {
         StringBuilder sql = new StringBuilder(SQL_CAMPOS);
         List<Object> parametros = new ArrayList<>();
         List<String> condicoes = new ArrayList<>();
@@ -101,7 +116,11 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
         if (!condicoes.isEmpty()) {
             sql.append(" WHERE ").append(String.join(" AND ", condicoes));
         }
-        sql.append(" ORDER BY nome, id");
+
+        // Validação da lista fechada de colunas para prevenção de SQL Injection (OWASP A05)
+        String colunaSql = validarColunaOrdenacao(colunaOrdenacao);
+        String direcao = ascendente ? "ASC" : "DESC";
+        sql.append(" ORDER BY ").append(colunaSql).append(" ").append(direcao).append(", id ASC");
 
         try (Connection conexao = ConexaoBanco.getConnection();
              PreparedStatement stmt = conexao.prepareStatement(sql.toString())) {
@@ -121,6 +140,18 @@ public class FuncionarioRepositoryJdbc implements FuncionarioRepository {
         } catch (SQLException e) {
             throw new RepositoryException("Falha ao listar funcionarios", e);
         }
+    }
+
+    public static String validarColunaOrdenacao(String coluna) {
+        if (coluna == null || coluna.isBlank()) {
+            return "nome";
+        }
+        String colunaNormalizada = coluna.trim().toLowerCase();
+        String colunaValida = COLUNAS_ORDENACAO_PERMITIDAS.get(colunaNormalizada);
+        if (colunaValida == null) {
+            throw new IllegalArgumentException("Coluna de ordenação não permitida: " + coluna);
+        }
+        return colunaValida;
     }
 
     @Override
