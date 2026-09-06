@@ -263,6 +263,24 @@
                                     </arguments>
                                 </configuration>
                             </execution>
+                            <!-- 4. Gera hash SHA-256 para validacao de integridade (OWASP A08 / CWE-494) -->
+                            <execution>
+                                <id>gerar-checksum-sha256-appimage</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>powershell</executable>
+                                    <arguments>
+                                        <argument>-NoProfile</argument>
+                                        <argument>-ExecutionPolicy</argument>
+                                        <argument>Bypass</argument>
+                                        <argument>-File</argument>
+                                        <argument>${project.basedir}/scripts/gerar_checksums.ps1</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -363,6 +381,24 @@
                                         <argument>Sistema de Escala</argument>
                                         <argument>--dest</argument>
                                         <argument>${project.build.directory}/dist</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <!-- Gera hash SHA-256 para validacao de integridade (OWASP A08 / CWE-494) -->
+                            <execution>
+                                <id>gerar-checksum-sha256-msi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>powershell</executable>
+                                    <arguments>
+                                        <argument>-NoProfile</argument>
+                                        <argument>-ExecutionPolicy</argument>
+                                        <argument>Bypass</argument>
+                                        <argument>-File</argument>
+                                        <argument>${project.basedir}/scripts/gerar_checksums.ps1</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
