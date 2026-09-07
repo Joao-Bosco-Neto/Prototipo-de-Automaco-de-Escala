@@ -16,7 +16,7 @@
         <h2.version>2.4.240</h2.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <openpdf.version>2.4.0</openpdf.version>
-        <pdfbox.version>3.0.3</pdfbox.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
     </properties>
 
     <dependencies>
