@@ -119,8 +119,15 @@ porque texto desatualiza de forma visível — um `git diff` mostra quando o sch
 descrição não —, enquanto uma imagem desatualiza em silêncio. A fonte última continua sendo
 `src/main/resources/banco/schema.sql`.
 
-Regenerar a imagem a partir do schema atual é trabalho pendente, e a issue #3 já listava
-"Diagrama MER atualizado" como critério de aceite.
+**O substituto já existe em texto:** [`documentacao/diagrama_mer.dbml`](diagrama_mer.dbml)
+descreve as 10 tabelas no formato DBML do dbdiagram.io, com tipos, chaves, `ON DELETE` e os
+comentários do schema. Colar esse arquivo em <https://dbdiagram.io> gera a imagem
+atualizada. O que continua pendente é apenas exportar o PNG e substituir
+`diagrama_mer.png` — a issue #3 já listava "Diagrama MER atualizado" como critério de
+aceite.
+
+Manter o DBML versionado junto do schema é o que resolve o problema de fundo: quando uma
+coluna mudar, o arquivo aparece no `git diff` e alguém percebe.
 
 ### 2.2 As 10 tabelas
 

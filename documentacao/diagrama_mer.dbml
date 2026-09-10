@@ -1,0 +1,381 @@
+// =====================================================================
+// Sistema de Escala — MER em DBML
+//
+// Gerado a partir de src/main/resources/banco/schema.sql — as 10 tabelas,
+// com tipos, chaves primarias, chaves estrangeiras e regras de exclusao.
+//
+// Como usar: cole o conteudo deste arquivo em https://dbdiagram.io e
+// exporte a imagem. E este arquivo, e nao o PNG, que deve ser mantido
+// junto com o schema: texto desatualiza de forma visivel num git diff,
+// imagem desatualiza em silencio.
+//
+// A fonte de verdade continua sendo o schema.sql. Ao alterar o schema,
+// atualize este arquivo no mesmo commit.
+//
+// Limitacao do formato: o DBML nao representa CHECK constraints. Todas
+// as do schema estao transcritas nas Notes das tabelas correspondentes.
+// =====================================================================
+
+Project sistema_escala {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Sistema desktop de gestao de escalas de plantao.
+
+    Alvo: H2 em modo PostgreSQL (producao, embarcado e cifrado com AES) e
+    PostgreSQL 13+ (desenvolvimento opcional). O MODE=PostgreSQL vem da URL
+    de conexao, nao do script.
+
+    Regras de portabilidade aplicadas em todo o schema:
+      - VARCHAR + CHECK no lugar de CREATE TYPE ... AS ENUM
+      - INT GENERATED ALWAYS AS IDENTITY no lugar de SERIAL
+      - CURRENT_TIMESTAMP no lugar de NOW()
+      - VARCHAR(n) no lugar de TEXT
+
+    O script e idempotente e roda a cada partida pelo BancoInicializador.
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 1. Configuracao da organizacao
+// ---------------------------------------------------------------------
+Table configuracao {
+  id                   int          [pk, increment]
+  nome_organizacao     varchar(255) [not null, note: 'Aparece na barra de titulo e no cabecalho do PDF']
+  subtitulo            varchar(255)
+  carga_horaria_mensal numeric(6,2) [note: 'Opcional: nem toda organizacao controla isso']
+  apuracao_banco_horas varchar(20)  [not null, default: 'mensal', note: "CHECK IN ('mensal','continuo')"]
+  caminho_pdf_padrao   varchar(500)
+  atualizado_em        timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: '''
+    Registro unico. Permite instalar o mesmo sistema em outro cliente sem
+    tocar no codigo.
+
+    A tabela NUNCA esta vazia: o seed.sql ja grava uma linha padrao. Quem
+    detecta "primeiro acesso" e a tabela usuario vazia, nao esta. Por isso
+    ConfiguracaoRepository so le e atualiza — nao tem metodo de insercao.
+
+    CHECK ck_config_apuracao: apuracao_banco_horas IN ('mensal','continuo')
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 2. Usuarios do sistema
+// ---------------------------------------------------------------------
+Table usuario {
+  id           int          [pk, increment]
+  nome         varchar(150) [not null]
+  login        varchar(100) [not null, unique, note: 'Identificacao gravada na trilha de auditoria']
+  senha_hash   varchar(255) [not null, note: 'Hash BCrypt custo 12; a senha em claro nunca e armazenada']
+  role         varchar(20)  [not null, default: 'gestor', note: "CHECK IN ('admin','gestor')"]
+  ativo        boolean      [not null, default: true, note: 'Conta desativada nao autentica; o sistema nao exclui usuario']
+  ultimo_login timestamp
+  criado_em    timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: '''
+    Quem OPERA o programa. Nao ha vinculo com funcionario: um agente
+    escalado nao tem conta no sistema.
+
+    login e separado de nome porque nomes se repetem e login nao
+    (ex.: "alexandre39"). A autenticacao busca por login, nunca por nome.
+
+    O perfil admin e suporte tecnico (a equipe de desenvolvimento);
+    gestor e quem monta a escala.
+
+    CHECK ck_usuario_role: role IN ('admin','gestor')
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 3. Pessoas escaladas
+// ---------------------------------------------------------------------
+Table funcionario {
+  id          int           [pk, increment]
+  nome        varchar(150)  [not null]
+  matricula   varchar(50)   [not null, unique, note: 'Identificador usado em todas as telas e na auditoria']
+  telefone    varchar(20)
+  observacoes varchar(1000) [note: 'Texto livre do gestor — ver LGPD_E_DADOS_PESSOAIS.md, Riscos aceitos']
+  ativo       boolean       [not null, default: true]
+  criado_em   timestamp     [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: '''
+    Pessoas ESCALADAS (nao operam o sistema).
+
+    ativo sustenta o filtro Ativos/Inativos e a desativacao logica: o
+    funcionario nunca e excluido, para preservar o historico de plantoes.
+    FuncionarioRepository expoe ativar(int) e desativar(int), e nenhuma
+    operacao de remocao.
+
+    Nao guarda CPF: removido por minimizacao na issue #37 — a matricula ja
+    identifica o funcionario em todo o sistema.
+
+    A coluna horas_banco NAO existe: o saldo do banco de horas e derivado
+    por soma de lancamento_horas.
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 4. Tipos de turno — o que torna o produto generico
+// ---------------------------------------------------------------------
+Table tipo_turno {
+  id                       int          [pk, increment]
+  nome                     varchar(100) [not null]
+  hora_inicio              time         [not null, note: 'Permite mais de um turno por dia; sem ela 12x36 e impossivel']
+  duracao_horas            numeric(5,2) [not null, note: 'CHECK > 0; fracionario e valido (8,5h)']
+  intervalo_descanso_horas numeric(5,2) [not null, default: 0, note: 'CHECK >= 0; fracionario e valido (36,5h)']
+  min_agentes              int          [not null, default: 2, note: 'CHECK >= 1; o 2 e apenas o padrao, nao regra fixa']
+  max_agentes              int          [note: 'CHECK: NULL ou >= min_agentes']
+  conta_banco_horas        boolean      [not null, default: true]
+  ativo                    boolean      [not null, default: true]
+  criado_em                timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: '''
+    E aqui que o produto deixa de ser especifico de um cliente. O regime de
+    trabalho e dado, nao codigo:
+
+      24x72 ..... 1 registro:  08:00, 24h de duracao, 72h de descanso
+      12x36 ..... 2 registros: 07:00/12h/36h e 19:00/12h/36h
+      5x2 ....... 1 registro:  08:00, 8h, 16h de descanso
+      Sobreaviso  1 registro:  14:00, 18h, 0h, sem banco de horas
+
+    Regra dura no codigo: NUNCA fixar 72, 24 ou 2. Esses valores vem sempre
+    daqui ou de configuracao.
+
+    Inativar um tipo nao apaga os turnos ja gerados com ele: some do gerador
+    de rodizio e do cadastro de novos turnos, e o historico permanece.
+
+    CHECK ck_tt_duracao:  duracao_horas > 0
+    CHECK ck_tt_descanso: intervalo_descanso_horas >= 0
+    CHECK ck_tt_min:      min_agentes >= 1
+    CHECK ck_tt_max:      max_agentes IS NULL OR max_agentes >= min_agentes
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 5. Turnos concretos no calendario
+// ---------------------------------------------------------------------
+Table escala_turno {
+  id            int          [pk, increment]
+  tipo_turno_id int          [not null]
+  inicio        timestamp    [not null]
+  fim           timestamp    [not null, note: 'CHECK fim > inicio']
+  min_agentes   int          [not null, default: 2]
+  max_agentes   int
+  observacao    varchar(255)
+  ativo         boolean      [not null, default: true]
+  criado_em     timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (tipo_turno_id, inicio) [unique, name: 'uq_et_tipo_inicio']
+    inicio [name: 'idx_turno_inicio']
+    fim    [name: 'idx_turno_fim']
+  }
+
+  Note: '''
+    Um turno concreto numa data, derivado de um tipo_turno.
+
+    min_agentes e max_agentes se repetem aqui de proposito: permitem excecao
+    num dia especifico (feriado, operacao) sem alterar o tipo de turno
+    inteiro.
+
+    CHECK ck_et_periodo:  fim > inicio
+    UNIQUE uq_et_tipo_inicio: (tipo_turno_id, inicio)
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 6. Motivos de cobertura
+// ---------------------------------------------------------------------
+Table motivo_cobertura {
+  id              int          [pk, increment]
+  nome            varchar(100) [not null, unique]
+  gera_lancamento boolean      [not null, default: true, note: 'Se falso, a cobertura nao movimenta o banco de horas']
+  ativo           boolean      [not null, default: true]
+
+  Note: '''
+    Tabela, nao lista fixa no codigo: cada cliente cadastra os seus motivos
+    sem precisar de nova versao do sistema.
+
+    Consequencia registrada na LGPD: um motivo como "licenca medica" torna a
+    linha de cobertura correspondente informacao de saude vinculada a um
+    agente identificado. A orientacao ao cliente e usar motivos genericos.
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 7. Alocacao de pessoas nos turnos
+// ---------------------------------------------------------------------
+Table escala_funcionario {
+  id                  int          [pk, increment]
+  escala_turno_id     int          [not null]
+  funcionario_id      int          [not null]
+  inicio              timestamp    [note: 'NULL = cumpre o turno inteiro (caso normal)']
+  fim                 timestamp    [note: 'Preenchidos com inicio = turno parcial (meio plantao)']
+  cobertura_de        int          [note: 'Auto-relacionamento: a alocacao titular que esta sendo coberta']
+  motivo_cobertura_id int
+  observacao          varchar(500)
+  lancou_banco_horas  boolean      [not null, default: false]
+  criado_em           timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (escala_turno_id, funcionario_id) [unique, name: 'uq_ef_turno_func']
+    funcionario_id  [name: 'idx_ef_funcionario']
+    escala_turno_id [name: 'idx_ef_turno']
+    cobertura_de    [name: 'idx_ef_cobertura']
+  }
+
+  Note: '''
+    Tabela central da escala.
+
+    inicio/fim nulos = cumpre o turno inteiro (caso normal). Preenchidos =
+    turno parcial (meio plantao), sem tabela nova. Por isso a verificacao de
+    conflito e sobreposicao de intervalos, que funciona em qualquer regime:
+      haConflito = a.inicio < b.fim && b.inicio < a.fim
+
+    Os dois ON DELETE CASCADE sustentam o "Limpar mes" (issue #44):
+      escala_turno_id -> apaga as alocacoes junto com o turno;
+      cobertura_de    -> apaga a alocacao de cobertura junto com a titular.
+
+    O segundo so aparece quando a cobertura esta num turno FORA do mes que
+    esta sendo limpo: se as duas alocacoes caem no mesmo mes, elas ja somem
+    juntas pela cascata do turno. Sem cascade nesse caso, a limpeza aborta
+    com violacao de chave estrangeira. Efeito colateral registrado: limpar
+    agosto tambem apaga uma cobertura de setembro que aponte para agosto.
+
+    A FK fk_ef_cobertura e nomeada de proposito: uma FK anonima ganha nome
+    gerado (CONSTRAINT_E5, CONSTRAINT_E5C...) e nao da para corrigi-la
+    depois por DDL fixo.
+
+    A FK para funcionario NAO tem cascata — e o que impede a exclusao real
+    de uma pessoa com historico.
+
+    UNIQUE uq_ef_turno_func: (escala_turno_id, funcionario_id)
+    CHECK ck_ef_periodo: inicio IS NULL OR fim IS NULL OR fim > inicio
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 8. Extrato do banco de horas
+// ---------------------------------------------------------------------
+Table lancamento_horas {
+  id                    int          [pk, increment]
+  funcionario_id        int          [not null]
+  escala_funcionario_id int          [note: 'Alocacao que gerou o lancamento; NULL em ajuste manual']
+  data_referencia       date         [not null]
+  minutos               int          [not null, note: 'MINUTOS, nao horas: um turno de 8h30 quebra campo inteiro de horas']
+  tipo                  varchar(30)  [not null, note: "CHECK IN ('credito_cobertura','debito_ausencia','credito_extra','ajuste_manual')"]
+  descricao             varchar(255)
+  criado_em             timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (funcionario_id, data_referencia) [name: 'idx_lanc_func_data']
+  }
+
+  Note: '''
+    Extrato do banco de horas. O saldo e DERIVADO POR SOMA, nunca guardado
+    como coluna: uma coluna unica em funcionario nao sustenta o "Ver extrato"
+    da tela nem o estorno quando uma cobertura e excluida.
+
+    Guardado em minutos: turno de 8h30 quebra um campo inteiro de horas.
+
+    O ON DELETE CASCADE de escala_funcionario_id e o que faz o estorno
+    automatico — apagar a alocacao leva junto o par credito/debito que ela
+    gerou.
+
+    CHECK ck_lanc_tipo: tipo IN ('credito_cobertura','debito_ausencia',
+                                 'credito_extra','ajuste_manual')
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 9. Excecoes autorizadas as regras da escala
+// ---------------------------------------------------------------------
+Table escala_excecao {
+  id                    int          [pk, increment]
+  escala_funcionario_id int          [note: 'ON DELETE SET NULL: apagar a alocacao nao apaga o registro da excecao']
+  funcionario_id        int          [not null, note: 'Denormalizado de proposito']
+  data_plantao          date         [not null, note: 'Denormalizado de proposito']
+  regra                 varchar(50)  [not null, note: 'Qual regra foi rompida']
+  descricao             varchar(500) [not null, note: 'Justificativa dada pelo gestor']
+  autorizado_por        varchar(150) [not null, note: 'Login de quem autorizou, nao o nome']
+  criado_em             timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    funcionario_id [name: 'idx_exc_funcionario']
+  }
+
+  Note: '''
+    Trilha de auditoria, nao cadastro: o gestor alocou alguem sabendo que a
+    regra de descanso nao fecha, e o sistema guarda quem autorizou, quando e
+    por que a regra foi violada. A linha e imutavel — o repositorio nao tem
+    remover, e atualizar() lanca excecao em vez de gravar (sem trigger,
+    conforme a decisao de manter as regras no backend).
+
+    escala_funcionario_id usa ON DELETE SET NULL, nao CASCADE: apagar a
+    alocacao (ou limpar o mes, issue #44) nao pode apagar o registro de que a
+    excecao aconteceu. Sem o SET NULL, o "Limpar mes" abortaria por violacao
+    de chave estrangeira assim que existisse uma excecao.
+
+    funcionario_id e data_plantao ficam denormalizadas de proposito: sao o
+    que mantem o registro legivel depois que a escala do mes some.
+  '''
+}
+
+// ---------------------------------------------------------------------
+// 10. Log de eventos de seguranca (OWASP A09)
+// ---------------------------------------------------------------------
+Table log_seguranca {
+  id            int          [pk, increment]
+  data_hora     timestamp    [not null, default: `CURRENT_TIMESTAMP`]
+  identificacao varchar(150) [not null, note: 'String de login tentada — NAO e FK para usuario']
+  acao          varchar(100) [not null]
+  resultado     varchar(100) [note: 'sucesso / falha']
+  detalhes      varchar(500) [note: 'NUNCA recebe senha nem hash (CWE-532)']
+
+  indexes {
+    data_hora [name: 'idx_log_seg_data_hora']
+  }
+
+  Note: '''
+    Trilha de auditoria de acoes criticas: login (bem-sucedido E falho),
+    logout, criacao/desativacao de usuario, redefinicao de senha, autorizacao
+    de excecao de escala, exclusao de cobertura e exclusao em massa na escala.
+
+    identificacao guarda a string de login tentada, NAO um FK para usuario:
+    num login falho o usuario pode nem existir, e e justamente esse caso que
+    o OWASP manda registrar. Por isso esta tabela nao participa de nenhum
+    relacionamento. O texto chega sanitizado de quebras de linha pela camada
+    de servico (CWE-117), para ninguem forjar uma linha de log.
+
+    detalhes NUNCA recebe senha nem hash (CWE-532): so o que a acao mudou,
+    em texto curto. A trilha identifica pessoas por matricula e login, nunca
+    por nome completo.
+  '''
+}
+
+// =====================================================================
+// Relacionamentos
+//
+// "no action" e o comportamento do schema quando nao ha clausula ON DELETE:
+// o banco recusa a exclusao do pai enquanto houver filho apontando para ele.
+// =====================================================================
+
+Ref fk_et_tipo_turno: escala_turno.tipo_turno_id > tipo_turno.id [delete: no action]
+
+Ref fk_ef_escala_turno: escala_funcionario.escala_turno_id > escala_turno.id [delete: cascade]
+
+Ref fk_ef_funcionario: escala_funcionario.funcionario_id > funcionario.id [delete: no action]
+
+Ref fk_ef_cobertura: escala_funcionario.cobertura_de > escala_funcionario.id [delete: cascade]
+
+Ref fk_ef_motivo_cobertura: escala_funcionario.motivo_cobertura_id > motivo_cobertura.id [delete: no action]
+
+Ref fk_lanc_funcionario: lancamento_horas.funcionario_id > funcionario.id [delete: no action]
+
+Ref fk_lanc_escala_funcionario: lancamento_horas.escala_funcionario_id > escala_funcionario.id [delete: cascade]
+
+Ref fk_exc_escala_funcionario: escala_excecao.escala_funcionario_id > escala_funcionario.id [delete: set null]
+
+Ref fk_exc_funcionario: escala_excecao.funcionario_id > funcionario.id [delete: no action]
+
+// configuracao, usuario e log_seguranca nao participam de nenhuma FK.
